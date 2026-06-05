@@ -135,3 +135,12 @@ export interface DTUGPAResult {
   totalRetakeCredits: number;
 }
 
+/**
+ * Interface đại diện cho một môn học trong Khung chương trình dự kiến.
+ */
+export interface CurriculumCourse {
+  courseCode: string;
+  courseName: string;
+  credits: number;
+}
+

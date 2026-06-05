@@ -47,33 +47,107 @@ export function calculateSemesterGpa(courses: Course[]): number {
 }
 
 /**
+ * Tự động phát hiện và liên kết các môn học lại / cải thiện dựa trên mã môn (Course Code).
+ * Nếu một môn học có nhiều lượt học ở các học kỳ khác nhau, hệ thống sẽ tự động coi:
+ * - Lượt học sau (mới nhất theo thời gian) là môn học lại/cải thiện.
+ * - Các lượt học trước đó là môn bị thay thế (isReplaced = true).
+ */
+export function resolveRetakes(courses: Course[]) {
+  const replacedIds = new Set<string>();
+  const retakeIds = new Set<string>();
+  const replacesMap = new Map<string, string>();
+
+  // 1. Áp dụng liên kết thủ công của người dùng (nếu có)
+  courses.forEach(course => {
+    if (course.isRetake && course.replacesCourseId) {
+      replacedIds.add(course.replacesCourseId);
+      retakeIds.add(course.id);
+      replacesMap.set(course.id, course.replacesCourseId);
+    }
+  });
+
+  // 2. Tự động phát hiện các liên kết chưa được khai báo thủ công
+  // Nhóm các môn học theo mã môn học (courseCode) và số tín chỉ (credits)
+  const groups = new Map<string, Course[]>();
+  courses.forEach(course => {
+    const key = `${course.courseCode.toUpperCase()}_${course.credits}`;
+    if (!groups.has(key)) {
+      groups.set(key, []);
+    }
+    groups.get(key)!.push(course);
+  });
+
+  groups.forEach((groupCourses) => {
+    if (groupCourses.length <= 1) return;
+
+    // Sắp xếp các môn học theo thứ tự thời gian tăng dần (cũ nhất trước)
+    const sorted = [...groupCourses].sort((a, b) => {
+      const yearPartsA = (a.academicYear || '2025-2026').split('-');
+      const yearPartsB = (b.academicYear || '2025-2026').split('-');
+      const yA = parseInt(yearPartsA[0]) || 0;
+      const yB = parseInt(yearPartsB[0]) || 0;
+      if (yA !== yB) {
+        return yA - yB;
+      }
+      const semOrder = { 'Học kỳ 1': 1, 'Học kỳ 2': 2, 'Học kỳ Hè': 3 };
+      const sA = semOrder[a.semester || 'Học kỳ 1'] || 1;
+      const sB = semOrder[b.semester || 'Học kỳ 1'] || 1;
+      return sA - sB;
+    });
+
+    for (let i = 0; i < sorted.length - 1; i++) {
+      const currentAttempt = sorted[i];
+      const nextAttempt = sorted[i + 1];
+
+      // Chỉ liên kết nếu chúng ở các học kỳ khác nhau
+      const sameSemester = currentAttempt.academicYear === nextAttempt.academicYear && 
+                           currentAttempt.semester === nextAttempt.semester;
+      if (!sameSemester) {
+        // Đánh dấu môn sau là học lại (luôn luôn đúng vì đã có lượt học trước đó)
+        retakeIds.add(nextAttempt.id);
+        
+        // Chỉ đánh dấu môn trước là bị thay thế (loại khỏi GPA) nếu môn sau đã học xong và có điểm
+        if (nextAttempt.gradeChar !== '') {
+          replacedIds.add(currentAttempt.id);
+          replacesMap.set(nextAttempt.id, currentAttempt.id);
+        } else {
+          // Nếu môn sau chưa có điểm (đang học), chúng ta vẫn có thể hiển thị liên kết dự kiến trên giao diện
+          replacesMap.set(nextAttempt.id, currentAttempt.id);
+        }
+      }
+    }
+  });
+
+  return { replacedIds, retakeIds, replacesMap };
+}
+
+/**
  * Hàm tính toán tổng thể GPA học kỳ, GPA tích lũy và số tín chỉ đạt được của sinh viên.
  * Hàm này tự động quét và đánh dấu các môn bị học cải thiện/học lại để loại bỏ khỏi GPA tích lũy.
  * 
  * @param allCourses Toàn bộ danh sách môn học của sinh viên từ trước đến nay
- * @param currentSemesterId ID của học kỳ hiện tại (để tính riêng GPA học kỳ)
+ * @param currentSemesterCourses Danh sách môn học kỳ hiện tại
  * @returns Đối tượng GPACalculationResult chứa đầy đủ thông tin chi tiết
  */
 export function calculateGpaSummary(
   allCourses: Course[],
   currentSemesterCourses: Course[] = []
 ): GPACalculationResult {
-  // 1. Xác định danh sách các ID môn học bị thay thế (được thay thế bởi môn học lại/cải thiện)
-  const replacedCourseIds = new Set<string>();
-  allCourses.forEach(course => {
-    if (course.isRetake && course.replacesCourseId) {
-      replacedCourseIds.add(course.replacesCourseId);
-    }
-  });
+  // 1. Xác định các liên kết học lại/cải thiện tự động + thủ công
+  const { replacedIds, retakeIds, replacesMap } = resolveRetakes(allCourses);
 
   // 2. Chuyển đổi sang danh sách môn học đã xử lý (ProcessedCourse)
   const processedCourses: ProcessedCourse[] = allCourses.map(course => {
     const gradePoint = GRADE_SCALE_MAP[course.gradeChar];
     const isPassed = isCoursePassed(course.gradeChar, course.isConditionCourse);
-    const isReplaced = replacedCourseIds.has(course.id);
+    const isReplaced = replacedIds.has(course.id);
+    const isRetake = retakeIds.has(course.id) || course.isRetake;
+    const replacesCourseId = replacesMap.get(course.id) || course.replacesCourseId;
 
     return {
       ...course,
+      isRetake,
+      replacesCourseId,
       gradePoint,
       isPassed,
       isReplaced
@@ -144,7 +218,7 @@ export function calculateGpaSummary(
  */
 export function calculateDTUGPA(courses: Course[]): DTUGPAResult {
   // 1. Quét danh sách để xác định các ID môn học bị thay thế (bị học cải thiện/học lại phủ quyết)
-  const replacedCourseIds = new Set<string>();
+  const { replacedIds, retakeIds } = resolveRetakes(courses);
   let totalRetakeCredits = 0;
 
   for (const course of courses) {
@@ -152,14 +226,9 @@ export function calculateDTUGPA(courses: Course[]): DTUGPAResult {
       continue;
     }
 
-    if (course.isRetake) {
+    if (retakeIds.has(course.id) || course.isRetake) {
       // Cộng dồn tín chỉ học lại/cải thiện để theo dõi phạt bằng Giỏi (>5%)
       totalRetakeCredits += course.credits;
-
-      // Lưu lại ID của môn học bị thay thế để loại trừ sau này
-      if (course.replacesCourseId) {
-        replacedCourseIds.add(course.replacesCourseId);
-      }
     }
   }
 
@@ -174,7 +243,7 @@ export function calculateDTUGPA(courses: Course[]): DTUGPAResult {
     }
 
     // B. Loại bỏ môn học cũ đã bị thay thế bởi môn học lại/cải thiện mới hơn
-    if (replacedCourseIds.has(course.id)) {
+    if (replacedIds.has(course.id)) {
       continue;
     }
 

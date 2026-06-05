@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Course, GradeChar, ProcessedCourse, GRADE_SCALE_MAP } from '../types/gpa';
+import { Course, GradeChar, ProcessedCourse, GRADE_SCALE_MAP, CurriculumCourse } from '../types/gpa';
 import { calculateDTUGPA, calculateGpaSummary, calculateGpaTrend, calculateSemesterGpa, GpaTrendPoint } from '../utils/gpaCalculator';
 import { 
   Plus, 
@@ -19,7 +19,10 @@ import {
   ChevronUp,
   TrendingUp,
   List,
-  FolderKanban
+  FolderKanban,
+  Pencil,
+  Check,
+  X
 } from 'lucide-react';
 
 interface GpaCalculatorUIProps {
@@ -63,8 +66,23 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
   // 2. State quản lý Form nhập liệu
   const [courseCode, setCourseCode] = useState('');
   const [courseName, setCourseName] = useState('');
-  const [credits, setCredits] = useState<number>(3);
-  const [gradeChar, setGradeChar] = useState<GradeChar>('B');
+  const [credits, setCredits] = useState<number>(() => {
+    try {
+      const saved = localStorage.getItem('dtu_gpa_form_credits');
+      if (saved) {
+        const parsed = parseInt(saved);
+        if (!isNaN(parsed) && parsed > 0) return parsed;
+      }
+    } catch (e) {}
+    return 3;
+  });
+  const [gradeChar, setGradeChar] = useState<GradeChar>(() => {
+    try {
+      const saved = localStorage.getItem('dtu_gpa_form_grade');
+      if (saved) return saved as GradeChar;
+    } catch (e) {}
+    return 'B';
+  });
   const [isConditionCourse, setIsConditionCourse] = useState(false);
   const [isRetake, setIsRetake] = useState(false);
   const [replacesCourseId, setReplacesCourseId] = useState<string | null>(null);
@@ -75,8 +93,20 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
   const [smartPasteStatus, setSmartPasteStatus] = useState<{message: string; type: 'idle' | 'success' | 'error'}>({message: '', type: 'idle'});
   
   // Mặc định chọn năm học và học kỳ hiện hành
-  const [academicYear, setAcademicYear] = useState<string>(academicYearOptions[1] || '2025-2026');
-  const [semester, setSemester] = useState<'Học kỳ 1' | 'Học kỳ 2' | 'Học kỳ Hè'>('Học kỳ 1');
+  const [academicYear, setAcademicYear] = useState<string>(() => {
+    try {
+      const saved = localStorage.getItem('dtu_gpa_form_year');
+      if (saved) return saved;
+    } catch (e) {}
+    return academicYearOptions[1] || '2025-2026';
+  });
+  const [semester, setSemester] = useState<'Học kỳ 1' | 'Học kỳ 2' | 'Học kỳ Hè'>(() => {
+    try {
+      const saved = localStorage.getItem('dtu_gpa_form_semester');
+      if (saved) return saved as 'Học kỳ 1' | 'Học kỳ 2' | 'Học kỳ Hè';
+    } catch (e) {}
+    return 'Học kỳ 1';
+  });
 
   // State điều khiển tổng tín chỉ tốt nghiệp mục tiêu (Nạp từ LocalStorage nếu có)
   const [targetCredits, setTargetCredits] = useState<number>(() => {
@@ -92,8 +122,40 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
     return 144;
   });
 
-  // State điều khiển chế độ hiển thị danh sách: 'grouped' (Phân nhóm học kỳ) hoặc 'flat' (Tất cả phẳng)
-  const [viewMode, setViewMode] = useState<'grouped' | 'flat'>('grouped');
+  const [isEditingTargetCredits, setIsEditingTargetCredits] = useState(false);
+  const [tempTargetCredits, setTempTargetCredits] = useState(targetCredits);
+
+  // Đồng bộ Form State vào localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('dtu_gpa_form_year', academicYear);
+    } catch (e) {}
+  }, [academicYear]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('dtu_gpa_form_semester', semester);
+    } catch (e) {}
+  }, [semester]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('dtu_gpa_form_credits', credits.toString());
+    } catch (e) {}
+  }, [credits]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('dtu_gpa_form_grade', gradeChar);
+    } catch (e) {}
+  }, [gradeChar]);
+
+  useEffect(() => {
+    setTempTargetCredits(targetCredits);
+  }, [targetCredits]);
+
+  // State điều khiển chế độ hiển thị danh sách: 'grouped' (Phân nhóm học kỳ), 'flat' (Tất cả phẳng) hoặc 'curriculum' (Đối chiếu Tiến độ Khung)
+  const [viewMode, setViewMode] = useState<'grouped' | 'flat' | 'curriculum'>('grouped');
   
   // State điều khiển trạng thái đóng/mở của các thẻ Học kỳ (Accordion)
   const [expandedSemesters, setExpandedSemesters] = useState<Record<string, boolean>>({});
@@ -122,6 +184,127 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
     confirmText: 'Xác nhận xóa',
     onConfirm: () => {}
   });
+
+  // State quản lý Khung chương trình (Curriculum)
+  const [curriculumCourses, setCurriculumCourses] = useState<CurriculumCourse[]>(() => {
+    try {
+      const saved = localStorage.getItem('dtu_gpa_curriculum');
+      if (saved) {
+        return JSON.parse(saved);
+      }
+    } catch (e) {
+      console.error('Lỗi khi nạp khung chương trình từ localStorage:', e);
+    }
+    return [];
+  });
+  const [isCurriculumModalOpen, setIsCurriculumModalOpen] = useState(false);
+  const [curriculumInputText, setCurriculumInputText] = useState('');
+
+  // State quản lý sửa môn học trong bảng điểm (Transcript Edit Inline)
+  const [editingCourseId, setEditingCourseId] = useState<string | null>(null);
+  const [editCourseCode, setEditCourseCode] = useState('');
+  const [editCourseName, setEditCourseName] = useState('');
+  const [editCredits, setEditCredits] = useState<number>(3);
+
+  // State quản lý sửa tín chỉ môn học trong Khung chương trình
+  const [editingCurriculumCode, setEditingCurriculumCode] = useState<string | null>(null);
+  const [editCurriculumCredits, setEditCurriculumCredits] = useState<number>(3);
+
+  // Đồng bộ Khung chương trình vào localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('dtu_gpa_curriculum', JSON.stringify(curriculumCourses));
+    } catch (e) {
+      console.error('Lỗi khi lưu khung chương trình vào localStorage:', e);
+    }
+  }, [curriculumCourses]);
+
+  // Bộ bóc tách dữ liệu Khung chương trình từ myDTU
+  const handleParseCurriculum = () => {
+    if (!curriculumInputText.trim()) {
+      alert('Vui lòng dán khung chương trình dự kiến!');
+      return;
+    }
+
+    try {
+      const cells = curriculumInputText
+        .split(/[\n\t]/)
+        .map(c => c.trim())
+        .filter(c => c !== '');
+
+      const parsedCourses: CurriculumCourse[] = [];
+      
+      for (let i = 0; i < cells.length; i++) {
+        const cell = cells[i];
+        if (/^[a-zA-Z]{2,6}(\-[a-zA-Z]{1,4})?\s*\d{1,4}$/.test(cell)) {
+          if (i + 2 < cells.length) {
+            const courseCode = cell.toUpperCase();
+            const courseName = cells[i + 1];
+            const credits = parseInt(cells[i + 2], 10);
+
+            if (!isNaN(credits) && credits > 0 && credits <= 15) {
+              if (!parsedCourses.some(c => c.courseCode === courseCode)) {
+                parsedCourses.push({
+                  courseCode,
+                  courseName,
+                  credits
+                });
+              }
+              i += 2;
+            }
+          }
+        }
+      }
+
+      if (parsedCourses.length > 0) {
+        setCurriculumCourses(parsedCourses);
+        const totalCredits = parsedCourses.reduce((sum, c) => sum + c.credits, 0);
+        setTargetCredits(totalCredits);
+        setIsCurriculumModalOpen(false);
+        setCurriculumInputText('');
+        alert(`Thành công! Đã nhận diện ${parsedCourses.length} môn học. Tổng số tín chỉ tự động cập nhật: ${totalCredits} TC!`);
+      } else {
+        alert('Không nhận diện được môn học nào hợp lệ. Vui lòng copy đúng bảng khung chương trình.');
+      }
+    } catch (e) {
+      console.error(e);
+      alert('Đã xảy ra lỗi khi phân tích khung chương trình.');
+    }
+  };
+
+  const handleStartEditCourse = (course: Course) => {
+    setEditingCourseId(course.id);
+    setEditCourseCode(course.courseCode);
+    setEditCourseName(course.courseName);
+    setEditCredits(course.credits);
+  };
+
+  const handleSaveEditCourse = (courseId: string) => {
+    if (!editCourseCode.trim() || !editCourseName.trim() || editCredits <= 0) {
+      alert('Vui lòng nhập đầy đủ thông tin hợp lệ!');
+      return;
+    }
+    const updated = courses.map(c => 
+      c.id === courseId 
+        ? { ...c, courseCode: editCourseCode.trim(), courseName: editCourseName.trim(), credits: editCredits } 
+        : c
+    );
+    updateCoursesState(updated);
+    setEditingCourseId(null);
+  };
+
+  const handleCancelEditCourse = () => {
+    setEditingCourseId(null);
+  };
+
+  const handleUpdateCurriculumCredits = (courseCode: string, newCredits: number) => {
+    const updated = curriculumCourses.map(cc => 
+      cc.courseCode === courseCode ? { ...cc, credits: newCredits } : cc
+    );
+    setCurriculumCourses(updated);
+    const newTotal = updated.reduce((sum, c) => sum + c.credits, 0);
+    setTargetCredits(newTotal);
+  };
 
   // Cập nhật trạng thái môn học và đồng bộ lên cấp cha App (nếu có)
   const updateCoursesState = (newCourses: Course[]) => {
@@ -163,24 +346,69 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
   
   // Tính toán danh sách nợ môn (F) chưa được học lại/thay thế
   const { failedCourses, totalFailedCredits } = useMemo(() => {
-    const replacedCourseIds = new Set<string>();
-    courses.forEach(c => {
-      if (c.isRetake && c.replacesCourseId) {
-        replacedCourseIds.add(c.replacesCourseId);
-      }
-    });
-
-    const activeFailed = courses.filter(c => c.gradeChar === 'F' && !replacedCourseIds.has(c.id));
+    const activeFailed = summaryResult.processedCourses.filter(c => c.gradeChar === 'F' && !c.isReplaced);
     const totalCredits = activeFailed.reduce((sum, c) => sum + c.credits, 0);
 
     return {
       failedCourses: activeFailed,
       totalFailedCredits: totalCredits
     };
-  }, [courses]);
+  }, [summaryResult.processedCourses]);
 
   // Tính toán xu hướng GPA (Trend Points) phục vụ vẽ biểu đồ
   const gpaTrend = useMemo(() => calculateGpaTrend(courses), [courses]);
+
+  // Đối chiếu tiến độ với Khung chương trình dự kiến
+  const curriculumProgress = useMemo(() => {
+    if (curriculumCourses.length === 0) return null;
+
+    const courseStatusMap = new Map<string, { gradeChar: string; isPassed: boolean; isReplaced: boolean }>();
+    summaryResult.processedCourses.forEach(c => {
+      const code = c.courseCode.toUpperCase();
+      const existing = courseStatusMap.get(code);
+      if (!existing || (!existing.isPassed && c.isPassed) || (existing.isReplaced && !c.isReplaced)) {
+        courseStatusMap.set(code, {
+          gradeChar: c.gradeChar,
+          isPassed: c.isPassed,
+          isReplaced: c.isReplaced
+        });
+      }
+    });
+
+    const completed: CurriculumCourse[] = [];
+    const learning: CurriculumCourse[] = [];
+    const failed: CurriculumCourse[] = [];
+    const missing: CurriculumCourse[] = [];
+
+    curriculumCourses.forEach(cc => {
+      const code = cc.courseCode.toUpperCase();
+      const transcript = courseStatusMap.get(code);
+
+      if (!transcript) {
+        missing.push(cc);
+      } else if (transcript.gradeChar === '') {
+        learning.push(cc);
+      } else if (!transcript.isPassed && !transcript.isReplaced) {
+        failed.push(cc);
+      } else if (transcript.isPassed) {
+        completed.push(cc);
+      } else {
+        missing.push(cc);
+      }
+    });
+
+    return {
+      completed,
+      learning,
+      failed,
+      missing,
+      totalCredits: curriculumCourses.reduce((sum, c) => sum + c.credits, 0),
+      completedCredits: completed.reduce((sum, c) => sum + c.credits, 0),
+      learningCredits: learning.reduce((sum, c) => sum + c.credits, 0),
+      failedCredits: failed.reduce((sum, c) => sum + c.credits, 0),
+      missingCredits: missing.reduce((sum, c) => sum + c.credits, 0),
+    };
+  }, [curriculumCourses, summaryResult.processedCourses]);
 
   // Tính toán kết quả giả lập GPA mục tiêu
   const simulationResult = useMemo(() => {
@@ -235,6 +463,88 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
     };
   }, [dtuResult.accumulatedCredits, dtuResult.cumulativeGpa, simulatorRemainingCredits, simulatorTargetGpa, isCustomTarget, customTargetGpa]);
 
+  // Tính toán mức GPA được cộng thêm khi học lại các môn bị điểm F
+  const failedCoursesBoosts = useMemo(() => {
+    const totalCredits = dtuResult.accumulatedCredits; // Mẫu số GPA tích lũy
+    if (totalCredits === 0) return [];
+
+    return failedCourses.map(c => {
+      // Công thức: Mức tăng = (Điểm mới * Số tín chỉ môn học lại) / Tổng số tín chỉ tính GPA
+      const boostA = (c.credits * 4.00) / totalCredits;
+      const boostAMinus = (c.credits * 3.65) / totalCredits;
+      const boostBPlus = (c.credits * 3.33) / totalCredits;
+
+      return {
+        courseCode: c.courseCode,
+        courseName: c.courseName,
+        credits: c.credits,
+        boostA,
+        boostAMinus,
+        boostBPlus,
+      };
+    });
+  }, [failedCourses, dtuResult.accumulatedCredits]);
+
+  // Tính toán các tổ hợp điểm số gợi ý cho số tín chỉ còn lại
+  const gradeRecipes = useMemo(() => {
+    if (simulationResult.status !== 'feasible' || !simulationResult.requiredGPA) return [];
+    const req = simulationResult.requiredGPA;
+    const rem = simulatorRemainingCredits;
+    
+    const recipes: { type: string; details: string; icon: string }[] = [];
+
+    // 1. Tổ hợp A và A- (Nếu req <= 4.0)
+    if (req <= 4.0) {
+      const minReqForA = Math.max(0, req - 3.65);
+      const creditsA = Math.ceil((minReqForA * rem) / 0.35);
+      const finalA = Math.max(0, Math.min(rem, creditsA));
+      const finalAMinus = rem - finalA;
+      recipes.push({
+        type: 'Tổ hợp Xuất sắc (A & A-)',
+        details: `Cần đạt ${finalA} TC điểm A/A+ và ${finalAMinus} TC điểm A-`,
+        icon: '🥇'
+      });
+    }
+
+    // 2. Tổ hợp A và B+ (Nếu req <= 4.0 và req >= 3.33)
+    if (req <= 4.0 && req >= 3.33) {
+      const creditsA = Math.ceil(((req - 3.33) * rem) / 0.67);
+      const finalA = Math.max(0, Math.min(rem, creditsA));
+      const finalBPlus = rem - finalA;
+      recipes.push({
+        type: 'Tổ hợp Giỏi kết hợp (A & B+)',
+        details: `Cần đạt ${finalA} TC điểm A/A+ và ${finalBPlus} TC điểm B+`,
+        icon: '🥈'
+      });
+    }
+
+    // 3. Tổ hợp A- và B (Nếu req <= 3.65 và req >= 3.0)
+    if (req <= 3.65 && req >= 3.00) {
+      const creditsAMinus = Math.ceil(((req - 3.00) * rem) / 0.65);
+      const finalAMinus = Math.max(0, Math.min(rem, creditsAMinus));
+      const finalB = rem - finalAMinus;
+      recipes.push({
+        type: 'Tổ hợp Khá an toàn (A- & B)',
+        details: `Cần đạt ${finalAMinus} TC điểm A- và ${finalB} TC điểm B`,
+        icon: '🥉'
+      });
+    }
+
+    // 4. Tổ hợp B+ và B- (Nếu req <= 3.33 và req >= 2.65)
+    if (req <= 3.33 && req >= 2.65) {
+      const creditsBPlus = Math.ceil(((req - 2.65) * rem) / 0.68);
+      const finalBPlus = Math.max(0, Math.min(rem, creditsBPlus));
+      const finalBMinus = rem - finalBPlus;
+      recipes.push({
+        type: 'Tổ hợp Trung bình khá (B+ & B-)',
+        details: `Cần đạt ${finalBPlus} TC điểm B+ và ${finalBMinus} TC điểm B-`,
+        icon: '🎓'
+      });
+    }
+
+    return recipes;
+  }, [simulationResult, simulatorRemainingCredits]);
+
   // Phân loại học lực theo GPA tích lũy hệ 4
   const gpaClassification = useMemo(() => {
     const gpa = dtuResult.cumulativeGpa;
@@ -256,27 +566,24 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
 
   // Lấy danh sách các môn có thể bị thay thế (các môn có điểm chữ thấp từ B- trở xuống, không phải môn điều kiện và chưa bị thay thế)
   const replaceableCourses = useMemo(() => {
-    const alreadyReplacedIds = new Set<string>();
-    courses.forEach(c => {
-      if (c.isRetake && c.replacesCourseId) {
-        alreadyReplacedIds.add(c.replacesCourseId);
-      }
-    });
-
     return summaryResult.processedCourses.filter(c => {
       if (c.isConditionCourse) return false;
-      if (alreadyReplacedIds.has(c.id)) return false;
+      if (c.isReplaced) return false;
       
       const point = GRADE_SCALE_MAP[c.gradeChar];
       return point !== null && point < 3.0; // B- (2.65), C+ (2.33), C (2.0), C- (1.65), D (1.0), F (0.0)
     });
-  }, [courses, summaryResult.processedCourses]);
+  }, [summaryResult.processedCourses]);
 
   // 4. Xử lý thêm môn học mới
   const handleAddCourse = (e: React.FormEvent) => {
     e.preventDefault();
     if (!courseCode.trim() || !courseName.trim()) {
       alert('Vui lòng điền đầy đủ Mã môn học và Tên môn học!');
+      return;
+    }
+    if (credits <= 0 || isNaN(credits)) {
+      alert('Số tín chỉ phải lớn hơn 0!');
       return;
     }
 
@@ -485,127 +792,142 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
 
   // 6. Tải Dữ liệu Mẫu (Để vẽ biểu đồ 3 học kỳ trực quan)
   const loadMockScenario = () => {
-    const mockData: Course[] = [
-      // NĂM HỌC 2024-2025 - HỌC KỲ 1
-      {
-        id: 'sem1-law',
-        courseCode: 'LAW 201',
-        courseName: 'Pháp luật đại cương',
-        credits: 2,
-        gradeChar: 'F',
-        isConditionCourse: false,
-        isRetake: false,
-        replacesCourseId: null,
-        academicYear: '2024-2025',
-        semester: 'Học kỳ 1',
-      },
-      {
-        id: 'sem1-eng',
-        courseCode: 'ENG 101',
-        courseName: 'Tiếng Anh 1',
-        credits: 3,
-        gradeChar: 'B',
-        isConditionCourse: false,
-        isRetake: false,
-        replacesCourseId: null,
-        academicYear: '2024-2025',
-        semester: 'Học kỳ 1',
-      },
-      {
-        id: 'sem1-pe',
-        courseCode: 'PE 101',
-        courseName: 'Giáo dục Thể chất 1',
-        credits: 1,
-        gradeChar: 'F',
-        isConditionCourse: true,
-        isRetake: false,
-        replacesCourseId: null,
-        academicYear: '2024-2025',
-        semester: 'Học kỳ 1',
-      },
-      // NĂM HỌC 2024-2025 - HỌC KỲ 2
-      {
-        id: 'sem2-law-retake',
-        courseCode: 'LAW 201',
-        courseName: 'Pháp luật đại cương',
-        credits: 2,
-        gradeChar: 'A',
-        isConditionCourse: false,
-        isRetake: true,
-        replacesCourseId: 'sem1-law',
-        academicYear: '2024-2025',
-        semester: 'Học kỳ 2',
-      },
-      {
-        id: 'sem2-cs',
-        courseCode: 'CS 101',
-        courseName: 'Tin học cơ sở',
-        credits: 3,
-        gradeChar: 'B+',
-        isConditionCourse: false,
-        isRetake: false,
-        replacesCourseId: null,
-        academicYear: '2024-2025',
-        semester: 'Học kỳ 2',
-      },
-      {
-        id: 'sem2-pe-retake',
-        courseCode: 'PE 101',
-        courseName: 'Giáo dục Thể chất 1',
-        credits: 1,
-        gradeChar: 'P',
-        isConditionCourse: true,
-        isRetake: true,
-        replacesCourseId: 'sem1-pe',
-        academicYear: '2024-2025',
-        semester: 'Học kỳ 2',
-      },
-      // NĂM HỌC 2025-2026 - HỌC KỲ 1
-      {
-        id: 'sem3-mat',
-        courseCode: 'MAT 101',
-        courseName: 'Toán cao cấp',
-        credits: 3,
-        gradeChar: 'A',
-        isConditionCourse: false,
-        isRetake: false,
-        replacesCourseId: null,
-        academicYear: '2025-2026',
-        semester: 'Học kỳ 1',
-      },
-      {
-        id: 'sem3-phy',
-        courseCode: 'PHY 101',
-        courseName: 'Vật lý đại cương',
-        credits: 3,
-        gradeChar: 'B-',
-        isConditionCourse: false,
-        isRetake: false,
-        replacesCourseId: null,
-        academicYear: '2025-2026',
-        semester: 'Học kỳ 1',
-      },
-      {
-        id: 'sem3-eng2',
-        courseCode: 'ENG 102',
-        courseName: 'Tiếng Anh 2',
-        credits: 3,
-        gradeChar: 'A',
-        isConditionCourse: false,
-        isRetake: false,
-        replacesCourseId: null,
-        academicYear: '2025-2026',
-        semester: 'Học kỳ 1',
-      }
-    ];
-    updateCoursesState(mockData);
-    
-    // Mở tất cả các nhóm học kỳ mặc định
-    setExpandedSemesters({
-      '2024-2025-Học kỳ 1': true,
-      '2024-2025-Học kỳ 2': true,
-      '2025-2026-Học kỳ 1': true
-    });
+    const action = () => {
+      const mockData: Course[] = [
+        // NĂM HỌC 2024-2025 - HỌC KỲ 1
+        {
+          id: 'sem1-law',
+          courseCode: 'LAW 201',
+          courseName: 'Pháp luật đại cương',
+          credits: 2,
+          gradeChar: 'F',
+          isConditionCourse: false,
+          isRetake: false,
+          replacesCourseId: null,
+          academicYear: '2024-2025',
+          semester: 'Học kỳ 1',
+        },
+        {
+          id: 'sem1-eng',
+          courseCode: 'ENG 101',
+          courseName: 'Tiếng Anh 1',
+          credits: 3,
+          gradeChar: 'B',
+          isConditionCourse: false,
+          isRetake: false,
+          replacesCourseId: null,
+          academicYear: '2024-2025',
+          semester: 'Học kỳ 1',
+        },
+        {
+          id: 'sem1-pe',
+          courseCode: 'PE 101',
+          courseName: 'Giáo dục Thể chất 1',
+          credits: 1,
+          gradeChar: 'F',
+          isConditionCourse: true,
+          isRetake: false,
+          replacesCourseId: null,
+          academicYear: '2024-2025',
+          semester: 'Học kỳ 1',
+        },
+        // NĂM HỌC 2024-2025 - HỌC KỲ 2
+        {
+          id: 'sem2-law-retake',
+          courseCode: 'LAW 201',
+          courseName: 'Pháp luật đại cương',
+          credits: 2,
+          gradeChar: 'A',
+          isConditionCourse: false,
+          isRetake: true,
+          replacesCourseId: 'sem1-law',
+          academicYear: '2024-2025',
+          semester: 'Học kỳ 2',
+        },
+        {
+          id: 'sem2-cs',
+          courseCode: 'CS 101',
+          courseName: 'Tin học cơ sở',
+          credits: 3,
+          gradeChar: 'B+',
+          isConditionCourse: false,
+          isRetake: false,
+          replacesCourseId: null,
+          academicYear: '2024-2025',
+          semester: 'Học kỳ 2',
+        },
+        {
+          id: 'sem2-pe-retake',
+          courseCode: 'PE 101',
+          courseName: 'Giáo dục Thể chất 1',
+          credits: 1,
+          gradeChar: 'P',
+          isConditionCourse: true,
+          isRetake: true,
+          replacesCourseId: 'sem1-pe',
+          academicYear: '2024-2025',
+          semester: 'Học kỳ 2',
+        },
+        // NĂM HỌC 2025-2026 - HỌC KỲ 1
+        {
+          id: 'sem3-mat',
+          courseCode: 'MAT 101',
+          courseName: 'Toán cao cấp',
+          credits: 3,
+          gradeChar: 'A',
+          isConditionCourse: false,
+          isRetake: false,
+          replacesCourseId: null,
+          academicYear: '2025-2026',
+          semester: 'Học kỳ 1',
+        },
+        {
+          id: 'sem3-phy',
+          courseCode: 'PHY 101',
+          courseName: 'Vật lý đại cương',
+          credits: 3,
+          gradeChar: 'B-',
+          isConditionCourse: false,
+          isRetake: false,
+          replacesCourseId: null,
+          academicYear: '2025-2026',
+          semester: 'Học kỳ 1',
+        },
+        {
+          id: 'sem3-eng2',
+          courseCode: 'ENG 102',
+          courseName: 'Tiếng Anh 2',
+          credits: 3,
+          gradeChar: 'A',
+          isConditionCourse: false,
+          isRetake: false,
+          replacesCourseId: null,
+          academicYear: '2025-2026',
+          semester: 'Học kỳ 1',
+        }
+      ];
+      updateCoursesState(mockData);
+      
+      // Mở tất cả các nhóm học kỳ mặc định
+      setExpandedSemesters({
+        '2024-2025-Học kỳ 1': true,
+        '2024-2025-Học kỳ 2': true,
+        '2025-2026-Học kỳ 1': true
+      });
+      setConfirmModal(prev => ({ ...prev, isOpen: false }));
+    };
+
+    if (courses.length > 0) {
+      setConfirmModal({
+        isOpen: true,
+        title: 'Tải Dữ Liệu Mẫu (Demo)',
+        message: 'Hệ thống phát hiện bạn đã có sẵn môn học trong bảng. Việc tải dữ liệu mẫu sẽ GHI ĐÈ và XÓA TOÀN BỘ môn học hiện tại của bạn. Bạn có chắc chắn muốn tiếp tục?',
+        confirmText: 'Vâng, tải dữ liệu mẫu',
+        onConfirm: action
+      });
+    } else {
+      action();
+    }
   };
 
   // Làm sạch localStorage và đưa danh sách môn về rỗng
@@ -764,14 +1086,16 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
         </div>
         
         <div className="flex flex-wrap items-center gap-2.5">
-          <button
-            onClick={loadMockScenario}
-            className="flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-lg bg-indigo-600 hover:bg-indigo-500 active:scale-95 transition-all shadow-md shadow-indigo-600/20 border border-indigo-400/20 cursor-pointer"
-            id="btn-load-mock"
-          >
-            <Sparkles className="w-3.5 h-3.5" />
-            Tải Dữ Liệu Mẫu (Nhiều Kỳ)
-          </button>
+          {courses.length === 0 && (
+            <button
+              onClick={loadMockScenario}
+              className="flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-lg bg-indigo-600 hover:bg-indigo-500 active:scale-95 transition-all shadow-md shadow-indigo-600/20 border border-indigo-400/20 cursor-pointer"
+              id="btn-load-mock"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              Tải Dữ Liệu Mẫu (Nhiều Kỳ)
+            </button>
+          )}
           
           <button
             onClick={handleResetApp}
@@ -821,21 +1145,67 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
             </span>
             <div className="flex items-center gap-1">
               <span className="text-[10px] text-slate-500">Mục tiêu:</span>
-              <input 
-                type="number" 
-                value={targetCredits}
-                onChange={(e) => setTargetCredits(Math.max(1, parseInt(e.target.value) || 0))}
-                className="w-11 bg-slate-950 border border-slate-800 rounded px-1 py-0.5 text-center text-xs font-semibold text-emerald-400 focus:outline-none focus:border-emerald-500"
-                id="input-target-credits"
-              />
-              <span className="text-[10px] text-slate-500">TC</span>
+              <span className="px-1.5 py-0.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[11px] font-bold rounded">
+                {targetCredits} TC
+              </span>
             </div>
           </div>
           <div className="flex items-baseline gap-1.5 mb-2.5">
             <span className="text-3xl font-extrabold tracking-tight text-white" id="dashboard-credits">
               {dtuResult.accumulatedCredits}
             </span>
-            <span className="text-slate-500 text-xs">/ {targetCredits} TC</span>
+            <span className="text-slate-500 text-xs">/</span>
+            {isEditingTargetCredits ? (
+              <div className="flex items-center gap-1">
+                <input 
+                  type="number" 
+                  value={tempTargetCredits}
+                  onChange={(e) => setTempTargetCredits(Math.max(1, parseInt(e.target.value) || 0))}
+                  className="w-16 bg-slate-950 border border-emerald-500 rounded px-1.5 py-0.5 text-center text-xs font-semibold text-emerald-400 focus:outline-none"
+                  autoFocus
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      setTargetCredits(tempTargetCredits);
+                      setIsEditingTargetCredits(false);
+                    } else if (e.key === 'Escape') {
+                      setTempTargetCredits(targetCredits);
+                      setIsEditingTargetCredits(false);
+                    }
+                  }}
+                  id="input-target-credits"
+                />
+                <button 
+                  onClick={() => {
+                    setTargetCredits(tempTargetCredits);
+                    setIsEditingTargetCredits(false);
+                  }}
+                  className="p-1 hover:bg-slate-800 rounded text-emerald-400 hover:text-emerald-300 cursor-pointer flex items-center justify-center"
+                  title="Lưu"
+                >
+                  <Check className="w-4 h-4" />
+                </button>
+                <button 
+                  onClick={() => {
+                    setTempTargetCredits(targetCredits);
+                    setIsEditingTargetCredits(false);
+                  }}
+                  className="p-1 hover:bg-slate-850 rounded text-rose-450 hover:text-rose-400 cursor-pointer flex items-center justify-center"
+                  title="Hủy"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-1 group/credits cursor-pointer" onClick={() => {
+                setTempTargetCredits(targetCredits);
+                setIsEditingTargetCredits(true);
+              }}>
+                <span className="text-slate-300 text-xs hover:text-emerald-400 font-bold transition">
+                  {targetCredits} TC
+                </span>
+                <Pencil className="w-3 h-3 text-slate-500 group-hover/credits:text-emerald-400 transition opacity-60 group-hover/credits:opacity-100" />
+              </div>
+            )}
           </div>
           <div className="w-full bg-slate-950 rounded-full h-1.5 overflow-hidden">
             <div 
@@ -843,9 +1213,17 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
               style={{ width: `${Math.min(100, (dtuResult.accumulatedCredits / targetCredits) * 100)}%` }}
             ></div>
           </div>
-          <p className="text-[11px] text-slate-400 mt-2">
-            Đã hoàn thành {Math.round((dtuResult.accumulatedCredits / targetCredits) * 100)}% chương trình đào tạo.
-          </p>
+          <div className="text-[11px] text-slate-400 mt-2 flex justify-between items-center">
+            <span>Đã hoàn thành {targetCredits > 0 ? Math.round((dtuResult.accumulatedCredits / targetCredits) * 100) : 0}% chương trình.</span>
+            <button 
+              onClick={() => setIsCurriculumModalOpen(true)}
+              className="text-[10px] text-indigo-400 hover:text-indigo-300 font-bold hover:underline cursor-pointer flex items-center gap-0.5"
+              id="btn-curriculum-modal"
+            >
+              <Sparkles className="w-3 h-3" />
+              Khung chương trình
+            </button>
+          </div>
         </div>
 
         {/* RETAKES CARD */}
@@ -1182,17 +1560,19 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-[10px] font-bold text-slate-400 tracking-wider mb-1">SỐ TÍN CHỈ</label>
-                  <select
-                    value={credits}
-                    onChange={(e) => setCredits(parseInt(e.target.value))}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500 cursor-pointer"
+                  <input
+                    type="number"
+                    min="1"
+                    max="15"
+                    value={credits || ''}
+                    onChange={(e) => {
+                      const val = parseInt(e.target.value);
+                      setCredits(isNaN(val) ? 0 : val);
+                    }}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500"
                     id="form-credits"
-                  >
-                    <option value={1}>1 Tín chỉ</option>
-                    <option value={2}>2 Tín chỉ</option>
-                    <option value={3}>3 Tín chỉ</option>
-                    <option value={4}>4 Tín chỉ</option>
-                  </select>
+                    required
+                  />
                 </div>
 
                 <div>
@@ -1435,7 +1815,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
               )}
 
               {simulationResult.status === 'feasible' && (
-                <div className="space-y-2">
+                <div className="space-y-3">
                   <div className="flex justify-between items-center">
                     <span className="font-semibold text-slate-400">GPA cần đạt trong {simulatorRemainingCredits} TC tới:</span>
                     <span className="text-sm font-extrabold text-white bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-500/20" id="simulator-required-gpa">
@@ -1443,13 +1823,70 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                     </span>
                   </div>
                   <div className="h-px bg-slate-800/40 w-full my-1"></div>
-                  <p className="text-[11px] text-slate-300 font-semibold flex items-start gap-1.5">
-                    <Sparkles className="w-3.5 h-3.5 text-indigo-405 flex-shrink-0 mt-0.5" />
+                  <p className="text-[11px] text-slate-350 font-semibold flex items-start gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-indigo-400 flex-shrink-0 mt-0.5" />
                     <span>{simulationResult.message}</span>
                   </p>
+
+                  {/* LỘ TRÌNH ĐIỂM GỢI Ý */}
+                  {gradeRecipes.length > 0 && (
+                    <div className="mt-3 pt-3 border-t border-slate-800/40 space-y-2">
+                      <span className="block text-[10px] font-bold text-indigo-400 tracking-wider">
+                        GỢI Ý TỔ HỢP ĐIỂM (THEO TÍN CHỈ):
+                      </span>
+                      <div className="space-y-1.5">
+                        {gradeRecipes.map((r, i) => (
+                          <div key={i} className="flex items-start gap-1.5 p-2 bg-slate-950/40 rounded-lg border border-slate-800/60">
+                            <span className="text-sm flex-shrink-0">{r.icon}</span>
+                            <div>
+                              <span className="font-bold text-[10px] text-slate-300 block">{r.type}</span>
+                              <span className="text-[10px] text-slate-400 leading-normal">{r.details}</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
+
+            {/* LỢI ÍCH HỌC LẠI MÔN NỢ (F) */}
+            {failedCoursesBoosts.length > 0 && (
+              <div className="pt-3.5 border-t border-slate-800/60 space-y-2">
+                <span className="block text-[10px] font-bold text-slate-400 tracking-wider flex items-center gap-1">
+                  <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
+                  HIỆU QUẢ TRẢ NỢ MÔN F:
+                </span>
+                <p className="text-[10.5px] text-slate-400 leading-normal">
+                  Học lại các môn trượt sẽ xóa điểm F cũ. Dưới đây là mức GPA tích lũy tăng thêm tương ứng:
+                </p>
+                <div className="space-y-2 max-h-36 overflow-y-auto pr-1">
+                  {failedCoursesBoosts.map((b, idx) => (
+                    <div key={idx} className="p-2.5 bg-rose-500/5 rounded-xl border border-rose-500/10 space-y-1">
+                      <div className="flex justify-between items-center text-[10px]">
+                        <span className="font-bold text-rose-400">{b.courseCode}</span>
+                        <span className="text-slate-400 font-semibold">{b.courseName} ({b.credits} TC)</span>
+                      </div>
+                      <div className="grid grid-cols-3 gap-1.5 pt-1 text-[9px] font-bold text-center">
+                        <div className="bg-slate-950/80 rounded py-1 px-0.5">
+                          <span className="text-slate-500 block">Đạt A (4.0)</span>
+                          <span className="text-emerald-400">+{b.boostA.toFixed(2)} GPA</span>
+                        </div>
+                        <div className="bg-slate-950/80 rounded py-1 px-0.5">
+                          <span className="text-slate-500 block">Đạt A- (3.65)</span>
+                          <span className="text-emerald-400">+{b.boostAMinus.toFixed(2)} GPA</span>
+                        </div>
+                        <div className="bg-slate-950/80 rounded py-1 px-0.5">
+                          <span className="text-slate-500 block">Đạt B+ (3.33)</span>
+                          <span className="text-emerald-400">+{b.boostBPlus.toFixed(2)} GPA</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
         </div>
@@ -1503,7 +1940,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                 </button>
               </div>
 
-              {/* Chế độ xem: Phân học kỳ vs Phẳng */}
+              {/* Chế độ xem: Phân học kỳ vs Phẳng vs Tiến độ Khung */}
               <div className="flex items-center gap-1 bg-slate-950 p-1 rounded-lg border border-slate-800/60">
                 <button
                   onClick={() => setViewMode('grouped')}
@@ -1526,6 +1963,17 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                 >
                   <List className="w-3.5 h-3.5" />
                   Bảng phẳng
+                </button>
+                <button
+                  onClick={() => setViewMode('curriculum')}
+                  className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-semibold cursor-pointer transition-all ${
+                    viewMode === 'curriculum' ? 'bg-indigo-600 text-white' : 'text-slate-500 hover:text-slate-300'
+                  }`}
+                  title="Đối chiếu tiến độ theo Khung chương trình"
+                  id="view-mode-curriculum"
+                >
+                  <BookOpen className="w-3.5 h-3.5" />
+                  Tiến độ Khung
                 </button>
               </div>
             </div>
@@ -1635,11 +2083,13 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                                 <tbody className="divide-y divide-slate-850 bg-transparent">
                                   {semCourses.map(pc => {
                                     const replacedCourse = pc.replacesCourseId 
-                                      ? courses.find(c => c.id === pc.replacesCourseId) 
+                                      ? summaryResult.processedCourses.find(c => c.id === pc.replacesCourseId) 
                                       : null;
                                     const replacementCourse = pc.isReplaced
-                                      ? courses.find(c => c.isRetake && c.replacesCourseId === pc.id)
+                                      ? summaryResult.processedCourses.find(c => c.isRetake && c.replacesCourseId === pc.id)
                                       : null;
+
+                                    const isEditing = editingCourseId === pc.id;
 
                                     return (
                                       <tr 
@@ -1648,30 +2098,63 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                                           pc.isReplaced ? 'opacity-40 line-through bg-slate-950/10' : ''
                                         }`}
                                       >
-                                        <td className="px-4 py-2.5 font-semibold text-slate-400">{pc.courseCode}</td>
-                                        <td className="px-4 py-2.5">
-                                          <div>
-                                            <span className="font-semibold text-slate-200">{pc.courseName}</span>
-                                            {replacedCourse && (
-                                              <div className="text-[9px] text-indigo-400 mt-0.5 flex items-center gap-1 font-semibold">
-                                                <RefreshCw className="w-2.5 h-2.5" />
-                                                Thay thế môn: {replacedCourse.courseCode} (Điểm cũ: {replacedCourse.gradeChar} | {replacedCourse.academicYear} - {replacedCourse.semester})
-                                              </div>
-                                            )}
-                                            {replacementCourse && (
-                                              <div className="text-[9px] text-rose-400 mt-0.5 flex items-center gap-1 font-semibold">
-                                                <AlertTriangle className="w-2.5 h-2.5" />
-                                                Cải thiện tại: {replacementCourse.academicYear} - {replacementCourse.semester}
-                                              </div>
-                                            )}
-                                          </div>
+                                        <td className="px-4 py-2.5 font-semibold text-slate-400">
+                                          {isEditing ? (
+                                            <input 
+                                              type="text"
+                                              value={editCourseCode}
+                                              onChange={(e) => setEditCourseCode(e.target.value)}
+                                              className="w-16 bg-slate-950 border border-slate-800 rounded px-1.5 py-0.5 text-xs text-white font-semibold focus:outline-none focus:border-indigo-500"
+                                            />
+                                          ) : (
+                                            pc.courseCode
+                                          )}
                                         </td>
-                                        <td className="px-4 py-2.5 text-center font-semibold text-slate-300">{pc.credits}</td>
+                                        <td className="px-4 py-2.5">
+                                          {isEditing ? (
+                                            <input 
+                                              type="text"
+                                              value={editCourseName}
+                                              onChange={(e) => setEditCourseName(e.target.value)}
+                                              className="w-full bg-slate-950 border border-slate-800 rounded px-1.5 py-0.5 text-xs text-white focus:outline-none focus:border-indigo-500"
+                                            />
+                                          ) : (
+                                            <div>
+                                              <span className="font-semibold text-slate-200">{pc.courseName}</span>
+                                              {replacedCourse && (
+                                                <div className="text-[9px] text-indigo-400 mt-0.5 flex items-center gap-1 font-semibold">
+                                                  <RefreshCw className="w-2.5 h-2.5" />
+                                                  Thay thế môn: {replacedCourse.courseCode} (Điểm cũ: {replacedCourse.gradeChar} | {replacedCourse.academicYear} - {replacedCourse.semester})
+                                                </div>
+                                              )}
+                                              {replacementCourse && (
+                                                <div className="text-[9px] text-rose-400 mt-0.5 flex items-center gap-1 font-semibold">
+                                                  <AlertTriangle className="w-2.5 h-2.5" />
+                                                  Cải thiện tại: {replacementCourse.academicYear} - {replacementCourse.semester}
+                                                </div>
+                                              )}
+                                            </div>
+                                          )}
+                                        </td>
+                                        <td className="px-4 py-2.5 text-center font-semibold text-slate-300">
+                                          {isEditing ? (
+                                            <input 
+                                              type="number"
+                                              min="1"
+                                              value={editCredits}
+                                              onChange={(e) => setEditCredits(Math.max(1, parseInt(e.target.value) || 0))}
+                                              className="w-12 bg-slate-950 border border-slate-800 rounded px-1 py-0.5 text-xs text-white text-center font-bold focus:outline-none focus:border-indigo-500"
+                                            />
+                                          ) : (
+                                            pc.credits
+                                          )}
+                                        </td>
                                         <td className="px-4 py-2.5 text-center">
                                           <select
+                                            disabled={isEditing}
                                             value={pc.gradeChar}
                                             onChange={(e) => handleUpdateGrade(pc.id, e.target.value as GradeChar)}
-                                            className="font-bold text-[11px] px-2 py-1 rounded bg-slate-900 border border-slate-700 text-white cursor-pointer hover:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 appearance-none text-center outline-none"
+                                            className="font-bold text-[11px] px-2 py-1 rounded bg-slate-900 border border-slate-700 text-white cursor-pointer hover:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 appearance-none text-center outline-none disabled:opacity-50"
                                           >
                                             <option value="">--</option>
                                             {['A+', 'A', 'A-', 'B+', 'B', 'B-', 'C+', 'C', 'C-', 'D', 'F', 'P'].map(grade => (
@@ -1697,12 +2180,41 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                                           </div>
                                         </td>
                                         <td className="px-4 py-2.5 text-right">
-                                          <button
-                                            onClick={() => handleDeleteCourse(pc.id)}
-                                            className="text-slate-500 hover:text-rose-400 p-1 rounded-md hover:bg-rose-500/10 transition-all cursor-pointer"
-                                          >
-                                            <Trash2 className="w-3.5 h-3.5" />
-                                          </button>
+                                          {isEditing ? (
+                                            <div className="flex gap-1 justify-end">
+                                              <button
+                                                onClick={() => handleSaveEditCourse(pc.id)}
+                                                className="text-emerald-400 hover:text-emerald-300 p-1 rounded hover:bg-emerald-500/10 transition-all cursor-pointer flex items-center justify-center"
+                                                title="Lưu thay đổi"
+                                              >
+                                                <Check className="w-3.5 h-3.5 text-emerald-400" />
+                                              </button>
+                                              <button
+                                                onClick={handleCancelEditCourse}
+                                                className="text-rose-400 hover:text-rose-350 p-1 rounded hover:bg-rose-500/10 transition-all cursor-pointer flex items-center justify-center"
+                                                title="Hủy bỏ"
+                                              >
+                                                <X className="w-3.5 h-3.5 text-rose-400" />
+                                              </button>
+                                            </div>
+                                          ) : (
+                                            <div className="flex gap-1 justify-end">
+                                              <button
+                                                onClick={() => handleStartEditCourse(pc)}
+                                                className="text-slate-500 hover:text-indigo-400 p-1 rounded hover:bg-indigo-500/10 transition-all cursor-pointer flex items-center justify-center"
+                                                title="Sửa môn học"
+                                              >
+                                                <Pencil className="w-3.5 h-3.5 text-indigo-400" />
+                                              </button>
+                                              <button
+                                                onClick={() => handleDeleteCourse(pc.id)}
+                                                className="text-slate-500 hover:text-rose-450 p-1 rounded-md hover:bg-rose-500/10 transition-all cursor-pointer"
+                                                title="Xóa môn học"
+                                              >
+                                                <Trash2 className="w-3.5 h-3.5 text-rose-400" />
+                                              </button>
+                                            </div>
+                                          )}
                                         </td>
                                       </tr>
                                     );
@@ -1745,11 +2257,13 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                     {flatFilteredCourses.length > 0 ? (
                       flatFilteredCourses.map((pc) => {
                         const replacedCourse = pc.replacesCourseId 
-                          ? courses.find(c => c.id === pc.replacesCourseId) 
+                          ? summaryResult.processedCourses.find(c => c.id === pc.replacesCourseId) 
                           : null;
                         const replacementCourse = pc.isReplaced
-                          ? courses.find(c => c.isRetake && c.replacesCourseId === pc.id)
+                          ? summaryResult.processedCourses.find(c => c.isRetake && c.replacesCourseId === pc.id)
                           : null;
+
+                        const isEditing = editingCourseId === pc.id;
 
                         return (
                           <tr 
@@ -1761,30 +2275,63 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                             <td className="px-4 py-3 text-slate-400 font-medium whitespace-nowrap">
                               {pc.academicYear} - <span className="text-[10px] font-semibold">{pc.semester.replace('Học kỳ ', 'HK')}</span>
                             </td>
-                            <td className="px-4 py-3 font-semibold text-slate-300">{pc.courseCode}</td>
-                            <td className="px-4 py-3">
-                              <div>
-                                <span className="font-semibold text-white">{pc.courseName}</span>
-                                {replacedCourse && (
-                                  <div className="text-[9px] text-indigo-400 mt-0.5 flex items-center gap-1 font-semibold">
-                                    <RefreshCw className="w-2.5 h-2.5" />
-                                    Thay thế môn: {replacedCourse.courseCode} (Điểm cũ: {replacedCourse.gradeChar})
-                                  </div>
-                                )}
-                                {replacementCourse && (
-                                  <div className="text-[9px] text-rose-400 mt-0.5 flex items-center gap-1 font-semibold">
-                                    <AlertTriangle className="w-2.5 h-2.5" />
-                                    Bị phủ quyết bởi môn cải thiện
-                                  </div>
-                                )}
-                              </div>
+                            <td className="px-4 py-3 font-semibold text-slate-300">
+                              {isEditing ? (
+                                <input 
+                                  type="text"
+                                  value={editCourseCode}
+                                  onChange={(e) => setEditCourseCode(e.target.value)}
+                                  className="w-16 bg-slate-950 border border-slate-800 rounded px-1.5 py-0.5 text-xs text-white font-semibold focus:outline-none focus:border-indigo-500"
+                                />
+                              ) : (
+                                pc.courseCode
+                              )}
                             </td>
-                            <td className="px-4 py-3 text-center font-medium text-slate-300">{pc.credits}</td>
+                            <td className="px-4 py-3">
+                              {isEditing ? (
+                                <input 
+                                  type="text"
+                                  value={editCourseName}
+                                  onChange={(e) => setEditCourseName(e.target.value)}
+                                  className="w-full bg-slate-950 border border-slate-800 rounded px-1.5 py-0.5 text-xs text-white focus:outline-none focus:border-indigo-500"
+                                />
+                              ) : (
+                                <div>
+                                  <span className="font-semibold text-white">{pc.courseName}</span>
+                                  {replacedCourse && (
+                                    <div className="text-[9px] text-indigo-400 mt-0.5 flex items-center gap-1 font-semibold">
+                                      <RefreshCw className="w-2.5 h-2.5" />
+                                      Thay thế môn: {replacedCourse.courseCode} (Điểm cũ: {replacedCourse.gradeChar})
+                                    </div>
+                                  )}
+                                  {replacementCourse && (
+                                    <div className="text-[9px] text-rose-400 mt-0.5 flex items-center gap-1 font-semibold">
+                                      <AlertTriangle className="w-2.5 h-2.5" />
+                                      Bị phủ quyết bởi môn cải thiện
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </td>
+                            <td className="px-4 py-3 text-center font-medium text-slate-300">
+                              {isEditing ? (
+                                <input 
+                                  type="number"
+                                  min="1"
+                                  value={editCredits}
+                                  onChange={(e) => setEditCredits(Math.max(1, parseInt(e.target.value) || 0))}
+                                  className="w-12 bg-slate-950 border border-slate-800 rounded px-1 py-0.5 text-xs text-white text-center font-bold focus:outline-none focus:border-indigo-500"
+                                />
+                              ) : (
+                                pc.credits
+                              )}
+                            </td>
                             <td className="px-4 py-3 text-center">
                               <select
+                                disabled={isEditing}
                                 value={pc.gradeChar}
                                 onChange={(e) => handleUpdateGrade(pc.id, e.target.value as GradeChar)}
-                                className="font-bold text-[11px] px-2 py-1 rounded bg-slate-900 border border-slate-700 text-white cursor-pointer hover:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 appearance-none text-center outline-none"
+                                className="font-bold text-[11px] px-2 py-1 rounded bg-slate-900 border border-slate-700 text-white cursor-pointer hover:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 appearance-none text-center outline-none disabled:opacity-50"
                               >
                                 <option value="">--</option>
                                 {['A+', 'A', 'A-', 'B+', 'B', 'B-', 'C+', 'C', 'C-', 'D', 'F', 'P'].map(grade => (
@@ -1810,12 +2357,41 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                               </div>
                             </td>
                             <td className="px-4 py-3 text-right">
-                              <button
-                                onClick={() => handleDeleteCourse(pc.id)}
-                                className="text-slate-500 hover:text-rose-400 p-1.5 rounded-lg hover:bg-rose-500/10 transition-colors cursor-pointer"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
+                              {isEditing ? (
+                                <div className="flex gap-1 justify-end">
+                                  <button
+                                    onClick={() => handleSaveEditCourse(pc.id)}
+                                    className="text-emerald-400 hover:text-emerald-300 p-1 rounded hover:bg-emerald-500/10 transition-all cursor-pointer flex items-center justify-center"
+                                    title="Lưu thay đổi"
+                                  >
+                                    <Check className="w-3.5 h-3.5 text-emerald-400" />
+                                  </button>
+                                  <button
+                                    onClick={handleCancelEditCourse}
+                                    className="text-rose-400 hover:text-rose-350 p-1 rounded hover:bg-rose-500/10 transition-all cursor-pointer flex items-center justify-center"
+                                    title="Hủy bỏ"
+                                  >
+                                    <X className="w-3.5 h-3.5 text-rose-400" />
+                                  </button>
+                                </div>
+                              ) : (
+                                <div className="flex gap-1 justify-end">
+                                  <button
+                                    onClick={() => handleStartEditCourse(pc)}
+                                    className="text-slate-500 hover:text-indigo-400 p-1.5 rounded-lg hover:bg-indigo-500/10 transition-colors cursor-pointer flex items-center justify-center"
+                                    title="Sửa môn học"
+                                  >
+                                    <Pencil className="w-3.5 h-3.5 text-indigo-400" />
+                                  </button>
+                                  <button
+                                    onClick={() => handleDeleteCourse(pc.id)}
+                                    className="text-slate-500 hover:text-rose-400 p-1.5 rounded-lg hover:bg-rose-500/10 transition-colors cursor-pointer flex items-center justify-center"
+                                    title="Xóa môn học"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                              )}
                             </td>
                           </tr>
                         );
@@ -1835,6 +2411,314 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                 <span>Đang hiển thị {flatFilteredCourses.length} môn học</span>
                 <span>Tổng số môn trong hệ thống: {courses.length}</span>
               </div>
+            </div>
+          )}
+
+          {/* VIEW: CURRICULUM PROGRESS CHECKLIST */}
+          {viewMode === 'curriculum' && (
+            <div className="space-y-6 animate-fadeIn">
+              {curriculumProgress ? (
+                <>
+                  {/* Curriculum Progress Statistics Panel */}
+                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 bg-slate-900/40 backdrop-blur-md border border-slate-800 rounded-2xl p-4 shadow-sm text-center">
+                    <div className="space-y-1">
+                      <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Tổng Khung</span>
+                      <span className="text-lg font-extrabold text-white">{curriculumProgress.totalCredits} TC</span>
+                      <span className="text-[9px] text-slate-500 block">({curriculumCourses.length} môn)</span>
+                    </div>
+                    <div className="space-y-1 border-l border-slate-800/60">
+                      <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider block">Đã Xong</span>
+                      <span className="text-lg font-extrabold text-emerald-400">{curriculumProgress.completedCredits} TC</span>
+                      <span className="text-[9px] text-emerald-500/80 block">({curriculumProgress.completed.length} môn)</span>
+                    </div>
+                    <div className="space-y-1 border-l border-slate-800/60">
+                      <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-wider block">Đang Học</span>
+                      <span className="text-lg font-extrabold text-indigo-400">{curriculumProgress.learningCredits} TC</span>
+                      <span className="text-[9px] text-indigo-500/80 block">({curriculumProgress.learning.length} môn)</span>
+                    </div>
+                    <div className="space-y-1 border-l border-slate-800/60">
+                      <span className="text-[10px] font-bold text-rose-400 uppercase tracking-wider block">Nợ Môn</span>
+                      <span className="text-lg font-extrabold text-rose-400">{curriculumProgress.failedCredits} TC</span>
+                      <span className="text-[9px] text-rose-500/80 block">({curriculumProgress.failed.length} môn)</span>
+                    </div>
+                    <div className="space-y-1 border-l border-slate-800/60">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Còn Thiếu</span>
+                      <span className="text-lg font-extrabold text-slate-200">{curriculumProgress.missingCredits} TC</span>
+                      <span className="text-[9px] text-slate-500 block">({curriculumProgress.missing.length} môn)</span>
+                    </div>
+                  </div>
+
+                  {/* Checklist Columns */}
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    {/* COLUMN 1: CÒN THIẾU (Chưa Đăng Ký) */}
+                    <div className="bg-slate-900/30 border border-slate-800/80 rounded-2xl p-4 flex flex-col h-[500px]">
+                      <div className="flex justify-between items-center mb-3 pb-2 border-b border-slate-800/60">
+                        <span className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
+                          <span className="w-2 h-2 rounded-full bg-slate-400"></span>
+                          CÒN THIẾU ({curriculumProgress.missing.length})
+                        </span>
+                        <span className="text-[10px] font-bold text-slate-500 bg-slate-950 px-2 py-0.5 rounded border border-slate-800/60">{curriculumProgress.missingCredits} TC</span>
+                      </div>
+                      <div className="space-y-2.5 overflow-y-auto flex-grow pr-1.5 custom-scrollbar bg-transparent">
+                        {curriculumProgress.missing.map(c => (
+                          <div key={c.courseCode} className="p-3 bg-slate-950/40 border border-slate-900 rounded-xl hover:border-slate-800 transition-all flex justify-between items-start gap-2 group">
+                            <div className="space-y-1">
+                              <div className="font-bold text-[11px] text-slate-300">{c.courseCode}</div>
+                              <div className="text-[10px] text-slate-500 leading-snug">{c.courseName}</div>
+                            </div>
+                            
+                            {/* Interactive Edit Credits */}
+                            <div className="flex items-center gap-1">
+                              {editingCurriculumCode === c.courseCode ? (
+                                <input
+                                  type="number"
+                                  min="1"
+                                  value={editCurriculumCredits}
+                                  onChange={(e) => setEditCurriculumCredits(Math.max(1, parseInt(e.target.value) || 0))}
+                                  className="w-10 bg-slate-950 border border-slate-700 rounded text-center text-xs text-white p-0.5 font-bold"
+                                  autoFocus
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                      handleUpdateCurriculumCredits(c.courseCode, editCurriculumCredits);
+                                      setEditingCurriculumCode(null);
+                                    } else if (e.key === 'Escape') {
+                                      setEditingCurriculumCode(null);
+                                    }
+                                  }}
+                                />
+                              ) : (
+                                <span className="text-[10px] font-bold text-slate-400 bg-slate-900 px-1.5 py-0.5 rounded border border-slate-850">{c.credits} TC</span>
+                              )}
+                              <button
+                                onClick={() => {
+                                  if (editingCurriculumCode === c.courseCode) {
+                                    handleUpdateCurriculumCredits(c.courseCode, editCurriculumCredits);
+                                    setEditingCurriculumCode(null);
+                                  } else {
+                                    setEditingCurriculumCode(c.courseCode);
+                                    setEditCurriculumCredits(c.credits);
+                                  }
+                                }}
+                                className="p-1 hover:bg-slate-800 text-slate-500 hover:text-white rounded opacity-0 group-hover:opacity-100 transition cursor-pointer"
+                                title="Sửa tín chỉ môn này"
+                              >
+                                {editingCurriculumCode === c.courseCode ? <Check className="w-3 h-3" /> : <Pencil className="w-3 h-3" />}
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                        {curriculumProgress.missing.length === 0 && (
+                          <div className="text-center py-10 text-[11px] text-slate-600">Tuyệt vời! Bạn không thiếu môn nào.</div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* COLUMN 2: NỢ MÔN (F) */}
+                    <div className="bg-slate-900/30 border border-slate-800/80 rounded-2xl p-4 flex flex-col h-[500px]">
+                      <div className="flex justify-between items-center mb-3 pb-2 border-b border-slate-800/60">
+                        <span className="text-xs font-bold text-rose-450 flex items-center gap-1.5">
+                          <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse"></span>
+                          NỢ MÔN / F ({curriculumProgress.failed.length})
+                        </span>
+                        <span className="text-[10px] font-bold text-rose-450 bg-rose-500/10 px-2 py-0.5 rounded border border-rose-500/20">{curriculumProgress.failedCredits} TC</span>
+                      </div>
+                      <div className="space-y-2.5 overflow-y-auto flex-grow pr-1.5 custom-scrollbar bg-transparent">
+                        {curriculumProgress.failed.map(c => (
+                          <div key={c.courseCode} className="p-3 bg-rose-500/5 border border-rose-950/20 rounded-xl flex justify-between items-start gap-2 group">
+                            <div className="space-y-1">
+                              <div className="font-bold text-[11px] text-rose-455">{c.courseCode}</div>
+                              <div className="text-[10px] text-slate-500 leading-snug">{c.courseName}</div>
+                            </div>
+                            
+                            <div className="flex items-center gap-1">
+                              {editingCurriculumCode === c.courseCode ? (
+                                <input
+                                  type="number"
+                                  min="1"
+                                  value={editCurriculumCredits}
+                                  onChange={(e) => setEditCurriculumCredits(Math.max(1, parseInt(e.target.value) || 0))}
+                                  className="w-10 bg-slate-950 border border-slate-700 rounded text-center text-xs text-white p-0.5 font-bold"
+                                  autoFocus
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                      handleUpdateCurriculumCredits(c.courseCode, editCurriculumCredits);
+                                      setEditingCurriculumCode(null);
+                                    } else if (e.key === 'Escape') {
+                                      setEditingCurriculumCode(null);
+                                    }
+                                  }}
+                                />
+                              ) : (
+                                <span className="text-[10px] font-bold text-rose-400 bg-rose-500/10 px-1.5 py-0.5 rounded border border-rose-500/10">{c.credits} TC</span>
+                              )}
+                              <button
+                                onClick={() => {
+                                  if (editingCurriculumCode === c.courseCode) {
+                                    handleUpdateCurriculumCredits(c.courseCode, editCurriculumCredits);
+                                    setEditingCurriculumCode(null);
+                                  } else {
+                                    setEditingCurriculumCode(c.courseCode);
+                                    setEditCurriculumCredits(c.credits);
+                                  }
+                                }}
+                                className="p-1 hover:bg-slate-800 text-slate-500 hover:text-white rounded opacity-0 group-hover:opacity-100 transition cursor-pointer"
+                                title="Sửa tín chỉ môn này"
+                              >
+                                {editingCurriculumCode === c.courseCode ? <Check className="w-3 h-3" /> : <Pencil className="w-3 h-3" />}
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                        {curriculumProgress.failed.length === 0 && (
+                          <div className="text-center py-10 text-[11px] text-slate-600">Sạch điểm F! Không có môn nợ.</div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* COLUMN 3: ĐANG HỌC (Chờ Điểm) */}
+                    <div className="bg-slate-900/30 border border-slate-800/80 rounded-2xl p-4 flex flex-col h-[500px]">
+                      <div className="flex justify-between items-center mb-3 pb-2 border-b border-slate-800/60">
+                        <span className="text-xs font-bold text-indigo-400 flex items-center gap-1.5">
+                          <span className="w-2 h-2 rounded-full bg-indigo-500"></span>
+                          ĐANG HỌC ({curriculumProgress.learning.length})
+                        </span>
+                        <span className="text-[10px] font-bold text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-500/20">{curriculumProgress.learningCredits} TC</span>
+                      </div>
+                      <div className="space-y-2.5 overflow-y-auto flex-grow pr-1.5 custom-scrollbar bg-transparent">
+                        {curriculumProgress.learning.map(c => (
+                          <div key={c.courseCode} className="p-3 bg-slate-950/40 border border-slate-900 rounded-xl hover:border-slate-800 transition-all flex justify-between items-start gap-2 group">
+                            <div className="space-y-1">
+                              <div className="font-bold text-[11px] text-indigo-400">{c.courseCode}</div>
+                              <div className="text-[10px] text-slate-500 leading-snug">{c.courseName}</div>
+                            </div>
+                            
+                            <div className="flex items-center gap-1">
+                              {editingCurriculumCode === c.courseCode ? (
+                                <input
+                                  type="number"
+                                  min="1"
+                                  value={editCurriculumCredits}
+                                  onChange={(e) => setEditCurriculumCredits(Math.max(1, parseInt(e.target.value) || 0))}
+                                  className="w-10 bg-slate-950 border border-slate-700 rounded text-center text-xs text-white p-0.5 font-bold"
+                                  autoFocus
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                      handleUpdateCurriculumCredits(c.courseCode, editCurriculumCredits);
+                                      setEditingCurriculumCode(null);
+                                    } else if (e.key === 'Escape') {
+                                      setEditingCurriculumCode(null);
+                                    }
+                                  }}
+                                />
+                              ) : (
+                                <span className="text-[10px] font-bold text-indigo-400 bg-indigo-500/10 px-1.5 py-0.5 rounded border border-indigo-500/10">{c.credits} TC</span>
+                              )}
+                              <button
+                                onClick={() => {
+                                  if (editingCurriculumCode === c.courseCode) {
+                                    handleUpdateCurriculumCredits(c.courseCode, editCurriculumCredits);
+                                    setEditingCurriculumCode(null);
+                                  } else {
+                                    setEditingCurriculumCode(c.courseCode);
+                                    setEditCurriculumCredits(c.credits);
+                                  }
+                                }}
+                                className="p-1 hover:bg-slate-800 text-slate-500 hover:text-white rounded opacity-0 group-hover:opacity-100 transition cursor-pointer"
+                                title="Sửa tín chỉ môn này"
+                              >
+                                {editingCurriculumCode === c.courseCode ? <Check className="w-3 h-3" /> : <Pencil className="w-3 h-3" />}
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                        {curriculumProgress.learning.length === 0 && (
+                          <div className="text-center py-10 text-[11px] text-slate-600">Không có môn nào đang học.</div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* COLUMN 4: ĐÃ HOÀN THÀNH */}
+                    <div className="bg-slate-900/30 border border-slate-800/80 rounded-2xl p-4 flex flex-col h-[500px]">
+                      <div className="flex justify-between items-center mb-3 pb-2 border-b border-slate-800/60">
+                        <span className="text-xs font-bold text-emerald-450 flex items-center gap-1.5">
+                          <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                          ĐÃ ĐẠT ({curriculumProgress.completed.length})
+                        </span>
+                        <span className="text-[10px] font-bold text-emerald-450 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">{curriculumProgress.completedCredits} TC</span>
+                      </div>
+                      <div className="space-y-2.5 overflow-y-auto flex-grow pr-1.5 custom-scrollbar bg-transparent">
+                        {curriculumProgress.completed.map(c => (
+                          <div key={c.courseCode} className="p-3 bg-emerald-500/5 border border-emerald-950/20 rounded-xl flex justify-between items-start gap-2 group">
+                            <div className="space-y-1">
+                              <div className="font-bold text-[11px] text-emerald-400">{c.courseCode}</div>
+                              <div className="text-[10px] text-slate-500 leading-snug">{c.courseName}</div>
+                            </div>
+                            
+                            <div className="flex items-center gap-1">
+                              {editingCurriculumCode === c.courseCode ? (
+                                <input
+                                  type="number"
+                                  min="1"
+                                  value={editCurriculumCredits}
+                                  onChange={(e) => setEditCurriculumCredits(Math.max(1, parseInt(e.target.value) || 0))}
+                                  className="w-10 bg-slate-950 border border-slate-700 rounded text-center text-xs text-white p-0.5 font-bold"
+                                  autoFocus
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                      handleUpdateCurriculumCredits(c.courseCode, editCurriculumCredits);
+                                      setEditingCurriculumCode(null);
+                                    } else if (e.key === 'Escape') {
+                                      setEditingCurriculumCode(null);
+                                    }
+                                  }}
+                                />
+                              ) : (
+                                <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/10">{c.credits} TC</span>
+                              )}
+                              <button
+                                onClick={() => {
+                                  if (editingCurriculumCode === c.courseCode) {
+                                    handleUpdateCurriculumCredits(c.courseCode, editCurriculumCredits);
+                                    setEditingCurriculumCode(null);
+                                  } else {
+                                    setEditingCurriculumCode(c.courseCode);
+                                    setEditCurriculumCredits(c.credits);
+                                  }
+                                }}
+                                className="p-1 hover:bg-slate-800 text-slate-500 hover:text-white rounded opacity-0 group-hover:opacity-100 transition cursor-pointer"
+                                title="Sửa tín chỉ môn này"
+                              >
+                                {editingCurriculumCode === c.courseCode ? <Check className="w-3 h-3" /> : <Pencil className="w-3 h-3" />}
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                        {curriculumProgress.completed.length === 0 && (
+                          <div className="text-center py-10 text-[11px] text-slate-600">Chưa hoàn thành môn nào.</div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <div className="bg-slate-900/40 border border-slate-800 rounded-2xl p-8 text-center space-y-4 shadow-md max-w-md mx-auto my-10 animate-fadeIn">
+                  <div className="w-12 h-12 rounded-full bg-indigo-500/10 flex items-center justify-center border border-indigo-500/20 mx-auto">
+                    <BookOpen className="w-6 h-6 text-indigo-400" />
+                  </div>
+                  <div className="space-y-2">
+                    <h3 className="text-sm font-bold text-white uppercase tracking-wider">Chưa Cài Đặt Khung Chương Trình</h3>
+                    <p className="text-xs text-slate-400 leading-relaxed">
+                      Hãy dán khung chương trình dự kiến từ myDTU để hệ thống tự động bóc tách và tạo lộ trình đối chiếu môn học cho bạn.
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setIsCurriculumModalOpen(true)}
+                    className="px-4 py-2 bg-indigo-650 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-indigo-650/15 cursor-pointer border border-indigo-400/20"
+                  >
+                    Cài đặt Khung ngay
+                  </button>
+                </div>
+              )}
             </div>
           )}
 
@@ -1875,6 +2759,51 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
               >
                 <Trash2 className="w-4 h-4" />
                 {confirmModal.confirmText}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL CÀI ĐẶT KHUNG CHƯƠNG TRÌNH */}
+      {isCurriculumModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div 
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm" 
+            onClick={() => setIsCurriculumModalOpen(false)}
+          ></div>
+          <div className="relative bg-slate-900 border border-slate-700/80 rounded-2xl p-6 w-full max-w-lg shadow-2xl animate-in fade-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
+            <h3 className="text-base font-bold text-white mb-2 uppercase tracking-wide flex items-center gap-2">
+              <BookOpen className="w-5 h-5 text-indigo-405" />
+              Cài Đặt Khung Chương Trình Đào Tạo
+            </h3>
+            <p className="text-[11px] text-slate-400 leading-relaxed mb-4">
+              Hãy vào trang <b>Khung Chương Trình</b> trên myDTU, bôi đơn/bôi đen toàn bộ bảng danh sách môn học, copy (Ctrl+C) và dán (Ctrl+V) vào ô dưới đây. Hệ thống sẽ tự động bóc tách mã môn, tên môn và số tín chỉ của từng môn học.
+            </p>
+            
+            <textarea
+              value={curriculumInputText}
+              onChange={(e) => setCurriculumInputText(e.target.value)}
+              placeholder="Dán nội dung khung chương trình copy từ myDTU..."
+              className="w-full bg-slate-950/80 border border-slate-800 rounded-xl p-3 text-xs text-indigo-205 placeholder-slate-600 focus:outline-none focus:border-indigo-500 flex-grow h-60 resize-none font-mono mb-4"
+            />
+
+            <div className="flex gap-3 justify-end">
+              <button 
+                onClick={() => {
+                  setIsCurriculumModalOpen(false);
+                  setCurriculumInputText('');
+                }}
+                className="px-4 py-2 rounded-lg text-sm font-semibold text-slate-350 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
+              >
+                Hủy bỏ
+              </button>
+              <button 
+                onClick={handleParseCurriculum}
+                className="px-4 py-2 rounded-lg text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-500 shadow-lg shadow-indigo-900/20 transition-all active:scale-95 flex items-center gap-2 cursor-pointer"
+              >
+                <Sparkles className="w-4 h-4" />
+                Phân tích & Cập nhật
               </button>
             </div>
           </div>

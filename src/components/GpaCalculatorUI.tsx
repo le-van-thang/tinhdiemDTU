@@ -1984,33 +1984,33 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
           
           {/* QUICK ADD FORM */}
           <div className="bg-slate-900/50 backdrop-blur-md border border-slate-800/80 rounded-xl sm:rounded-2xl p-3 sm:p-5 shadow-md">
-          <div className="flex items-center justify-between mb-2 sm:mb-4 pb-2 sm:pb-2.5 border-b border-slate-800/80">
+          {/* Header: 2 d\u00f2ng tr\u00ean mobile (title trên, tabs dưới), 1 d\u00f2ng tr\u00ean desktop */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-2 sm:mb-4 pb-2 sm:pb-2.5 border-b border-slate-800/80 gap-1.5 sm:gap-0">
             <h2 className="text-xs sm:text-sm font-bold text-white flex items-center gap-1.5">
-              <Plus className="w-4.5 h-4.5 text-indigo-400" />
-              <span className="hidden sm:inline">Thêm Môn Học</span>
-              <span className="sm:hidden">Nhập Môn</span>
+              <Plus className="w-3.5 h-3.5 sm:w-4.5 sm:h-4.5 text-indigo-400 shrink-0" />
+              Thêm Môn Học
               <button
                 type="button"
                 onClick={() => setIsHelpModalOpen(true)}
                 className="text-slate-500 hover:text-indigo-400 transition-all p-0.5 rounded cursor-pointer"
                 title="Hướng dẫn nhập điểm từ myDTU"
               >
-                <HelpCircle className="w-4 h-4" />
+                <HelpCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               </button>
             </h2>
             
-            <div className="flex bg-slate-950 rounded-lg p-0.5 border border-slate-800 shrink-0">
+            <div className="flex bg-slate-950 rounded-lg p-0.5 border border-slate-800 w-full sm:w-auto">
               <button
                 onClick={() => setAddMode('manual')}
-                className={`px-1.5 sm:px-3 py-1 text-[9px] sm:text-[10px] font-bold rounded-md transition-all ${addMode === 'manual' ? 'bg-indigo-500 text-white shadow-sm' : 'text-slate-400 hover:text-white'}`}
+                className={`flex-1 sm:flex-none px-2 sm:px-3 py-1 text-[9px] sm:text-[10px] font-bold rounded-md transition-all ${addMode === 'manual' ? 'bg-indigo-500 text-white shadow-sm' : 'text-slate-400 hover:text-white'}`}
               >
-                Nhập TC
+                Nhập thủ công
               </button>
               <button
                 onClick={() => setAddMode('smart_paste')}
-                className={`px-1.5 sm:px-3 py-1 text-[9px] sm:text-[10px] font-bold rounded-md transition-all ${addMode === 'smart_paste' ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'}`}
+                className={`flex-1 sm:flex-none px-2 sm:px-3 py-1 text-[9px] sm:text-[10px] font-bold rounded-md transition-all ${addMode === 'smart_paste' ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'}`}
               >
-                myDTU
+                Dán từ myDTU
               </button>
             </div>
           </div>

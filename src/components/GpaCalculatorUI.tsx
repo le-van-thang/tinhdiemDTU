@@ -28,7 +28,8 @@ import {
   Mail,
   Paperclip,
   Upload,
-  Database
+  Database,
+  ClipboardList
 } from 'lucide-react';
 
 interface GpaCalculatorUIProps {
@@ -1984,32 +1985,48 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
           
           {/* QUICK ADD FORM */}
           <div className="bg-slate-900/50 backdrop-blur-md border border-slate-800/80 rounded-xl sm:rounded-2xl p-3 sm:p-5 shadow-md">
-          {/* Header: 2 d\u00f2ng tr\u00ean mobile (title trên, tabs dưới), 1 d\u00f2ng tr\u00ean desktop */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-2 sm:mb-4 pb-2 sm:pb-2.5 border-b border-slate-800/80 gap-1.5 sm:gap-0">
-            <h2 className="text-xs sm:text-sm font-bold text-white flex items-center gap-1.5">
-              <Plus className="w-3.5 h-3.5 sm:w-4.5 sm:h-4.5 text-indigo-400 shrink-0" />
-              Thêm Môn Học
+          {/* Form Header: luôn 2 dòng - title trên, mode tabs dưới */}
+          <div className="flex flex-col gap-2.5 mb-3 pb-3 border-b border-slate-800/80">
+            {/* Dòng 1: Title + Help */}
+            <div className="flex items-center justify-between">
+              <h2 className="text-xs sm:text-sm font-bold text-white flex items-center gap-1.5">
+                <Plus className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+                Thêm Môn Học
+              </h2>
               <button
                 type="button"
                 onClick={() => setIsHelpModalOpen(true)}
-                className="text-slate-500 hover:text-indigo-400 transition-all p-0.5 rounded cursor-pointer"
+                className="text-slate-500 hover:text-indigo-400 transition-all p-1 rounded-lg hover:bg-indigo-500/10 cursor-pointer"
                 title="Hướng dẫn nhập điểm từ myDTU"
               >
-                <HelpCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                <HelpCircle className="w-3.5 h-3.5" />
               </button>
-            </h2>
-            
-            <div className="flex bg-slate-950 rounded-lg p-0.5 border border-slate-800 w-full sm:w-auto">
+            </div>
+
+            {/* Dòng 2: Mode tabs - 2 nút to, full width, rõ ràng */}
+            <div className="grid grid-cols-2 gap-2">
               <button
+                type="button"
                 onClick={() => setAddMode('manual')}
-                className={`flex-1 sm:flex-none px-2 sm:px-3 py-1 text-[9px] sm:text-[10px] font-bold rounded-md transition-all ${addMode === 'manual' ? 'bg-indigo-500 text-white shadow-sm' : 'text-slate-400 hover:text-white'}`}
+                className={`flex items-center justify-center gap-1.5 py-2 rounded-xl text-[11px] font-bold transition-all border ${
+                  addMode === 'manual'
+                    ? 'bg-indigo-600 text-white border-indigo-500 shadow-lg shadow-indigo-600/20'
+                    : 'bg-slate-900 text-slate-400 border-slate-700 hover:text-white hover:border-indigo-500/50'
+                }`}
               >
+                <Pencil className="w-3 h-3 shrink-0" />
                 Nhập thủ công
               </button>
               <button
+                type="button"
                 onClick={() => setAddMode('smart_paste')}
-                className={`flex-1 sm:flex-none px-2 sm:px-3 py-1 text-[9px] sm:text-[10px] font-bold rounded-md transition-all ${addMode === 'smart_paste' ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'}`}
+                className={`flex items-center justify-center gap-1.5 py-2 rounded-xl text-[11px] font-bold transition-all border ${
+                  addMode === 'smart_paste'
+                    ? 'bg-emerald-600 text-white border-emerald-500 shadow-lg shadow-emerald-600/20'
+                    : 'bg-slate-900 text-slate-400 border-slate-700 hover:text-white hover:border-emerald-500/50'
+                }`}
               >
+                <ClipboardList className="w-3 h-3 shrink-0" />
                 Dán từ myDTU
               </button>
             </div>

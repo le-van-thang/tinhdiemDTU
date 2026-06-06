@@ -447,8 +447,8 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
 
       const parsedCourses: CurriculumCourse[] = [];
       
-      // Nhận diện định dạng: Nếu có các từ khóa trạng thái, đây là định dạng Cây chương trình học (có nhiều môn tự chọn chưa đăng ký)
-      const isTreeFormat = /hoàn tất|chưa học|đang học|đăng ký|hoàn thành|miễn|đạt/i.test(curriculumInputText);
+      // Nhận diện định dạng: Nếu có cụm từ "Chọn X trong Y", đây là định dạng Cây chương trình học đầy đủ nhóm môn tự chọn
+      const isTreeFormat = /chọn \d+ trong/i.test(curriculumInputText);
 
       for (let i = 0; i < cells.length; i++) {
         const cell = cells[i];

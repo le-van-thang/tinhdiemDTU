@@ -250,8 +250,9 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
     }
   });
 
-  // State quản lý tab hiển thị trên mobile ('transcript' | 'add' | 'simulator')
-  const [activeMobileTab, setActiveMobileTab] = useState<'transcript' | 'add' | 'simulator'>('transcript');
+  // State quản lý Bottom Sheet Drawer trên Mobile
+  const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
+  const [mobileDrawerTab, setMobileDrawerTab] = useState<'add' | 'simulator'>('add');
 
   // State quản lý xem dữ liệu hiện tại có phải là dữ liệu ví dụ mẫu hay không
   const [isMockDataLoaded, setIsMockDataLoaded] = useState<boolean>(() => {
@@ -813,7 +814,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
 
     updateCoursesState([...courses, newCourse]);
     setIsMockDataLoaded(false);
-    setActiveMobileTab('transcript');
+    setIsMobileDrawerOpen(false);
 
     // Reset Form (giữ lại năm học và học kỳ để tiện nhập tiếp)
     setCourseCode('');
@@ -975,7 +976,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
         setSmartPasteText('');
         const dupMsg = duplicateCount > 0 ? ` (Đã bỏ qua ${duplicateCount} môn trùng lặp)` : '';
         setSmartPasteStatus({ message: `Hoàn tất! Đã thêm ${importedCount} môn học.${dupMsg}`, type: 'success' });
-        setActiveMobileTab('transcript');
+        setIsMobileDrawerOpen(false);
         
         setTimeout(() => setSmartPasteStatus({ message: '', type: 'idle' }), 5000);
       } else if (duplicateCount > 0) {
@@ -1123,7 +1124,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
       ];
       updateCoursesState(mockData);
       setIsMockDataLoaded(true);
-      setActiveMobileTab('transcript');
+      setIsMobileDrawerOpen(false);
       
       // Mở tất cả các nhóm học kỳ mặc định
       setExpandedSemesters({
@@ -2017,54 +2018,56 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
         )}
       </section>
 
-      {/* MOBILE TAB NAVIGATION (Visible only on mobile) */}
-      <div className="sm:hidden flex items-center justify-between p-1 bg-slate-900/80 border border-slate-800 backdrop-blur-md rounded-xl mb-4 gap-1">
-        <button
-          onClick={() => setActiveMobileTab('transcript')}
-          className={`flex-1 flex flex-col items-center gap-1 py-1.5 rounded-lg text-[10px] font-bold transition-all ${
-            activeMobileTab === 'transcript' 
-              ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20' 
-              : 'text-slate-400 hover:text-slate-200'
-          }`}
-        >
-          <ClipboardList className="w-4 h-4" />
-          Bảng điểm
-        </button>
-        <button
-          onClick={() => setActiveMobileTab('add')}
-          className={`flex-1 flex flex-col items-center gap-1 py-1.5 rounded-lg text-[10px] font-bold transition-all ${
-            activeMobileTab === 'add' 
-              ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20' 
-              : 'text-slate-400 hover:text-slate-200'
-          }`}
-        >
-          <Plus className="w-4 h-4" />
-          Nhập điểm
-        </button>
-        <button
-          onClick={() => setActiveMobileTab('simulator')}
-          className={`flex-1 flex flex-col items-center gap-1 py-1.5 rounded-lg text-[10px] font-bold transition-all ${
-            activeMobileTab === 'simulator' 
-              ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20' 
-              : 'text-slate-400 hover:text-slate-200'
-          }`}
-        >
-          <TrendingUp className="w-4 h-4" />
-          Giả lập GPA
-        </button>
-      </div>
-
       {/* MAIN LAYOUT - 12 columns on desktop, active tab takes 100% on mobile */}
       <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 sm:gap-6">
         
         {/* LEFT COLUMN: FORM & SIMULATOR */}
-        <div className={`sm:col-span-4 space-y-3 sm:space-y-6 min-w-0 ${
-          activeMobileTab === 'transcript' ? 'hidden sm:block' : 'block'
-        }`}>
+        {/* On desktop: static left column. On mobile: absolute bottom sheet drawer when open, hidden otherwise */}
+        <div className={`
+          sm:col-span-4 space-y-3 sm:space-y-6 min-w-0
+          ${isMobileDrawerOpen 
+            ? 'fixed inset-x-0 bottom-0 z-50 bg-slate-900/98 border-t border-slate-800 rounded-t-3xl p-4 shadow-2xl max-h-[85vh] overflow-y-auto animate-slideUp block' 
+            : 'hidden sm:block'
+          }
+        `}>
+          {/* Header of Drawer (Only visible on mobile when drawer is open) */}
+          {isMobileDrawerOpen && (
+            <div className="sm:hidden flex items-center justify-between pb-3 mb-3 border-b border-slate-800">
+              <div className="flex gap-2 p-0.5 bg-slate-950 rounded-xl border border-slate-800/80">
+                <button
+                  type="button"
+                  onClick={() => setMobileDrawerTab('add')}
+                  className={`px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all ${
+                    mobileDrawerTab === 'add' ? 'bg-indigo-600 text-white shadow shadow-indigo-600/30' : 'text-slate-400'
+                  }`}
+                >
+                  Nhập điểm
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMobileDrawerTab('simulator')}
+                  className={`px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all ${
+                    mobileDrawerTab === 'simulator' ? 'bg-indigo-600 text-white shadow shadow-indigo-600/30' : 'text-slate-400'
+                  }`}
+                >
+                  Giả lập GPA
+                </button>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsMobileDrawerOpen(false)}
+                className="p-1.5 bg-slate-800 hover:bg-slate-700 rounded-full text-slate-400 hover:text-white transition cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          )}
           
           {/* QUICK ADD FORM */}
           <div className={`bg-slate-900/50 backdrop-blur-md border border-slate-800/80 rounded-xl sm:rounded-2xl p-3 sm:p-5 shadow-md ${
-            activeMobileTab === 'add' ? 'block' : 'hidden sm:block'
+            isMobileDrawerOpen 
+              ? (mobileDrawerTab === 'add' ? 'block' : 'hidden')
+              : 'block'
           }`}>
           {/* Form Header: luôn 2 dòng - title trên, mode tabs dưới */}
           <div className="flex flex-col gap-2.5 mb-3 pb-3 border-b border-slate-800/80">
@@ -2372,7 +2375,9 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
 
           {/* TARGET GPA SIMULATOR PANEL */}
           <div className={`bg-slate-900/50 backdrop-blur-md border border-slate-800/80 rounded-2xl p-5 shadow-md ${
-            activeMobileTab === 'simulator' ? 'block' : 'hidden sm:block'
+            isMobileDrawerOpen 
+              ? (mobileDrawerTab === 'simulator' ? 'block' : 'hidden')
+              : 'block'
           }`}>
             <h2 className="text-sm font-bold text-white mb-3 flex items-center gap-2 pb-2.5 border-b border-slate-800/80">
             <TrendingUp className="w-4.5 h-4.5 text-emerald-400" />
@@ -2550,9 +2555,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
         </div>
 
         {/* RIGHT COLUMN: TABLE */}
-        <div className={`sm:col-span-8 space-y-4 min-w-0 overflow-hidden ${
-          activeMobileTab === 'transcript' ? 'block' : 'hidden sm:block'
-        }`}>
+        <div className="sm:col-span-8 space-y-4 min-w-0 overflow-hidden">
           
           {/* SEARCH, CATEGORIES, AND VIEW MODES */}
           <div className="flex flex-col gap-3 justify-between items-start bg-slate-900/25 backdrop-blur-md border border-slate-800/80 p-3 sm:p-4 rounded-xl shadow-inner">
@@ -3934,6 +3937,28 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
           </button>
         </div>
       )}
+
+      {/* Backdrop for Mobile Drawer */}
+      {isMobileDrawerOpen && (
+        <div 
+          className="sm:hidden fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-40 animate-fadeIn"
+          onClick={() => setIsMobileDrawerOpen(false)}
+        />
+      )}
+
+      {/* Floating Action Button (FAB) on Mobile */}
+      <div className="sm:hidden fixed bottom-5 left-1/2 -translate-x-1/2 z-30 animate-bounce-subtle">
+        <button
+          onClick={() => {
+            setMobileDrawerTab('add');
+            setIsMobileDrawerOpen(true);
+          }}
+          className="flex items-center gap-2 px-5 py-3 rounded-full bg-gradient-to-r from-indigo-600 to-violet-600 text-white font-bold text-xs shadow-lg shadow-indigo-600/35 hover:scale-105 active:scale-95 transition-all border border-indigo-400/20 cursor-pointer"
+        >
+          <Plus className="w-4 h-4" />
+          Nhập Điểm & Giả Lập
+        </button>
+      </div>
 
     </div>
   );

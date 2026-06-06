@@ -288,14 +288,14 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
 
   // State quản lý Hover vẽ Tooltip biểu đồ
   const [hoveredPoint, setHoveredPoint] = useState<{
-    x: number;
-    y: number;
     label: string;
     semesterGpa: number;
     cumulativeGpa: number;
     diffGpa?: number;
     diffPercent?: string;
   } | null>(null);
+  const [mousePos, setMousePos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const chartContainerRef = useRef<HTMLDivElement>(null);
 
   // Helper chuyển đổi ảnh thành PNG blob để copy vào clipboard (Luôn đi qua canvas để chuẩn hóa định dạng)
   const convertToPngBlob = (file: File): Promise<Blob | null> => {
@@ -1746,7 +1746,14 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
         
         {gpaTrend.length >= 2 ? (
           <div className="w-full overflow-x-auto">
-            <div className="min-w-[580px] h-[185px] relative">
+            <div 
+              ref={chartContainerRef}
+              className="min-w-[580px] h-[185px] relative"
+              onMouseMove={(e) => {
+                const rect = e.currentTarget.getBoundingClientRect();
+                setMousePos({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+              }}
+            >
               <svg width="100%" height="180" viewBox="0 0 560 180" className="overflow-visible">
                 <defs>
                   {/* Gradient cho đường line GPA Tích lũy */}
@@ -1824,8 +1831,6 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                         className="transition-all hover:opacity-80 cursor-pointer"
                         onMouseEnter={() => {
                           setHoveredPoint({
-                            x: p.x,
-                            y: p.ySem,
                             label: p.point.label,
                             semesterGpa: p.point.semesterGpa,
                             cumulativeGpa: p.point.cumulativeGpa,
@@ -1885,8 +1890,6 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                         className="cursor-pointer hover:r-7 transition-all duration-150"
                         onMouseEnter={() => {
                           setHoveredPoint({
-                            x: p.x,
-                            y: p.yCum,
                             label: p.point.label,
                             semesterGpa: p.point.semesterGpa,
                             cumulativeGpa: p.point.cumulativeGpa,
@@ -1923,18 +1926,20 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                 })}
               </svg>
 
-              {/* FLOATING TOOLTIP */}
+              {/* FLOATING TOOLTIP - sử dụng tọa độ chuột thực tế */}
               {hoveredPoint && (
                 <div 
-                  className="absolute bg-slate-950/95 border border-indigo-500/35 rounded-xl p-2.5 shadow-2xl backdrop-blur-md text-[11px] pointer-events-none transition-all duration-100 z-35 w-48 text-left animate-fadeIn"
+                  className="absolute bg-slate-950/95 border border-indigo-500/40 rounded-xl p-2.5 shadow-2xl backdrop-blur-md text-[11px] pointer-events-none z-50 w-48 text-left"
                   style={{ 
-                    left: `${(hoveredPoint.x / 560) * 100}%`,
-                    top: `${(hoveredPoint.y / 180) * 100}%`,
-                    transform: 'translate(-50%, -100%) translateY(-10px)'
+                    left: mousePos.x,
+                    top: mousePos.y,
+                    transform: 'translate(-50%, calc(-100% - 12px))'
                   }}
                 >
-                  <span className="font-bold text-indigo-400 block mb-1.5 text-center border-b border-slate-800/80 pb-1">{hoveredPoint.label}</span>
-                  <div className="space-y-1">
+                  {/* Mũi tên nhỏ phía dưới tooltip */}
+                  <div className="absolute left-1/2 -translate-x-1/2 -bottom-1.5 w-3 h-3 bg-slate-950/95 border-r border-b border-indigo-500/40 rotate-45" />
+                  <span className="font-bold text-indigo-400 block mb-1.5 text-center border-b border-slate-800/80 pb-1.5">{hoveredPoint.label}</span>
+                  <div className="space-y-1.5">
                     <div className="flex justify-between items-center">
                       <span className="text-slate-400">GPA Học kỳ:</span>
                       <span className="font-bold text-emerald-400">{hoveredPoint.semesterGpa.toFixed(2)}</span>
@@ -1944,18 +1949,14 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                       <span className="font-bold text-white">{hoveredPoint.cumulativeGpa.toFixed(2)}</span>
                     </div>
                     {hoveredPoint.diffGpa !== undefined && (
-                      <div className="pt-1.5 mt-1 border-t border-slate-800/60 flex items-center justify-between font-bold">
+                      <div className="pt-1.5 mt-0.5 border-t border-slate-800/60 flex items-center justify-between font-bold">
                         <span className="text-slate-400">Biến động:</span>
                         {hoveredPoint.diffGpa > 0 ? (
-                          <span className="text-emerald-400">
-                            +{hoveredPoint.diffGpa.toFixed(2)} ({hoveredPoint.diffPercent})
-                          </span>
+                          <span className="text-emerald-400">↑ +{hoveredPoint.diffGpa.toFixed(2)} ({hoveredPoint.diffPercent})</span>
                         ) : hoveredPoint.diffGpa < 0 ? (
-                          <span className="text-rose-400">
-                            -{Math.abs(hoveredPoint.diffGpa).toFixed(2)} ({hoveredPoint.diffPercent})
-                          </span>
+                          <span className="text-rose-400">↓ {hoveredPoint.diffGpa.toFixed(2)} ({hoveredPoint.diffPercent})</span>
                         ) : (
-                          <span className="text-slate-400">➖ Không đổi</span>
+                          <span className="text-slate-400">→ Không đổi</span>
                         )}
                       </div>
                     )}

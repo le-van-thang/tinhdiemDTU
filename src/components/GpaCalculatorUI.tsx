@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Course, GradeChar, ProcessedCourse, GRADE_SCALE_MAP, CurriculumCourse } from '../types/gpa';
 import { calculateDTUGPA, calculateGpaSummary, calculateGpaTrend, calculateSemesterGpa, GpaTrendPoint } from '../utils/gpaCalculator';
 import { 
@@ -23,7 +23,11 @@ import {
   Pencil,
   Check,
   X,
-  HelpCircle
+  HelpCircle,
+  MessageSquare,
+  Mail,
+  Paperclip,
+  Upload
 } from 'lucide-react';
 
 interface GpaCalculatorUIProps {
@@ -250,6 +254,143 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
     } catch (e) {}
   }, [isMockDataLoaded]);
 
+  // State quản lý Hỗ trợ & Đóng góp ý kiến (Feedback Modal)
+  const [isFeedbackModalOpen, setIsFeedbackModalOpen] = useState(false);
+  const [feedbackTab, setFeedbackTab] = useState<'bug' | 'suggestion' | 'contact'>('bug');
+  const [bugText, setBugText] = useState('');
+  const [suggestionText, setSuggestionText] = useState('');
+  const [copiedEmail, setCopiedEmail] = useState(false);
+
+  // Toast state
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
+  const toastTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const showToast = (message: string, type: 'success' | 'error' | 'info' = 'success') => {
+    if (toastTimeoutRef.current) {
+      clearTimeout(toastTimeoutRef.current);
+    }
+    setToast({ message, type });
+    toastTimeoutRef.current = setTimeout(() => {
+      setToast(null);
+    }, 4500);
+  };
+
+  // State quản lý ảnh đính kèm (Lưu trữ cả File và Blob đã convert sẵn PNG)
+  const [bugImage, setBugImage] = useState<File | null>(null);
+  const [bugPngBlob, setBugPngBlob] = useState<Blob | null>(null);
+  const [suggestionImage, setSuggestionImage] = useState<File | null>(null);
+  const [suggestionPngBlob, setSuggestionPngBlob] = useState<Blob | null>(null);
+
+  // Trạng thái tải ảnh / gửi thư
+  const [isSendingBug, setIsSendingBug] = useState(false);
+  const [isSendingSuggestion, setIsSendingSuggestion] = useState(false);
+
+  // Helper chuyển đổi ảnh thành PNG blob để copy vào clipboard (Luôn đi qua canvas để chuẩn hóa định dạng)
+  const convertToPngBlob = (file: File): Promise<Blob | null> => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new window.Image();
+        img.onload = () => {
+          try {
+            const canvas = document.createElement('canvas');
+            canvas.width = img.width;
+            canvas.height = img.height;
+            const ctx = canvas.getContext('2d');
+            if (ctx) {
+              ctx.drawImage(img, 0, 0);
+              canvas.toBlob((blob) => {
+                resolve(blob);
+              }, 'image/png');
+            } else {
+              resolve(null);
+            }
+          } catch (err) {
+            console.error('Lỗi canvas convert:', err);
+            resolve(null);
+          }
+        };
+        img.onerror = () => resolve(null);
+        img.src = e.target?.result as string;
+      };
+      reader.onerror = () => resolve(null);
+      reader.readAsDataURL(file);
+    });
+  };
+
+  // Helper copy blob vào clipboard và chờ đợi kết quả (được gọi từ sự kiện click để giữ quyền user gesture)
+  const copyBlobToClipboard = async (blob: Blob): Promise<boolean> => {
+    try {
+      const item = new ClipboardItem({
+        'image/png': blob
+      });
+      await navigator.clipboard.write([item]);
+      return true;
+    } catch (err) {
+      console.error('Lỗi sao chép ảnh vào clipboard:', err);
+      return false;
+    }
+  };
+
+  // Helper tải ảnh lên Telegraph (Anonymous, No Key, CORS Enabled, Vĩnh viễn)
+  const uploadImageToTelegraph = async (file: File): Promise<string | null> => {
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      const response = await fetch('https://telegra.ph/upload', {
+        method: 'POST',
+        body: formData
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (Array.isArray(data) && data[0]?.src) {
+          return `https://telegra.ph${data[0].src}`;
+        }
+      }
+    } catch (err) {
+      console.error('Lỗi khi tải ảnh lên Telegraph:', err);
+    }
+    return null;
+  };
+
+  // Helper tải ảnh lên file.io làm phương án dự phòng (Xóa sau khi xem 1 lần)
+  const uploadImageToFileIo = async (file: File): Promise<string | null> => {
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      const response = await fetch('https://file.io', {
+        method: 'POST',
+        body: formData
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.link) {
+          return data.link;
+        }
+      }
+    } catch (err) {
+      console.error('Lỗi khi tải ảnh lên file.io:', err);
+    }
+    return null;
+  };
+
+  const handleCloseFeedbackModal = () => {
+    setIsFeedbackModalOpen(false);
+    setBugText('');
+    setSuggestionText('');
+    setBugImage(null);
+    setBugPngBlob(null);
+    setSuggestionImage(null);
+    setSuggestionPngBlob(null);
+    setIsSendingBug(false);
+    setIsSendingSuggestion(false);
+  };
+
+
   // State quản lý sửa tín chỉ môn học trong Khung chương trình
   const [editingCurriculumCode, setEditingCurriculumCode] = useState<string | null>(null);
   const [editCurriculumCredits, setEditCurriculumCredits] = useState<number>(3);
@@ -266,7 +407,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
   // Bộ bóc tách dữ liệu Khung chương trình từ myDTU
   const handleParseCurriculum = () => {
     if (!curriculumInputText.trim()) {
-      alert('Vui lòng dán khung chương trình dự kiến!');
+      showToast('Vui lòng dán khung chương trình dự kiến!', 'error');
       return;
     }
 
@@ -306,13 +447,13 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
         setTargetCredits(totalCredits);
         setIsCurriculumModalOpen(false);
         setCurriculumInputText('');
-        alert(`Thành công! Đã nhận diện ${parsedCourses.length} môn học. Tổng số tín chỉ tự động cập nhật: ${totalCredits} TC!`);
+        showToast(`Thành công! Đã nhận diện ${parsedCourses.length} môn học. Tổng số tín chỉ tự động cập nhật: ${totalCredits} TC!`, 'success');
       } else {
-        alert('Không nhận diện được môn học nào hợp lệ. Vui lòng copy đúng bảng khung chương trình.');
+        showToast('Không nhận diện được môn học nào hợp lệ. Vui lòng copy đúng bảng khung chương trình.', 'error');
       }
     } catch (e) {
       console.error(e);
-      alert('Đã xảy ra lỗi khi phân tích khung chương trình.');
+      showToast('Đã xảy ra lỗi khi phân tích khung chương trình.', 'error');
     }
   };
 
@@ -325,7 +466,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
 
   const handleSaveEditCourse = (courseId: string) => {
     if (!editCourseCode.trim() || !editCourseName.trim() || editCredits <= 0) {
-      alert('Vui lòng nhập đầy đủ thông tin hợp lệ!');
+      showToast('Vui lòng nhập đầy đủ thông tin hợp lệ!', 'error');
       return;
     }
     const updated = courses.map(c => 
@@ -623,11 +764,11 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
   const handleAddCourse = (e: React.FormEvent) => {
     e.preventDefault();
     if (!courseCode.trim() || !courseName.trim()) {
-      alert('Vui lòng điền đầy đủ Mã môn học và Tên môn học!');
+      showToast('Vui lòng điền đầy đủ Mã môn học và Tên môn học!', 'error');
       return;
     }
     if (credits <= 0 || isNaN(credits)) {
-      alert('Số tín chỉ phải lớn hơn 0!');
+      showToast('Số tín chỉ phải lớn hơn 0!', 'error');
       return;
     }
 
@@ -1114,6 +1255,181 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
     return { line: linePath, area: areaPath, points, yBase };
   }, [gpaTrend]);
 
+  // 7. Xử lý Gửi Báo cáo Lỗi qua Gmail (mailto hoặc Web Gmail)
+  const handleSendBugReport = async (type: 'web' | 'app') => {
+    if (!bugText.trim()) {
+      showToast('Vui lòng nhập mô tả lỗi!', 'error');
+      return;
+    }
+
+    setIsSendingBug(true);
+    let uploadedUrl: string | null = null;
+    let imageCopied = false;
+
+    if (bugImage) {
+      showToast('Đang xử lý và tải ảnh báo cáo lên máy chủ...', 'info');
+      // Thử tải lên Telegraph trước
+      uploadedUrl = await uploadImageToTelegraph(bugImage);
+      
+      // Nếu lỗi, thử tải lên file.io làm dự phòng
+      if (!uploadedUrl) {
+        uploadedUrl = await uploadImageToFileIo(bugImage);
+      }
+      
+      // Nếu tất cả server đều lỗi, chuyển về copy clipboard
+      if (!uploadedUrl && bugPngBlob) {
+        imageCopied = await copyBlobToClipboard(bugPngBlob);
+      }
+    }
+
+    const email = 'levanthang0166@gmail.com';
+    const rawSubject = '[Báo cáo lỗi] Công cụ tính điểm GPA DTU';
+    
+    // Mẫu mail chuyên nghiệp
+    let rawBody = `Kính gửi Admin Lê Văn Thắng,\n\n` +
+      `Tôi xin báo cáo một lỗi gặp phải khi sử dụng ứng dụng "Công cụ tính điểm GPA DTU":\n\n` +
+      `MÔ TẢ CHI TIẾT LỖI:\n` +
+      `"${bugText}"\n\n` +
+      `--------------------------------------------------\n`;
+
+    if (uploadedUrl) {
+      rawBody += `ẢNH CHỤP MÀN HÌNH ĐÍNH KÈM (Đã tải lên máy chủ):\n` +
+        `👉 Link xem ảnh: ${uploadedUrl}\n\n` +
+        `--------------------------------------------------\n`;
+    } else if (bugImage && imageCopied) {
+      rawBody += `ẢNH CHỤP MÀN HÌNH ĐÍNH KÈM (Đã lưu clipboard):\n` +
+        `-> [Bạn hãy nhấn Ctrl+V tại ô soạn thư này để chèn hình ảnh lỗi đã copy!]\n\n` +
+        `--------------------------------------------------\n`;
+    }
+
+    rawBody += `THÔNG TIN HỆ THỐNG:\n` +
+      `- Số môn học hiện tại: ${courses.length} môn\n` +
+      `- Điểm GPA tích lũy: ${dtuResult.cumulativeGpa.toFixed(2)}\n` +
+      `- Số tín chỉ tích lũy: ${dtuResult.accumulatedCredits} TC\n` +
+      `- Trình duyệt sử dụng: ${navigator.userAgent}\n` +
+      `- Thời gian báo cáo: ${new Date().toLocaleString()}\n` +
+      `--------------------------------------------------\n\n` +
+      `Trân trọng cảm ơn bạn đã hỗ trợ và phát triển công cụ này!`;
+
+    const subject = encodeURIComponent(rawSubject);
+    const body = encodeURIComponent(rawBody);
+
+    // Nếu không có ảnh thì copy văn bản báo cáo vào clipboard dự phòng
+    if (!bugImage) {
+      try {
+        await navigator.clipboard.writeText(rawBody);
+      } catch (e) {}
+    }
+
+    if (type === 'web') {
+      window.open(`https://mail.google.com/mail/?view=cm&fs=1&to=${email}&su=${subject}&body=${body}`, '_blank');
+    } else {
+      window.open(`mailto:${email}?subject=${subject}&body=${body}`);
+    }
+
+    setIsSendingBug(false);
+
+    if (bugImage) {
+      if (uploadedUrl) {
+        showToast('Đã tải ảnh lên máy chủ thành công! Link ảnh đã được chèn tự động vào thư.', 'success');
+      } else if (imageCopied) {
+        showToast('Không thể tải ảnh lên. Đã copy ảnh, vui lòng nhấn Ctrl+V trong Gmail để dán.', 'success');
+      } else {
+        showToast('Không thể copy ảnh. Vui lòng chụp màn hình và dán thủ công.', 'error');
+      }
+    } else {
+      showToast('Đang chuyển hướng bạn tới Gmail soạn thư!', 'success');
+    }
+  };
+
+  // 8. Xử lý Gửi Ý kiến Đóng góp qua Gmail (mailto hoặc Web Gmail)
+  const handleSendSuggestion = async (type: 'web' | 'app') => {
+    if (!suggestionText.trim()) {
+      showToast('Vui lòng nhập ý kiến đóng góp!', 'error');
+      return;
+    }
+
+    setIsSendingSuggestion(true);
+    let uploadedUrl: string | null = null;
+    let imageCopied = false;
+
+    if (suggestionImage) {
+      showToast('Đang xử lý và tải ảnh ý tưởng lên máy chủ...', 'info');
+      uploadedUrl = await uploadImageToTelegraph(suggestionImage);
+      
+      if (!uploadedUrl) {
+        uploadedUrl = await uploadImageToFileIo(suggestionImage);
+      }
+      
+      if (!uploadedUrl && suggestionPngBlob) {
+        imageCopied = await copyBlobToClipboard(suggestionPngBlob);
+      }
+    }
+
+    const email = 'levanthang0166@gmail.com';
+    const rawSubject = '[Góp ý cải tiến] Công cụ tính điểm GPA DTU';
+    
+    // Mẫu mail chuyên nghiệp
+    let rawBody = `Kính gửi Admin Lê Văn Thắng,\n\n` +
+      `Tôi xin gửi ý kiến đóng góp nhằm cải thiện ứng dụng "Công cụ tính điểm GPA DTU":\n\n` +
+      `NỘI DUNG ĐÓNG GÓP:\n` +
+      `"${suggestionText}"\n\n` +
+      `--------------------------------------------------\n`;
+
+    if (uploadedUrl) {
+      rawBody += `ẢNH MINH HỌA ĐÍNH KÈM (Đã tải lên máy chủ):\n` +
+        `👉 Link xem ảnh: ${uploadedUrl}\n\n` +
+        `--------------------------------------------------\n`;
+    } else if (suggestionImage && imageCopied) {
+      rawBody += `ẢNH MINH HỌA ĐÍNH KÈM (Đã lưu clipboard):\n` +
+        `-> [Bạn hãy nhấn Ctrl+V tại ô soạn thư này để chèn hình ảnh ý tưởng đã copy!]\n\n` +
+        `--------------------------------------------------\n`;
+    }
+
+    rawBody += `THÔNG TIN HỆ THỐNG:\n` +
+      `- Trình duyệt sử dụng: ${navigator.userAgent}\n` +
+      `- Thời gian báo cáo: ${new Date().toLocaleString()}\n` +
+      `--------------------------------------------------\n\n` +
+      `Trân trọng cảm ơn bạn đã đóng góp xây dựng ứng dụng!`;
+
+    const subject = encodeURIComponent(rawSubject);
+    const body = encodeURIComponent(rawBody);
+
+    if (!suggestionImage) {
+      try {
+        await navigator.clipboard.writeText(rawBody);
+      } catch (e) {}
+    }
+
+    if (type === 'web') {
+      window.open(`https://mail.google.com/mail/?view=cm&fs=1&to=${email}&su=${subject}&body=${body}`, '_blank');
+    } else {
+      window.open(`mailto:${email}?subject=${subject}&body=${body}`);
+    }
+
+    setIsSendingSuggestion(false);
+
+    if (suggestionImage) {
+      if (uploadedUrl) {
+        showToast('Đã tải ảnh lên máy chủ thành công! Link ảnh đã được chèn tự động vào thư.', 'success');
+      } else if (imageCopied) {
+        showToast('Không thể tải ảnh lên. Đã copy ảnh, vui lòng nhấn Ctrl+V trong Gmail để dán.', 'success');
+      } else {
+        showToast('Không thể copy ảnh. Vui lòng chụp màn hình và dán thủ công.', 'error');
+      }
+    } else {
+      showToast('Đang chuyển hướng bạn tới Gmail soạn thư!', 'success');
+    }
+  };
+
+  // 9. Sao chép nhanh Email của tác giả
+  const handleCopyEmail = () => {
+    navigator.clipboard.writeText('levanthang0166@gmail.com');
+    setCopiedEmail(true);
+    showToast('Đã sao chép địa chỉ email levanthang0166@gmail.com!', 'success');
+    setTimeout(() => setCopiedEmail(false), 2000);
+  };
+
   return (
     <div className="max-w-6xl mx-auto px-4 py-8 text-slate-100">
       
@@ -1151,6 +1467,16 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
               Tải Dữ Liệu Mẫu (Nhiều Kỳ)
             </button>
           )}
+          
+          <button
+            onClick={() => setIsFeedbackModalOpen(true)}
+            className="flex items-center gap-2 px-3 py-2 text-xs font-semibold rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 hover:bg-indigo-500/20 active:scale-95 transition-all cursor-pointer shadow-sm shadow-indigo-500/5"
+            title="Liên hệ Admin, báo lỗi hoặc góp ý kiến"
+            id="btn-feedback"
+          >
+            <MessageSquare className="w-3.5 h-3.5" />
+            Hỗ Trợ & Góp Ý
+          </button>
           
           <button
             onClick={handleResetApp}
@@ -1615,7 +1941,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                             }
                             setAcademicYear(formatted);
                           } else {
-                            alert('Sai định dạng! Năm học phải có định dạng YYYY-YYYY (ví dụ: 2027-2028).');
+                            showToast('Sai định dạng! Năm học phải có định dạng YYYY-YYYY (ví dụ: 2027-2028).', 'error');
                           }
                         }
                       } else {
@@ -3071,6 +3397,343 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* MODAL HỖ TRỢ & GÓP Ý (Feedback Modal) */}
+      {isFeedbackModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div 
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm" 
+            onClick={handleCloseFeedbackModal}
+          ></div>
+          <div className="relative bg-slate-900 border border-slate-700/80 rounded-2xl p-5 w-full max-w-xl shadow-2xl animate-in fade-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
+            
+            {/* Header */}
+            <div className="flex justify-between items-center pb-2.5 border-b border-slate-800 mb-3.5">
+              <h3 className="text-sm font-bold text-white uppercase tracking-wide flex items-center gap-2">
+                <MessageSquare className="w-4.5 h-4.5 text-indigo-400" />
+                Hỗ Trợ & Đóng Góp Ý Kiến
+              </h3>
+              <button 
+                onClick={handleCloseFeedbackModal}
+                className="text-slate-500 hover:text-white hover:bg-slate-800 p-1 rounded-lg transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Author Credit Banner */}
+            <div className="bg-gradient-to-r from-indigo-500/10 to-purple-500/10 border border-indigo-500/15 rounded-xl p-3 mb-3.5 text-[11px] leading-relaxed text-slate-350 flex items-start gap-2.5">
+              <span className="p-1 bg-indigo-500/10 text-indigo-400 rounded-md font-bold text-xs shrink-0">👨‍💻</span>
+              <div>
+                <span className="font-bold text-white block">Lê Văn Thắng dev</span>
+                <span>Mọi đóng góp, báo cáo lỗi từ bạn là động lực to lớn giúp tôi tối ưu hóa ứng dụng này. Cảm ơn bạn!</span>
+              </div>
+            </div>
+
+            {/* Tabs Selector */}
+            <div className="flex border-b border-slate-800 mb-3.5 p-0.5 bg-slate-950 rounded-xl">
+              <button
+                onClick={() => setFeedbackTab('bug')}
+                className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                  feedbackTab === 'bug' 
+                    ? 'bg-rose-500/15 text-rose-400 border border-rose-500/20' 
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                🐞 Báo cáo lỗi
+              </button>
+              <button
+                onClick={() => setFeedbackTab('suggestion')}
+                className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                  feedbackTab === 'suggestion' 
+                    ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/20' 
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                💡 Góp ý cải tiến
+              </button>
+              <button
+                onClick={() => setFeedbackTab('contact')}
+                className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                  feedbackTab === 'contact' 
+                    ? 'bg-indigo-500/15 text-indigo-400 border border-indigo-500/20' 
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                📞 Liên hệ tác giả
+              </button>
+            </div>
+
+            {/* Content Area */}
+            <div className="overflow-y-auto pr-1 flex-grow space-y-3.5">
+              
+              {feedbackTab === 'bug' && (
+                <div className="space-y-3 animate-fadeIn">
+                  <p className="text-[11px] text-slate-400 leading-relaxed pl-1">
+                    Mô tả lỗi hiển thị hoặc tính toán sai dưới đây. Bạn có thể đính kèm ảnh chụp màn hình (ảnh sẽ được tự động copy, bạn chỉ cần nhấn <strong>Ctrl + V</strong> để dán vào Gmail).
+                  </p>
+                  
+                  <textarea
+                    value={bugText}
+                    onChange={(e) => setBugText(e.target.value)}
+                    placeholder="Mô tả chi tiết lỗi bạn gặp phải..."
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-rose-500/50 h-20 resize-none leading-relaxed"
+                  />
+
+                  {/* Nút gửi kèm ảnh lỗi */}
+                  <div className="flex flex-col sm:flex-row gap-2.5 items-stretch sm:items-center">
+                    <label className="flex items-center gap-1.5 px-3 py-2 bg-slate-950 hover:bg-slate-800 text-slate-300 rounded-xl text-xs font-semibold cursor-pointer border border-slate-800 transition-colors shrink-0">
+                      <Paperclip className="w-3.5 h-3.5 text-rose-400" />
+                      Đính kèm ảnh lỗi
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            setBugImage(file);
+                            const png = await convertToPngBlob(file);
+                            setBugPngBlob(png);
+                          }
+                        }}
+                        className="hidden"
+                      />
+                    </label>
+
+                    {bugImage ? (
+                      <div className="flex items-center gap-2 bg-rose-500/5 border border-rose-500/10 rounded-xl px-2.5 py-1.5 flex-grow min-w-0">
+                        <img
+                          src={URL.createObjectURL(bugImage)}
+                          alt="preview"
+                          className="w-6 h-6 rounded object-cover border border-rose-500/20 shrink-0"
+                        />
+                        <span className="text-[11px] text-slate-300 truncate flex-grow font-mono">{bugImage.name}</span>
+                        
+                        <button
+                          type="button"
+                          onClick={async (e) => {
+                            e.preventDefault();
+                            if (bugPngBlob) {
+                              const ok = await copyBlobToClipboard(bugPngBlob);
+                              if (ok) {
+                                showToast('Đã sao chép ảnh! Hãy nhấn Ctrl+V ở Gmail để dán.', 'success');
+                              } else {
+                                showToast('Không thể sao chép hình ảnh. Trình duyệt của bạn có thể đang chặn quyền Clipboard.', 'error');
+                              }
+                            } else {
+                              showToast('Đang xử lý ảnh, vui lòng thử lại sau 1 giây...', 'info');
+                            }
+                          }}
+                          className="px-2 py-0.5 bg-slate-800 hover:bg-slate-700 hover:text-white text-slate-350 text-[10px] rounded font-semibold cursor-pointer transition-colors shrink-0"
+                          title="Sao chép hình ảnh này vào bộ nhớ tạm"
+                        >
+                          Sao chép ảnh
+                        </button>
+
+                        <button
+                          onClick={() => {
+                            setBugImage(null);
+                            setBugPngBlob(null);
+                          }}
+                          className="text-slate-500 hover:text-rose-400 p-1 rounded-lg transition-colors shrink-0 cursor-pointer"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    ) : (
+                      <span className="text-[11px] text-slate-500 italic pl-1 flex-grow align-middle flex items-center h-8">
+                        Chưa chọn ảnh chụp lỗi
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
+                    <button
+                      onClick={() => handleSendBugReport('web')}
+                      disabled={isSendingBug}
+                      className={`flex items-center justify-center gap-1.5 py-2.5 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-bold transition-all active:scale-98 shadow-md shadow-rose-900/10 cursor-pointer border border-rose-500/20 ${isSendingBug ? 'opacity-65 cursor-not-allowed' : ''}`}
+                      title="Mở trình soạn thảo Gmail trên trình duyệt Web (khuyên dùng)"
+                    >
+                      <Sparkles className="w-3.5 h-3.5" />
+                      {isSendingBug ? 'Đang xử lý & gửi...' : 'Gửi qua Web Gmail (Nhanh nhất)'}
+                    </button>
+                    <button
+                      onClick={() => handleSendBugReport('app')}
+                      disabled={isSendingBug}
+                      className={`flex items-center justify-center gap-1.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-bold transition-all active:scale-98 cursor-pointer border border-slate-700 ${isSendingBug ? 'opacity-65 cursor-not-allowed' : ''}`}
+                      title="Kích hoạt ứng dụng email cài đặt trên thiết bị (Outlook, Mail...)"
+                    >
+                      <Mail className="w-3.5 h-3.5" />
+                      {isSendingBug ? 'Đang xử lý & gửi...' : 'Gửi bằng App Mail (Outlook...)'}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {feedbackTab === 'suggestion' && (
+                <div className="space-y-3 animate-fadeIn">
+                  <p className="text-[11px] text-slate-400 leading-relaxed pl-1">
+                    Đóng góp ý tưởng cải tiến ứng dụng. Bạn có thể đính kèm ảnh mô tả (ví dụ: ảnh vẽ phác họa hoặc screenshot minh họa).
+                  </p>
+                  
+                  <textarea
+                    value={suggestionText}
+                    onChange={(e) => setSuggestionText(e.target.value)}
+                    placeholder="Mô tả ý tưởng cải tiến của bạn..."
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-emerald-500/50 h-20 resize-none leading-relaxed"
+                  />
+
+                  {/* Nút gửi kèm ảnh góp ý */}
+                  <div className="flex flex-col sm:flex-row gap-2.5 items-stretch sm:items-center">
+                    <label className="flex items-center gap-1.5 px-3 py-2 bg-slate-950 hover:bg-slate-800 text-slate-300 rounded-xl text-xs font-semibold cursor-pointer border border-slate-800 transition-colors shrink-0">
+                      <Paperclip className="w-3.5 h-3.5 text-emerald-400" />
+                      Đính kèm ảnh góp ý
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            setSuggestionImage(file);
+                            const png = await convertToPngBlob(file);
+                            setSuggestionPngBlob(png);
+                          }
+                        }}
+                        className="hidden"
+                      />
+                    </label>
+
+                    {suggestionImage ? (
+                      <div className="flex items-center gap-2 bg-emerald-500/5 border border-emerald-500/10 rounded-xl px-2.5 py-1.5 flex-grow min-w-0">
+                        <img
+                          src={URL.createObjectURL(suggestionImage)}
+                          alt="preview"
+                          className="w-6 h-6 rounded object-cover border border-emerald-500/20 shrink-0"
+                        />
+                        <span className="text-[11px] text-slate-300 truncate flex-grow font-mono">{suggestionImage.name}</span>
+                        
+                        <button
+                          type="button"
+                          onClick={async (e) => {
+                            e.preventDefault();
+                            if (suggestionPngBlob) {
+                              const ok = await copyBlobToClipboard(suggestionPngBlob);
+                              if (ok) {
+                                showToast('Đã sao chép ảnh! Hãy nhấn Ctrl+V ở Gmail để dán.', 'success');
+                              } else {
+                                showToast('Không thể sao chép hình ảnh. Trình duyệt của bạn có thể đang chặn quyền Clipboard.', 'error');
+                              }
+                            } else {
+                              showToast('Đang xử lý ảnh, vui lòng thử lại sau 1 giây...', 'info');
+                            }
+                          }}
+                          className="px-2 py-0.5 bg-slate-800 hover:bg-slate-700 hover:text-white text-slate-350 text-[10px] rounded font-semibold cursor-pointer transition-colors shrink-0"
+                          title="Sao chép hình ảnh này vào bộ nhớ tạm"
+                        >
+                          Sao chép ảnh
+                        </button>
+
+                        <button
+                          onClick={() => {
+                            setSuggestionImage(null);
+                            setSuggestionPngBlob(null);
+                          }}
+                          className="text-slate-500 hover:text-emerald-400 p-1 rounded-lg transition-colors shrink-0 cursor-pointer"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    ) : (
+                      <span className="text-[11px] text-slate-500 italic pl-1 flex-grow align-middle flex items-center h-8">
+                        Chưa chọn ảnh góp ý
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
+                    <button
+                      onClick={() => handleSendSuggestion('web')}
+                      disabled={isSendingSuggestion}
+                      className={`flex items-center justify-center gap-1.5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition-all active:scale-98 shadow-md shadow-emerald-900/10 cursor-pointer border border-emerald-500/20 ${isSendingSuggestion ? 'opacity-65 cursor-not-allowed' : ''}`}
+                      title="Mở trình soạn thảo Gmail trên trình duyệt Web (khuyên dùng)"
+                    >
+                      <Sparkles className="w-3.5 h-3.5" />
+                      {isSendingSuggestion ? 'Đang xử lý & gửi...' : 'Gửi qua Web Gmail (Nhanh nhất)'}
+                    </button>
+                    <button
+                      onClick={() => handleSendSuggestion('app')}
+                      disabled={isSendingSuggestion}
+                      className={`flex items-center justify-center gap-1.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-bold transition-all active:scale-98 cursor-pointer border border-slate-700 ${isSendingSuggestion ? 'opacity-65 cursor-not-allowed' : ''}`}
+                      title="Kích hoạt ứng dụng email cài đặt trên thiết bị (Outlook, Mail...)"
+                    >
+                      <Mail className="w-3.5 h-3.5" />
+                      {isSendingSuggestion ? 'Đang xử lý & gửi...' : 'Gửi bằng App Mail (Outlook...)'}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {feedbackTab === 'contact' && (
+                <div className="space-y-3 animate-fadeIn">
+                  <p className="text-xs text-slate-400 leading-relaxed pl-1">
+                    Nếu bạn muốn trao đổi trực tiếp, báo cáo các lỗi nghiêm trọng hoặc hợp tác phát triển ứng dụng, hãy liên hệ trực tiếp với tôi qua hòm thư:
+                  </p>
+
+                  <div className="bg-slate-950 border border-slate-800 rounded-2xl p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                    <div className="flex items-center gap-3">
+                      <span className="p-2.5 bg-indigo-500/10 text-indigo-400 rounded-xl border border-indigo-500/10">
+                        <Mail className="w-5 h-5" />
+                      </span>
+                      <div>
+                        <span className="text-[10px] text-slate-500 font-bold block uppercase tracking-wider">Hòm thư hỗ trợ</span>
+                        <span className="text-xs font-bold text-white select-all">levanthang0166@gmail.com</span>
+                      </div>
+                    </div>
+                    
+                    <button
+                      onClick={handleCopyEmail}
+                      className="px-4 py-1.5 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-500 rounded-lg active:scale-95 transition-all cursor-pointer flex items-center gap-1.5"
+                    >
+                      {copiedEmail ? <Check className="w-3.5 h-3.5" /> : <List className="w-3.5 h-3.5" />}
+                      {copiedEmail ? 'Đã sao chép!' : 'Sao chép Email'}
+                    </button>
+                  </div>
+
+                  <div className="p-3 bg-indigo-500/5 border border-indigo-500/10 rounded-xl text-center">
+                    <span className="text-[10px] text-slate-400 block font-semibold">CẢM ƠN BẠN ĐÃ ĐỒNG HÀNH & ỦNG HỘ!</span>
+                    <span className="text-[11px] text-slate-500 block mt-0.5">Chúc các bạn sinh viên Duy Tân (DTU) học tốt và đạt điểm GPA như mong đợi!</span>
+                  </div>
+                </div>
+              )}
+
+            </div>
+
+            {/* Footer */}
+            <div className="flex justify-end pt-3 border-t border-slate-800 mt-3.5">
+              <button 
+                onClick={handleCloseFeedbackModal}
+                className="px-4 py-1.5 rounded-xl text-xs font-bold text-slate-400 hover:text-white hover:bg-slate-800 transition-all active:scale-95 cursor-pointer"
+              >
+                Đóng cửa sổ
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* Toast Notification */}
+      {toast && (
+        <div className="fixed top-5 left-1/2 -translate-x-1/2 z-[9999] flex items-center gap-3 px-4 py-3 rounded-xl border border-slate-800 bg-slate-950/95 text-white shadow-2xl backdrop-blur-md animate-in slide-in-from-top-4 duration-300 min-w-[320px] max-w-[90vw]">
+          {toast.type === 'success' && <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />}
+          {toast.type === 'error' && <AlertTriangle className="w-4 h-4 text-rose-500 shrink-0" />}
+          {toast.type === 'info' && <Info className="w-4 h-4 text-indigo-400 shrink-0" />}
+          <p className="text-[11px] font-semibold leading-relaxed flex-grow text-slate-200">{toast.message}</p>
+          <button onClick={() => setToast(null)} className="text-slate-500 hover:text-white p-0.5 rounded transition-colors shrink-0 cursor-pointer">
+            <X className="w-3.5 h-3.5" />
+          </button>
         </div>
       )}
 

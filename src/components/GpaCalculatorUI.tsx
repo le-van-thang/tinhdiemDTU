@@ -32,6 +32,68 @@ import {
   ClipboardList
 } from 'lucide-react';
 
+const K29_CMU_SE_PRESET: CurriculumCourse[] = [
+  // ĐẠI CƯƠNG (56 TC)
+  { courseCode: 'PHI 100', courseName: 'Phương Pháp Luận (gồm Nghiên Cứu Khoa Học)', credits: 2 },
+  { courseCode: 'COM 141', courseName: 'Nói & Trình Bày (tiếng Việt)', credits: 1 },
+  { courseCode: 'COM 142', courseName: 'Viết (tiếng Việt)', credits: 1 },
+  { courseCode: 'CS 201', courseName: 'Tin Học Ứng Dụng', credits: 3 },
+  { courseCode: 'MTH 204', courseName: 'Toán Cao Cấp A3 (LAB)', credits: 1 },
+  { courseCode: 'MTH 103', courseName: 'Toán Cao Cấp A1', credits: 3 },
+  { courseCode: 'MTH 104', courseName: 'Toán Cao Cấp A2', credits: 4 },
+  { courseCode: 'MTH 203', courseName: 'Toán Cao Cấp A3', credits: 3 },
+  { courseCode: 'PHY 101', courseName: 'Vật Lý Đại Cương 1', credits: 3 },
+  { courseCode: 'CHE 101', courseName: 'Hóa Học Đại Cương', credits: 3 },
+  { courseCode: 'LAW 201', courseName: 'Pháp Luật Đại Cương', credits: 2 },
+  { courseCode: 'HIS 221', courseName: 'Lịch Sử Văn Minh Thế Giới 1', credits: 2 },
+  { courseCode: 'EVR 205', courseName: 'Sức Khỏe Môi Trường', credits: 2 },
+  { courseCode: 'DTE-IS 102', courseName: 'Hướng Nghiệp 1', credits: 1 },
+  { courseCode: 'DTE-IS 152', courseName: 'Hướng Nghiệp 2', credits: 1 },
+  { courseCode: 'PHI 150', courseName: 'Triết Học Marx - Lenin', credits: 3 },
+  { courseCode: 'POS 151', courseName: 'Kinh Tế Chính Trị Marx - Lenin', credits: 2 },
+  { courseCode: 'POS 351', courseName: 'Chủ Nghĩa Xã Hội Khoa Học', credits: 2 },
+  { courseCode: 'HIS 362', courseName: 'Lịch Sử Đảng Cộng Sản Việt Nam', credits: 2 },
+  { courseCode: 'IS-ENG 136', courseName: 'English for International School - Level 1', credits: 3 },
+  { courseCode: 'IS-ENG 137', courseName: 'English for International School - Level 2', credits: 3 },
+  { courseCode: 'IS-ENG 186', courseName: 'English for International School - Level 3', credits: 3 },
+  { courseCode: 'IS-ENG 187', courseName: 'English for International School - Level 4', credits: 3 },
+  { courseCode: 'IS-ENG 236', courseName: 'English for International School - Level 5', credits: 3 },
+
+  // ĐẠI CƯƠNG NGÀNH & CHUYÊN NGÀNH (88 TC)
+  { courseCode: 'CMU-SE 100', courseName: 'Introduction to Software Engineering', credits: 3 },
+  { courseCode: 'CMU-CS 246', courseName: 'Application Development Practices', credits: 3 },
+  { courseCode: 'STA 151', courseName: 'Lý Thuyết Xác Suất & Thống Kê Toán', credits: 3 },
+  { courseCode: 'MTH 254', courseName: 'Toán Rời Rạc & Ứng Dụng', credits: 3 },
+  { courseCode: 'CMU-CS 316', courseName: 'Fundamentals of Computing 2', credits: 3 },
+  { courseCode: 'CS 211', courseName: 'Lập Trình Cơ Sở', credits: 4 },
+  { courseCode: 'CMU-CS 311', courseName: 'Object-Oriented Programming C++', credits: 4 },
+  { courseCode: 'IS 301', courseName: 'Cơ Sở Dữ Liệu', credits: 3 },
+  { courseCode: 'CMU-CS 252', courseName: 'Introduction to Network & Telecommunications Technology', credits: 3 },
+  { courseCode: 'CMU-CS 303', courseName: 'Fundamentals of Computing 1', credits: 3 },
+  { courseCode: 'CMU-SE 214', courseName: 'Requirements Engineering', credits: 3 },
+  { courseCode: 'CMU-SE 252', courseName: 'Computer Science for Practicing Engineers', credits: 3 },
+  { courseCode: 'CMU-ENG 130', courseName: 'Anh Văn Chuyên Ngành cho Sinh Viên CMU 1', credits: 2 },
+  { courseCode: 'CMU-ENG 230', courseName: 'Anh Văn Chuyên Ngành cho Sinh Viên CMU 2', credits: 2 },
+  { courseCode: 'DTE-CS 231', courseName: 'Asia Community with IT', credits: 2 },
+  { courseCode: 'CMU-CS 297', courseName: 'Đồ Án CDIO (Cơ sở)', credits: 1 },
+  { courseCode: 'MTH 291', courseName: 'Toán Ứng Dụng cho Công Nghệ Thông Tin 1', credits: 3 },
+  { courseCode: 'MTH 341', courseName: 'Toán Ứng Dụng cho Công Nghệ Thông Tin 2', credits: 3 },
+  { courseCode: 'CMU-CS 445', courseName: 'System Integration Practices', credits: 3 },
+  { courseCode: 'CMU-SE 445', courseName: 'Software Reuse & Integration', credits: 3 },
+  { courseCode: 'CS 466', courseName: 'Perl & Python', credits: 2 },
+  { courseCode: 'IS 385', courseName: 'Kỹ Thuật Thương Mại Điện Tử', credits: 3 },
+  { courseCode: 'CS 464', courseName: 'Lập Trình Ứng Dụng .NET', credits: 3 },
+  { courseCode: 'CMU-IS 401', courseName: 'Information System Applications', credits: 3 },
+  { courseCode: 'CMU-SE 403', courseName: 'Software Architecture & Design', credits: 4 },
+  { courseCode: 'CMU-IS 432', courseName: 'Software Project Management', credits: 3 },
+  { courseCode: 'CMU-SE 433', courseName: 'Software Process & Quality Management', credits: 3 },
+  { courseCode: 'CMU-SE 303', courseName: 'Software Testing (Verification & Validation)', credits: 3 },
+  { courseCode: 'CMU-CS 462', courseName: 'Software Measurements & Analysis', credits: 3 },
+  { courseCode: 'CMU-CS 447', courseName: 'Đồ Án CDIO (Chuyên ngành)', credits: 1 },
+  { courseCode: 'CMU-SE 450', courseName: 'Capstone Project for Software Engineering 1', credits: 3 },
+  { courseCode: 'CMU-SE 451', courseName: 'Capstone Project for Software Engineering 2', credits: 3 }
+];
+
 interface GpaCalculatorUIProps {
   initialCourses: Course[];
   onCoursesChange?: (courses: Course[]) => void;
@@ -231,6 +293,19 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
   });
   const [isCurriculumModalOpen, setIsCurriculumModalOpen] = useState(false);
   const [curriculumInputText, setCurriculumInputText] = useState('');
+  const [isCurriculumMerge, setIsCurriculumMerge] = useState(() => {
+    try {
+      return localStorage.getItem('dtu_gpa_curriculum_merge') === 'true';
+    } catch (e) {
+      return false;
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('dtu_gpa_curriculum_merge', isCurriculumMerge.toString());
+    } catch (e) {}
+  }, [isCurriculumMerge]);
 
   // State quản lý sửa môn học trong bảng điểm (Transcript Edit Inline)
   const [editingCourseId, setEditingCourseId] = useState<string | null>(null);
@@ -449,9 +524,17 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
       
       // Nhận diện định dạng: Nếu có cụm từ "Chọn X trong Y", đây là định dạng Cây chương trình học đầy đủ nhóm môn tự chọn
       const isTreeFormat = /chọn \d+ trong/i.test(curriculumInputText);
+      let isMandatory = true;
 
       for (let i = 0; i < cells.length; i++) {
         const cell = cells[i];
+
+        // Nhận diện phân khu Bắt buộc hay Tự chọn
+        if (/Bắt buộc/i.test(cell)) {
+          isMandatory = true;
+        } else if (/Chọn \d+ trong|Tự chọn/i.test(cell)) {
+          isMandatory = false;
+        }
         
         // Nhận diện Mã môn học (Ví dụ: CS 201, CMU-SE 100, MTH 103, DTE-IS 102)
         if (/^[a-zA-Z]{2,6}(\-[a-zA-Z]{1,4})?\s*\d{1,4}$/.test(cell)) {
@@ -488,8 +571,12 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
             }
 
             let shouldAdd = true;
-            if (isTreeFormat && !hasStatus) {
-              shouldAdd = false;
+            if (isTreeFormat) {
+              if (isMandatory) {
+                shouldAdd = true;
+              } else {
+                shouldAdd = hasStatus;
+              }
             }
 
             if (shouldAdd) {
@@ -509,8 +596,17 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
       }
 
       if (parsedCourses.length > 0) {
-        setCurriculumCourses(parsedCourses);
-        const totalCredits = parsedCourses.reduce((sum, c) => sum + c.credits, 0);
+        let finalCourses = [...parsedCourses];
+        if (isCurriculumMerge) {
+          // Gộp các môn học cũ vào, ưu tiên các môn mới dán nếu trùng mã môn
+          const existingMap = new Map<string, CurriculumCourse>();
+          curriculumCourses.forEach(c => existingMap.set(c.courseCode, c));
+          parsedCourses.forEach(c => existingMap.set(c.courseCode, c));
+          finalCourses = Array.from(existingMap.values());
+        }
+
+        setCurriculumCourses(finalCourses);
+        const totalCredits = finalCourses.reduce((sum, c) => sum + c.credits, 0);
         setTargetCredits(totalCredits);
         setIsCurriculumModalOpen(false);
         setCurriculumInputText('');
@@ -518,8 +614,9 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
         const formatMsg = isTreeFormat 
           ? 'Đã phát hiện cây chương trình cá nhân - Hệ thống tự động lọc bỏ các môn tự chọn bạn không đăng ký học.'
           : 'Đã phát hiện bảng danh sách khung dự kiến - Hệ thống đã nạp toàn bộ các môn.';
+        const modeMsg = isCurriculumMerge ? ' (Đã cộng dồn vào khung hiện tại)' : '';
         
-        showToast(`Thành công! Đã nhận diện ${parsedCourses.length} môn học. Tổng số tín chỉ: ${totalCredits} TC. ${formatMsg}`, 'success');
+        showToast(`Thành công! Đã nhận diện ${parsedCourses.length} môn học. Tổng số tín chỉ: ${totalCredits} TC. ${formatMsg}${modeMsg}`, 'success');
       } else {
         showToast('Không nhận diện được môn học nào hợp lệ. Vui lòng copy đúng bảng khung chương trình.', 'error');
       }
@@ -3532,13 +3629,50 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
             <p className="text-[11px] text-slate-400 leading-relaxed mb-4">
               Hãy vào trang <b>Khung Chương Trình</b> trên myDTU, bôi đơn/bôi đen toàn bộ bảng danh sách môn học, copy (Ctrl+C) và dán (Ctrl+V) vào ô dưới đây. Hệ thống sẽ tự động bóc tách mã môn, tên môn và số tín chỉ của từng môn học.
             </p>
+
+            <div className="mb-4 space-y-1.5">
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Chọn Khung Chương Trình Mẫu:</label>
+              <select
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (val === 'K29_CMU_SE') {
+                    setCurriculumCourses(K29_CMU_SE_PRESET);
+                    setTargetCredits(144);
+                    setIsCurriculumModalOpen(false);
+                    setCurriculumInputText('');
+                    showToast('Đã nạp Khung chương trình K29 Công nghệ Phần mềm CMU (144 TC)!', 'success');
+                  }
+                }}
+                defaultValue=""
+                className="w-full bg-slate-950/80 border border-slate-800 rounded-xl px-3 py-2 text-xs text-indigo-400 font-semibold focus:outline-none focus:border-indigo-500 cursor-pointer hover:border-indigo-500/50 transition-colors"
+              >
+                <option value="">-- Chọn ngành học để nạp nhanh --</option>
+                <option value="K29_CMU_SE">K29 - Công nghệ Phần mềm Chuẩn CMU (144 TC)</option>
+              </select>
+            </div>
             
             <textarea
               value={curriculumInputText}
               onChange={(e) => setCurriculumInputText(e.target.value)}
-              placeholder="Dán nội dung khung chương trình copy từ myDTU..."
-              className="w-full bg-slate-950/80 border border-slate-800 rounded-xl p-3 text-xs text-indigo-205 placeholder-slate-600 focus:outline-none focus:border-indigo-500 flex-grow h-60 resize-none font-mono mb-4"
+              placeholder="Hoặc dán nội dung khung chương trình copy từ myDTU vào đây..."
+              className="w-full bg-slate-950/80 border border-slate-800 rounded-xl p-3 text-xs text-indigo-205 placeholder-slate-600 focus:outline-none focus:border-indigo-500 flex-grow h-44 resize-none font-mono mb-4"
             />
+
+            <div className="flex items-center gap-2 mb-4">
+              <input 
+                type="checkbox"
+                id="curriculum-merge-checkbox"
+                checked={isCurriculumMerge}
+                onChange={(e) => setIsCurriculumMerge(e.target.checked)}
+                className="w-4 h-4 rounded bg-slate-950 border border-slate-800 text-indigo-600 focus:ring-indigo-500 focus:ring-offset-slate-900 focus:outline-none cursor-pointer"
+              />
+              <label 
+                htmlFor="curriculum-merge-checkbox" 
+                className="text-xs text-slate-350 hover:text-white transition-colors cursor-pointer select-none font-semibold"
+              >
+                Cộng dồn vào khung hiện tại (không xóa môn học cũ)
+              </label>
+            </div>
 
             <div className="flex gap-3 justify-end">
               <button 

@@ -1443,7 +1443,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
   };
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-8 text-slate-100">
+    <div className="max-w-6xl mx-auto px-3 sm:px-4 py-4 sm:py-8 text-slate-100">
       
       {/* HEADER */}
       <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 pb-5 border-b border-slate-800/80">
@@ -1452,7 +1452,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
             <span className="p-2 bg-indigo-500/10 rounded-xl text-indigo-400 border border-indigo-500/20 shadow-inner">
               <GraduationCap className="w-6 h-6" />
             </span>
-            <h1 className="text-2xl font-bold tracking-tight bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent flex items-center gap-2">
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent flex items-center gap-2">
               Ứng Dụng Tính Điểm GPA Duy Tân (DTU)
               <button 
                 onClick={() => setIsHelpModalOpen(true)}
@@ -1463,7 +1463,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
               </button>
             </h1>
           </div>
-          <p className="text-slate-400 text-sm">
+          <p className="text-slate-400 text-xs sm:text-sm hidden sm:block">
             Tính toán GPA tích lũy, quản lý phân nhóm học kỳ và theo dõi tỉ lệ tín chỉ học cải thiện.
           </p>
         </div>
@@ -1472,7 +1472,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
           {courses.length === 0 && (
             <button
               onClick={loadMockScenario}
-              className="flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-lg bg-indigo-600 hover:bg-indigo-500 active:scale-95 transition-all shadow-md shadow-indigo-600/20 border border-indigo-400/20 cursor-pointer"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 sm:px-4 sm:py-2 text-xs font-semibold rounded-lg bg-indigo-600 hover:bg-indigo-500 active:scale-95 transition-all shadow-md shadow-indigo-600/20 border border-indigo-400/20 cursor-pointer"
               id="btn-load-mock"
             >
               <Database className="w-3.5 h-3.5" />
@@ -1482,7 +1482,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
           
           <button
             onClick={() => setIsFeedbackModalOpen(true)}
-            className="flex items-center gap-2 px-3 py-2 text-xs font-semibold rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 hover:bg-indigo-500/20 active:scale-95 transition-all cursor-pointer shadow-sm shadow-indigo-500/5"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 sm:px-3 sm:py-2 text-xs font-semibold rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 hover:bg-indigo-500/20 active:scale-95 transition-all cursor-pointer shadow-sm shadow-indigo-500/5"
             title="Liên hệ Admin, báo lỗi hoặc góp ý kiến"
             id="btn-feedback"
           >
@@ -1492,7 +1492,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
           
           <button
             onClick={handleResetApp}
-            className="flex items-center gap-2 px-3 py-2 text-xs font-semibold rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-400 hover:bg-rose-500/20 active:scale-95 transition-all cursor-pointer shadow-sm shadow-rose-500/5"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 sm:px-3 sm:py-2 text-xs font-semibold rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-400 hover:bg-rose-500/20 active:scale-95 transition-all cursor-pointer shadow-sm shadow-rose-500/5"
             id="btn-reset"
           >
             <RefreshCw className="w-3.5 h-3.5" />
@@ -1535,7 +1535,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
       <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-6">
         
         {/* GPA CARD */}
-        <div className="relative group overflow-hidden bg-slate-900/50 backdrop-blur-md rounded-2xl p-5 border border-slate-800/80 shadow-md">
+        <div className="relative group overflow-hidden bg-slate-900/50 backdrop-blur-md rounded-2xl p-4 sm:p-5 border border-slate-800/80 shadow-md">
           <div className="absolute top-0 right-0 w-24 h-24 bg-indigo-500/10 rounded-full blur-2xl group-hover:bg-indigo-500/15 transition-all"></div>
           <div className="flex items-center justify-between mb-3.5">
             <span className="text-xs font-bold text-slate-400 tracking-wider flex items-center gap-1.5">
@@ -1547,7 +1547,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
             </span>
           </div>
           <div className="flex items-baseline gap-1.5">
-            <span className="text-3xl font-extrabold tracking-tight text-white" id="dashboard-gpa">
+            <span className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white" id="dashboard-gpa">
               {dtuResult.cumulativeGpa.toFixed(2)}
             </span>
             <span className="text-slate-500 text-xs">/ 4.00</span>
@@ -1559,7 +1559,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
         </div>
 
         {/* CREDITS CARD */}
-        <div className="relative group overflow-hidden bg-slate-900/50 backdrop-blur-md rounded-2xl p-5 border border-slate-800/80 shadow-md">
+        <div className="relative group overflow-hidden bg-slate-900/50 backdrop-blur-md rounded-2xl p-4 sm:p-5 border border-slate-800/80 shadow-md">
           <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/5 rounded-full blur-2xl group-hover:bg-emerald-500/10 transition-all"></div>
           <div className="flex items-center justify-between mb-3">
             <span className="text-xs font-bold text-slate-400 tracking-wider flex items-center gap-1.5">
@@ -1574,7 +1574,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
             </div>
           </div>
           <div className="flex items-baseline gap-1.5 mb-2.5">
-            <span className="text-3xl font-extrabold tracking-tight text-white" id="dashboard-credits">
+            <span className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white" id="dashboard-credits">
               {dtuResult.accumulatedCredits}
             </span>
             <span className="text-slate-500 text-xs">/</span>
@@ -1654,7 +1654,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
         </div>
 
         {/* RETAKES CARD */}
-        <div className="relative group overflow-hidden bg-slate-900/50 backdrop-blur-md rounded-2xl p-5 border border-slate-800/80 shadow-md">
+        <div className="relative group overflow-hidden bg-slate-900/50 backdrop-blur-md rounded-2xl p-4 sm:p-5 border border-slate-800/80 shadow-md">
           <div className="absolute top-0 right-0 w-24 h-24 bg-rose-500/5 rounded-full blur-2xl group-hover:bg-rose-500/10 transition-all"></div>
           <div className="flex items-center justify-between mb-3.5">
             <span className="text-xs font-bold text-slate-400 tracking-wider flex items-center gap-1.5">
@@ -1680,7 +1680,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
             </span>
           </div>
           <div className="flex items-baseline gap-1.5">
-            <span className="text-3xl font-extrabold tracking-tight text-white" id="dashboard-retakes">
+            <span className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white" id="dashboard-retakes">
               {dtuResult.totalRetakeCredits}
             </span>
             <span className="text-slate-500 text-xs">TC ({retakeRatio.toFixed(1)}%)</span>
@@ -1700,7 +1700,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
         </div>
 
         {/* FAILED CREDITS CARD */}
-        <div className="relative group overflow-hidden bg-slate-900/50 backdrop-blur-md rounded-2xl p-5 border border-slate-800/80 shadow-md">
+        <div className="relative group overflow-hidden bg-slate-900/50 backdrop-blur-md rounded-2xl p-4 sm:p-5 border border-slate-800/80 shadow-md">
           <div className="absolute top-0 right-0 w-24 h-24 bg-rose-500/10 rounded-full blur-2xl group-hover:bg-rose-500/15 transition-all"></div>
           <div className="flex items-center justify-between mb-3.5">
             <span className="text-xs font-bold text-slate-400 tracking-wider flex items-center gap-1.5">
@@ -1716,7 +1716,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
             </span>
           </div>
           <div className="flex items-baseline gap-1.5">
-            <span className="text-3xl font-extrabold tracking-tight text-white" id="dashboard-failed-credits">
+            <span className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white" id="dashboard-failed-credits">
               {totalFailedCredits}
             </span>
             <span className="text-slate-500 text-xs">TC ({failedCourses.length} môn)</span>
@@ -1979,8 +1979,8 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
       {/* MAIN LAYOUT */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         
-        {/* LEFT COLUMN: FORM & SIMULATOR (4 columns on lg) */}
-        <div className="lg:col-span-4 space-y-6">
+        {/* LEFT COLUMN: FORM & SIMULATOR – order-2 on mobile (bảng hiện trước) */}
+        <div className="lg:col-span-4 space-y-6 order-2 lg:order-1">
           
           {/* QUICK ADD FORM */}
           <div className="bg-slate-900/50 backdrop-blur-md border border-slate-800/80 rounded-2xl p-5 shadow-md">
@@ -2447,12 +2447,12 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
         </div>
         </div>
 
-        {/* RIGHT COLUMN: COURSE LIST (8 columns on lg) */}
-        <div className="lg:col-span-8 space-y-4">
+        {/* RIGHT COLUMN: COURSE LIST – order-1 on mobile (bảng hiện trước form) */}
+        <div className="lg:col-span-8 space-y-4 order-1 lg:order-2">
           
           {/* SEARCH, CATEGORIES, AND VIEW MODES */}
-          <div className="flex flex-col sm:flex-row gap-4 justify-between items-center bg-slate-900/25 backdrop-blur-md border border-slate-800/80 p-4 rounded-xl shadow-inner">
-            <div className="relative w-full sm:w-56">
+          <div className="flex flex-col gap-3 justify-between items-start bg-slate-900/25 backdrop-blur-md border border-slate-800/80 p-3 sm:p-4 rounded-xl shadow-inner">
+            <div className="relative w-full">
               <Search className="absolute left-3 top-2 w-3.5 h-3.5 text-slate-500" />
               <input
                 type="text"
@@ -2464,12 +2464,12 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
               />
             </div>
 
-            <div className="flex flex-wrap items-center gap-4 w-full sm:w-auto justify-between sm:justify-end">
+            <div className="flex flex-wrap items-center gap-2 w-full justify-between">
               {/* Thẻ lọc điểm */}
               <div className="flex items-center gap-1 bg-slate-950 p-1 rounded-lg border border-slate-800/60">
                 <button
                   onClick={() => setFilterType('all')}
-                  className={`px-2.5 py-1 rounded-md text-[11px] font-semibold cursor-pointer transition-all ${
+                  className={`px-2 sm:px-2.5 py-1 rounded-md text-[11px] font-semibold cursor-pointer transition-all ${
                     filterType === 'all' ? 'bg-slate-900 text-white font-bold' : 'text-slate-500 hover:text-slate-300'
                   }`}
                   id="filter-all"
@@ -2478,7 +2478,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                 </button>
                 <button
                   onClick={() => setFilterType('accumulated')}
-                  className={`px-2.5 py-1 rounded-md text-[11px] font-semibold cursor-pointer transition-all ${
+                  className={`px-2 sm:px-2.5 py-1 rounded-md text-[11px] font-semibold cursor-pointer transition-all ${
                     filterType === 'accumulated' ? 'bg-slate-900 text-white font-bold' : 'text-slate-500 hover:text-slate-300'
                   }`}
                   id="filter-accumulated"
@@ -2487,7 +2487,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                 </button>
                 <button
                   onClick={() => setFilterType('condition')}
-                  className={`px-2.5 py-1 rounded-md text-[11px] font-semibold cursor-pointer transition-all ${
+                  className={`px-2 sm:px-2.5 py-1 rounded-md text-[11px] font-semibold cursor-pointer transition-all ${
                     filterType === 'condition' ? 'bg-slate-900 text-white font-bold' : 'text-slate-500 hover:text-slate-300'
                   }`}
                   id="filter-condition"
@@ -2500,36 +2500,36 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
               <div className="flex items-center gap-1 bg-slate-950 p-1 rounded-lg border border-slate-800/60">
                 <button
                   onClick={() => setViewMode('grouped')}
-                  className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-semibold cursor-pointer transition-all ${
+                  className={`flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded-md text-[11px] font-semibold cursor-pointer transition-all ${
                     viewMode === 'grouped' ? 'bg-indigo-600 text-white' : 'text-slate-500 hover:text-slate-300'
                   }`}
                   title="Hiển thị theo từng học kỳ"
                   id="view-mode-grouped"
                 >
                   <FolderKanban className="w-3.5 h-3.5" />
-                  Theo kỳ
+                  <span className="hidden xs:inline sm:inline">Theo kỳ</span>
                 </button>
                 <button
                   onClick={() => setViewMode('flat')}
-                  className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-semibold cursor-pointer transition-all ${
+                  className={`flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded-md text-[11px] font-semibold cursor-pointer transition-all ${
                     viewMode === 'flat' ? 'bg-indigo-600 text-white' : 'text-slate-500 hover:text-slate-300'
                   }`}
                   title="Hiển thị bảng tất cả môn học phẳng"
                   id="view-mode-flat"
                 >
                   <List className="w-3.5 h-3.5" />
-                  Bảng phẳng
+                  <span className="hidden xs:inline sm:inline">Bảng phẳng</span>
                 </button>
                 <button
                   onClick={() => setViewMode('curriculum')}
-                  className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-semibold cursor-pointer transition-all ${
+                  className={`flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded-md text-[11px] font-semibold cursor-pointer transition-all ${
                     viewMode === 'curriculum' ? 'bg-indigo-600 text-white' : 'text-slate-500 hover:text-slate-300'
                   }`}
                   title="Đối chiếu tiến độ theo Khung chương trình"
                   id="view-mode-curriculum"
                 >
                   <BookOpen className="w-3.5 h-3.5" />
-                  Tiến độ Khung
+                  <span className="hidden xs:inline sm:inline">Tiến độ Khung</span>
                 </button>
               </div>
             </div>
@@ -2628,14 +2628,14 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                             <div className="overflow-x-auto">
                               <table className="w-full border-collapse text-left text-xs">
                                 <thead>
-                                  <tr className="border-b border-slate-800 bg-slate-950/20 text-slate-500 font-bold uppercase tracking-wider text-[10px]">
-                                    <th className="px-4 py-2.5">Mã Môn</th>
-                                    <th className="px-4 py-2.5">Tên Môn Học</th>
-                                    <th className="px-4 py-2.5 text-center">Tín Chỉ</th>
-                                    <th className="px-4 py-2.5 text-center">Điểm</th>
-                                    <th className="px-4 py-2.5 text-center">Hệ 4.0</th>
-                                    <th className="px-4 py-2.5">Trạng Thái</th>
-                                    <th className="px-4 py-2.5 text-right">Xóa</th>
+                                <tr className="border-b border-slate-800 bg-slate-950/20 text-slate-500 font-bold uppercase tracking-wider text-[9px] sm:text-[10px]">
+                                    <th className="px-2 sm:px-4 py-2 sm:py-2.5">Mã Môn</th>
+                                    <th className="px-2 sm:px-4 py-2 sm:py-2.5">Tên Môn Học</th>
+                                    <th className="px-2 sm:px-4 py-2 sm:py-2.5 text-center">TC</th>
+                                    <th className="px-2 sm:px-4 py-2 sm:py-2.5 text-center">Điểm</th>
+                                    <th className="px-2 sm:px-4 py-2 sm:py-2.5 text-center hidden sm:table-cell">Hệ 4.0</th>
+                                    <th className="px-2 sm:px-4 py-2 sm:py-2.5 hidden sm:table-cell">TT</th>
+                                    <th className="px-2 sm:px-4 py-2 sm:py-2.5 text-right">Xóa</th>
                                   </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-850 bg-transparent">
@@ -2656,7 +2656,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                                           pc.isReplaced ? 'opacity-40 line-through bg-slate-950/10' : ''
                                         }`}
                                       >
-                                        <td className="px-4 py-2.5 font-semibold text-slate-400">
+                                      <td className="px-2 sm:px-4 py-2 sm:py-2.5 font-semibold text-slate-400 whitespace-nowrap">
                                           {isEditing ? (
                                             <input 
                                               type="text"
@@ -2668,7 +2668,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                                             pc.courseCode
                                           )}
                                         </td>
-                                        <td className="px-4 py-2.5">
+                                        <td className="px-2 sm:px-4 py-2 sm:py-2.5">
                                           {isEditing ? (
                                             <input 
                                               type="text"
@@ -2694,7 +2694,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                                             </div>
                                           )}
                                         </td>
-                                        <td className="px-4 py-2.5 text-center font-semibold text-slate-300">
+                                        <td className="px-2 sm:px-4 py-2 sm:py-2.5 text-center font-semibold text-slate-300 whitespace-nowrap">
                                           {isEditing ? (
                                             <input 
                                               type="number"
@@ -2707,7 +2707,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                                             pc.credits
                                           )}
                                         </td>
-                                        <td className="px-4 py-2.5 text-center">
+                                        <td className="px-2 sm:px-4 py-2 sm:py-2.5 text-center">
                                           <select
                                             disabled={isEditing}
                                             value={pc.gradeChar}
@@ -2720,10 +2720,10 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                                             ))}
                                           </select>
                                         </td>
-                                        <td className="px-4 py-2.5 text-center font-medium text-slate-400">
+                                        <td className="px-2 sm:px-4 py-2 sm:py-2.5 text-center font-medium text-slate-400 hidden sm:table-cell">
                                           {pc.gradePoint !== null ? pc.gradePoint.toFixed(2) : '-'}
                                         </td>
-                                        <td className="px-4 py-2.5">
+                                        <td className="px-2 sm:px-4 py-2 sm:py-2.5 hidden sm:table-cell">
                                           <div className="flex flex-wrap gap-1">
                                             {pc.isConditionCourse ? (
                                               <span className="bg-amber-500/10 text-amber-400 text-[8px] font-bold px-1 rounded border border-amber-500/10">Đ.Kiện</span>
@@ -2737,7 +2737,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                                             )}
                                           </div>
                                         </td>
-                                        <td className="px-4 py-2.5 text-right">
+                                        <td className="px-2 sm:px-4 py-2 sm:py-2.5 text-right">
                                           {isEditing ? (
                                             <div className="flex gap-1 justify-end">
                                               <button
@@ -2800,15 +2800,15 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
               <div className="overflow-x-auto">
                 <table className="w-full border-collapse text-left text-xs">
                   <thead>
-                    <tr className="border-b border-slate-800 bg-slate-900/40 text-slate-400 font-bold uppercase tracking-wider">
-                      <th className="px-4 py-3">Năm học & Kỳ</th>
-                      <th className="px-4 py-3">Mã Môn</th>
-                      <th className="px-4 py-3">Tên Môn Học</th>
-                      <th className="px-4 py-3 text-center">Tín Chỉ</th>
-                      <th className="px-4 py-3 text-center">Điểm</th>
-                      <th className="px-4 py-3 text-center">Hệ 4.0</th>
-                      <th className="px-4 py-3">Trạng Thái</th>
-                      <th className="px-4 py-3 text-right">Xóa</th>
+                    <tr className="border-b border-slate-800 bg-slate-900/40 text-slate-400 font-bold uppercase tracking-wider text-[9px] sm:text-[10px]">
+                      <th className="px-2 sm:px-4 py-2 sm:py-3 hidden sm:table-cell">Năm học & Kỳ</th>
+                      <th className="px-2 sm:px-4 py-2 sm:py-3">Mã Môn</th>
+                      <th className="px-2 sm:px-4 py-2 sm:py-3">Tên Môn Học</th>
+                      <th className="px-2 sm:px-4 py-2 sm:py-3 text-center">TC</th>
+                      <th className="px-2 sm:px-4 py-2 sm:py-3 text-center">Điểm</th>
+                      <th className="px-2 sm:px-4 py-2 sm:py-3 text-center hidden sm:table-cell">Hệ 4.0</th>
+                      <th className="px-2 sm:px-4 py-2 sm:py-3 hidden sm:table-cell">TT</th>
+                      <th className="px-2 sm:px-4 py-2 sm:py-3 text-right">Xóa</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-850 bg-transparent" id="course-table-body">
@@ -2830,10 +2830,10 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                               pc.isReplaced ? 'opacity-50 line-through bg-slate-950/20' : ''
                             }`}
                           >
-                            <td className="px-4 py-3 text-slate-400 font-medium whitespace-nowrap">
+                            <td className="px-2 sm:px-4 py-2 sm:py-3 text-slate-400 font-medium whitespace-nowrap hidden sm:table-cell">
                               {pc.academicYear} - <span className="text-[10px] font-semibold">{pc.semester.replace('Học kỳ ', 'HK')}</span>
                             </td>
-                            <td className="px-4 py-3 font-semibold text-slate-300">
+                            <td className="px-2 sm:px-4 py-2 sm:py-3 font-semibold text-slate-300 whitespace-nowrap">
                               {isEditing ? (
                                 <input 
                                   type="text"
@@ -2845,7 +2845,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                                 pc.courseCode
                               )}
                             </td>
-                            <td className="px-4 py-3">
+                            <td className="px-2 sm:px-4 py-2 sm:py-3">
                               {isEditing ? (
                                 <input 
                                   type="text"
@@ -2871,7 +2871,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                                 </div>
                               )}
                             </td>
-                            <td className="px-4 py-3 text-center font-medium text-slate-300">
+                            <td className="px-2 sm:px-4 py-2 sm:py-3 text-center font-medium text-slate-300 whitespace-nowrap">
                               {isEditing ? (
                                 <input 
                                   type="number"
@@ -2884,7 +2884,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                                 pc.credits
                               )}
                             </td>
-                            <td className="px-4 py-3 text-center">
+                            <td className="px-2 sm:px-4 py-2 sm:py-3 text-center">
                               <select
                                 disabled={isEditing}
                                 value={pc.gradeChar}
@@ -2897,10 +2897,10 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                                 ))}
                               </select>
                             </td>
-                            <td className="px-4 py-3 text-center font-medium text-slate-400">
+                            <td className="px-2 sm:px-4 py-2 sm:py-3 text-center font-medium text-slate-400 hidden sm:table-cell">
                               {pc.gradePoint !== null ? pc.gradePoint.toFixed(2) : '-'}
                             </td>
-                            <td className="px-4 py-3">
+                            <td className="px-2 sm:px-4 py-2 sm:py-3 hidden sm:table-cell">
                               <div className="flex flex-wrap gap-1">
                                 {pc.isConditionCourse ? (
                                   <span className="bg-amber-500/10 text-amber-400 text-[8px] font-bold px-1 rounded border border-amber-500/15">Điều Kiện</span>
@@ -2914,7 +2914,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                                 )}
                               </div>
                             </td>
-                            <td className="px-4 py-3 text-right">
+                            <td className="px-2 sm:px-4 py-2 sm:py-3 text-right">
                               {isEditing ? (
                                 <div className="flex gap-1 justify-end">
                                   <button

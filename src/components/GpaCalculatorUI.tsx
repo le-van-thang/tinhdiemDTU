@@ -1902,18 +1902,20 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                         }}
                         onMouseLeave={() => setHoveredPoint(null)}
                       />
-                      {/* Trị số GPA Học kỳ nằm phía trên cột hoặc bên trong */}
-                      <text 
-                        x={p.x} 
-                        y={barHeight > 18 ? p.ySem + 12 : p.ySem - 5} 
-                        textAnchor="middle" 
-                        fill={barHeight > 18 ? "#ffffff" : "#10b981"} 
-                        fontSize="8.5" 
-                        fontWeight="bold"
-                        opacity="0.9"
-                      >
-                        {p.point.semesterGpa.toFixed(2)}
-                      </text>
+                      {/* Trị số GPA Học kỳ nằm ở dưới cùng bên trong cột để tránh đè lên đường tích lũy */}
+                      {p.point.semesterGpa >= 0.5 && (
+                        <text 
+                          x={p.x} 
+                          y={chartSvgPath.yBase - 8} 
+                          textAnchor="middle" 
+                          fill="#ffffff" 
+                          fontSize="8.5" 
+                          fontWeight="bold"
+                          opacity="0.8"
+                        >
+                          {p.point.semesterGpa.toFixed(2)}
+                        </text>
+                      )}
                     </g>
                   );
                 })}

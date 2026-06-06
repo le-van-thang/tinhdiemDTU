@@ -63,6 +63,30 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
     return options;
   }, []);
 
+  // State quản lý danh sách năm học tùy chỉnh do người dùng thêm vào
+  const [customYears, setCustomYears] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem('dtu_gpa_custom_years');
+      if (saved) {
+        return JSON.parse(saved);
+      }
+    } catch (e) {}
+    return [];
+  });
+
+  // Lưu trữ năm học tùy chỉnh vào localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('dtu_gpa_custom_years', JSON.stringify(customYears));
+    } catch (e) {}
+  }, [customYears]);
+
+  // Hợp nhất năm học mặc định và năm học tự thêm
+  const yearOptions = useMemo(() => {
+    const combined = [...academicYearOptions, ...customYears];
+    return Array.from(new Set(combined)).sort((a, b) => b.localeCompare(a));
+  }, [academicYearOptions, customYears]);
+
   // 2. State quản lý Form nhập liệu
   const [courseCode, setCourseCode] = useState('');
   const [courseName, setCourseName] = useState('');
@@ -166,7 +190,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
 
   // State quản lý bộ giả lập GPA mục tiêu
   const [simulatorTargetGpa, setSimulatorTargetGpa] = useState<number>(3.20);
-  const [simulatorRemainingCredits, setSimulatorRemainingCredits] = useState<number>(30);
+  const [simulatorRemainingCredits, setSimulatorRemainingCredits] = useState<number | ''>(30);
   const [isCustomTarget, setIsCustomTarget] = useState(false);
   const [customTargetGpa, setCustomTargetGpa] = useState('3.50');
 
@@ -414,7 +438,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
   const simulationResult = useMemo(() => {
     const currentCredits = dtuResult.accumulatedCredits;
     const currentGPA = dtuResult.cumulativeGpa;
-    const remainingCredits = simulatorRemainingCredits;
+    const remainingCredits = Number(simulatorRemainingCredits) || 0;
     const target = isCustomTarget ? parseFloat(customTargetGpa) || 0.0 : simulatorTargetGpa;
 
     if (remainingCredits <= 0) {
@@ -489,7 +513,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
   const gradeRecipes = useMemo(() => {
     if (simulationResult.status !== 'feasible' || !simulationResult.requiredGPA) return [];
     const req = simulationResult.requiredGPA;
-    const rem = simulatorRemainingCredits;
+    const rem = Number(simulatorRemainingCredits) || 0;
     
     const recipes: { type: string; details: string; icon: string }[] = [];
 
@@ -1196,14 +1220,18 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                 </button>
               </div>
             ) : (
-              <div className="flex items-center gap-1 group/credits cursor-pointer" onClick={() => {
-                setTempTargetCredits(targetCredits);
-                setIsEditingTargetCredits(true);
-              }}>
-                <span className="text-slate-300 text-xs hover:text-emerald-400 font-bold transition">
-                  {targetCredits} TC
+              <div 
+                className="flex items-center gap-1 group/credits cursor-pointer bg-slate-950/40 hover:bg-slate-950/80 px-2 py-1 rounded-lg border border-slate-800 hover:border-emerald-500/50 transition-all" 
+                onClick={() => {
+                  setTempTargetCredits(targetCredits);
+                  setIsEditingTargetCredits(true);
+                }}
+                title="Nhấp để thay đổi tổng số tín chỉ tốt nghiệp của ngành bạn"
+              >
+                <span className="text-slate-300 text-[11px] hover:text-emerald-450 font-bold transition">
+                  {targetCredits} TC (Nhấp để sửa)
                 </span>
-                <Pencil className="w-3 h-3 text-slate-500 group-hover/credits:text-emerald-400 transition opacity-60 group-hover/credits:opacity-100" />
+                <Pencil className="w-2.5 h-2.5 text-slate-500 group-hover/credits:text-emerald-400 transition opacity-80" />
               </div>
             )}
           </div>
@@ -1506,13 +1534,32 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                   <label className="block text-[10px] font-bold text-slate-400 tracking-wider mb-1">NĂM HỌC</label>
                   <select
                     value={academicYear}
-                    onChange={(e) => setAcademicYear(e.target.value)}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (val === 'ADD_CUSTOM_YEAR') {
+                        const inputYear = window.prompt('Nhập năm học mới (ví dụ: 2027-2028 hoặc 2028-2029):');
+                        if (inputYear) {
+                          if (/^\d{4}-\d{4}$/.test(inputYear.trim())) {
+                            const formatted = inputYear.trim();
+                            if (!customYears.includes(formatted)) {
+                              setCustomYears(prev => [...prev, formatted]);
+                            }
+                            setAcademicYear(formatted);
+                          } else {
+                            alert('Sai định dạng! Năm học phải có định dạng YYYY-YYYY (ví dụ: 2027-2028).');
+                          }
+                        }
+                      } else {
+                        setAcademicYear(val);
+                      }
+                    }}
                     className="w-full bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500 cursor-pointer"
                     id="form-year-select"
                   >
-                    {academicYearOptions.map(y => (
+                    {yearOptions.map(y => (
                       <option key={y} value={y}>{y}</option>
                     ))}
+                    <option value="ADD_CUSTOM_YEAR" className="text-indigo-400 font-bold">+ Thêm năm học khác...</option>
                   </select>
                 </div>
 
@@ -1573,6 +1620,14 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                     id="form-credits"
                     required
                   />
+                  {credits > 0 && (
+                    <span className="block text-[10px] text-rose-500 font-semibold mt-1">
+                      {(() => {
+                        const words = ['', 'Một', 'Hai', 'Ba', 'Bốn', 'Năm', 'Sáu', 'Bảy', 'Tám', 'Chín', 'Mười', 'Mười một', 'Mười hai', 'Mười ba', 'Mười bốn', 'Mười lăm'];
+                        return `(${words[credits] || credits} tín chỉ)`;
+                      })()}
+                    </span>
+                  )}
                 </div>
 
                 <div>
@@ -1753,8 +1808,11 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                 <input
                   type="number"
                   min="1"
-                  value={simulatorRemainingCredits}
-                  onChange={(e) => setSimulatorRemainingCredits(Math.max(1, parseInt(e.target.value) || 0))}
+                  value={simulatorRemainingCredits || ''}
+                  onChange={(e) => {
+                    const val = parseInt(e.target.value);
+                    setSimulatorRemainingCredits(isNaN(val) ? 0 : val);
+                  }}
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500"
                   id="simulator-remaining-credits"
                 />
@@ -1817,7 +1875,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
               {simulationResult.status === 'feasible' && (
                 <div className="space-y-3">
                   <div className="flex justify-between items-center">
-                    <span className="font-semibold text-slate-400">GPA cần đạt trong {simulatorRemainingCredits} TC tới:</span>
+                    <span className="font-semibold text-slate-400">GPA cần đạt trong {simulatorRemainingCredits || 0} TC tới:</span>
                     <span className="text-sm font-extrabold text-white bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-500/20" id="simulator-required-gpa">
                       {simulationResult.requiredGPA?.toFixed(2)}
                     </span>

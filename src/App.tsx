@@ -124,7 +124,7 @@ export default function App() {
     <div className="min-h-screen flex flex-col justify-between">
       {/* MAIN CONTENT AREA */}
       <main className="flex-grow">
-        <GpaCalculatorUI initialCourses={initialMockCourses} />
+        <GpaCalculatorUI initialCourses={[]} />
       </main>
 
       {/* FOOTER */}
@@ -135,9 +135,7 @@ export default function App() {
           </p>
           <p className="flex items-center gap-1.5 justify-center">
             <span>Thiết kế bởi</span>
-            <span className="font-semibold text-slate-400">Antigravity Coding Assistant</span>
-            <span>&bull;</span>
-            <span className="text-indigo-400/80">Tailwind CSS v4 + React</span>
+            <span className="font-semibold text-indigo-400">Lê Văn Thắng dev</span>
           </p>
         </div>
       </footer>

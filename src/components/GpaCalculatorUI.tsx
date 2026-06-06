@@ -547,6 +547,8 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
             let foundCredits = false;
             let nextCourseIndex = cells.length; // Mặc định nhảy tới cuối nếu đây là môn cuối cùng
 
+            const currentCourseMandatory = isMandatory; // Lưu giữ trạng thái trước khi quét tiếp để tránh sai lệch
+
             // Tìm kiếm tín chỉ và trạng thái ở các ô tiếp theo trước khi gặp mã môn khác
             for (let j = i + 2; j < cells.length; j++) {
               const cellVal = cells[j];
@@ -568,11 +570,18 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
               if (/hoàn tất|chưa học|đang học|đăng ký|hoàn thành|miễn|đạt|chưa đạt/i.test(cellVal)) {
                 hasStatus = true;
               }
+
+              // Nhận diện phân khu Bắt buộc hay Tự chọn nằm xen kẽ giữa các môn trong phần quét
+              if (/Bắt buộc/i.test(cellVal)) {
+                isMandatory = true;
+              } else if (/Chọn \d+ trong|Tự chọn/i.test(cellVal)) {
+                isMandatory = false;
+              }
             }
 
             let shouldAdd = true;
             if (isTreeFormat) {
-              if (isMandatory) {
+              if (currentCourseMandatory) {
                 shouldAdd = true;
               } else {
                 shouldAdd = hasStatus;
@@ -606,7 +615,16 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
         }
 
         setCurriculumCourses(finalCourses);
-        const totalCredits = finalCourses.reduce((sum, c) => sum + c.credits, 0);
+        
+        // Loại trừ môn điều kiện khỏi tổng số tín chỉ mục tiêu của Khung
+        const totalCredits = finalCourses.reduce((sum, c) => {
+          const isCondition = c.courseCode.toLowerCase().startsWith('es') ||
+                              c.courseName.toLowerCase().includes('thể chất') ||
+                              c.courseName.toLowerCase().includes('quốc phòng') ||
+                              c.courseName.toLowerCase().includes('chạy ngắn') ||
+                              c.courseName.toLowerCase().includes('bơi lội');
+          return isCondition ? sum : sum + c.credits;
+        }, 0);
         setTargetCredits(totalCredits);
         setIsCurriculumModalOpen(false);
         setCurriculumInputText('');
@@ -766,11 +784,46 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
       learning,
       failed,
       missing,
-      totalCredits: curriculumCourses.reduce((sum, c) => sum + c.credits, 0),
-      completedCredits: completed.reduce((sum, c) => sum + c.credits, 0),
-      learningCredits: learning.reduce((sum, c) => sum + c.credits, 0),
-      failedCredits: failed.reduce((sum, c) => sum + c.credits, 0),
-      missingCredits: missing.reduce((sum, c) => sum + c.credits, 0),
+      totalCredits: curriculumCourses.reduce((sum, c) => {
+        const isCondition = c.courseCode.toLowerCase().startsWith('es') ||
+                            c.courseName.toLowerCase().includes('thể chất') ||
+                            c.courseName.toLowerCase().includes('quốc phòng') ||
+                            c.courseName.toLowerCase().includes('chạy ngắn') ||
+                            c.courseName.toLowerCase().includes('bơi lội');
+        return isCondition ? sum : sum + c.credits;
+      }, 0),
+      completedCredits: completed.reduce((sum, c) => {
+        const isCondition = c.courseCode.toLowerCase().startsWith('es') ||
+                            c.courseName.toLowerCase().includes('thể chất') ||
+                            c.courseName.toLowerCase().includes('quốc phòng') ||
+                            c.courseName.toLowerCase().includes('chạy ngắn') ||
+                            c.courseName.toLowerCase().includes('bơi lội');
+        return isCondition ? sum : sum + c.credits;
+      }, 0),
+      learningCredits: learning.reduce((sum, c) => {
+        const isCondition = c.courseCode.toLowerCase().startsWith('es') ||
+                            c.courseName.toLowerCase().includes('thể chất') ||
+                            c.courseName.toLowerCase().includes('quốc phòng') ||
+                            c.courseName.toLowerCase().includes('chạy ngắn') ||
+                            c.courseName.toLowerCase().includes('bơi lội');
+        return isCondition ? sum : sum + c.credits;
+      }, 0),
+      failedCredits: failed.reduce((sum, c) => {
+        const isCondition = c.courseCode.toLowerCase().startsWith('es') ||
+                            c.courseName.toLowerCase().includes('thể chất') ||
+                            c.courseName.toLowerCase().includes('quốc phòng') ||
+                            c.courseName.toLowerCase().includes('chạy ngắn') ||
+                            c.courseName.toLowerCase().includes('bơi lội');
+        return isCondition ? sum : sum + c.credits;
+      }, 0),
+      missingCredits: missing.reduce((sum, c) => {
+        const isCondition = c.courseCode.toLowerCase().startsWith('es') ||
+                            c.courseName.toLowerCase().includes('thể chất') ||
+                            c.courseName.toLowerCase().includes('quốc phòng') ||
+                            c.courseName.toLowerCase().includes('chạy ngắn') ||
+                            c.courseName.toLowerCase().includes('bơi lội');
+        return isCondition ? sum : sum + c.credits;
+      }, 0),
     };
   }, [curriculumCourses, summaryResult.processedCourses]);
 
@@ -1275,6 +1328,8 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
         }
       ];
       updateCoursesState(mockData);
+      setCurriculumCourses([]); // Xóa khung cũ để tránh hiển thị lệch ở Demo
+      setTargetCredits(144);    // Đưa tín chỉ mục tiêu về 144 chuẩn
       setIsMockDataLoaded(true);
       setIsMobileDrawerOpen(false);
       

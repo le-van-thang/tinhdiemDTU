@@ -154,7 +154,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
   });
 
   const [isEditingTargetCredits, setIsEditingTargetCredits] = useState(false);
-  const [tempTargetCredits, setTempTargetCredits] = useState(targetCredits);
+  const [tempTargetCredits, setTempTargetCredits] = useState<number | ''>(targetCredits);
 
   // Đồng bộ Form State vào localStorage
   useEffect(() => {
@@ -236,7 +236,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
   const [editingCourseId, setEditingCourseId] = useState<string | null>(null);
   const [editCourseCode, setEditCourseCode] = useState('');
   const [editCourseName, setEditCourseName] = useState('');
-  const [editCredits, setEditCredits] = useState<number>(3);
+  const [editCredits, setEditCredits] = useState<number | ''>(3);
 
   // State quản lý Modal Hướng dẫn (Help Modal)
   const [isHelpModalOpen, setIsHelpModalOpen] = useState(false);
@@ -421,7 +421,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
 
   // State quản lý sửa tín chỉ môn học trong Khung chương trình
   const [editingCurriculumCode, setEditingCurriculumCode] = useState<string | null>(null);
-  const [editCurriculumCredits, setEditCurriculumCredits] = useState<number>(3);
+  const [editCurriculumCredits, setEditCurriculumCredits] = useState<number | ''>(3);
 
   // Đồng bộ Khung chương trình vào localStorage
   useEffect(() => {
@@ -493,13 +493,14 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
   };
 
   const handleSaveEditCourse = (courseId: string) => {
-    if (!editCourseCode.trim() || !editCourseName.trim() || editCredits <= 0) {
+    const finalCredits = Math.max(1, Number(editCredits) || 1);
+    if (!editCourseCode.trim() || !editCourseName.trim() || finalCredits <= 0) {
       showToast('Vui lòng nhập đầy đủ thông tin hợp lệ!', 'error');
       return;
     }
     const updated = courses.map(c => 
       c.id === courseId 
-        ? { ...c, courseCode: editCourseCode.trim(), courseName: editCourseName.trim(), credits: editCredits } 
+        ? { ...c, courseCode: editCourseCode.trim(), courseName: editCourseName.trim(), credits: finalCredits } 
         : c
     );
     updateCoursesState(updated);
@@ -510,9 +511,10 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
     setEditingCourseId(null);
   };
 
-  const handleUpdateCurriculumCredits = (courseCode: string, newCredits: number) => {
+  const handleUpdateCurriculumCredits = (courseCode: string, newCredits: number | '') => {
+    const finalCredits = Math.max(1, Number(newCredits) || 1);
     const updated = curriculumCourses.map(cc => 
-      cc.courseCode === courseCode ? { ...cc, credits: newCredits } : cc
+      cc.courseCode === courseCode ? { ...cc, credits: finalCredits } : cc
     );
     setCurriculumCourses(updated);
     const newTotal = updated.reduce((sum, c) => sum + c.credits, 0);
@@ -1612,12 +1614,17 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                 <input 
                   type="number" 
                   value={tempTargetCredits}
-                  onChange={(e) => setTempTargetCredits(Math.max(1, parseInt(e.target.value) || 0))}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setTempTargetCredits(val === '' ? '' : parseInt(val) || 0);
+                  }}
                   className="w-16 bg-slate-950 border border-emerald-500 rounded px-1.5 py-0.5 text-center text-xs font-semibold text-emerald-400 focus:outline-none"
                   autoFocus
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
-                      setTargetCredits(tempTargetCredits);
+                      const finalVal = Math.max(1, Number(tempTargetCredits) || 1);
+                      setTargetCredits(finalVal);
+                      setTempTargetCredits(finalVal);
                       setIsEditingTargetCredits(false);
                     } else if (e.key === 'Escape') {
                       setTempTargetCredits(targetCredits);
@@ -1628,7 +1635,9 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                 />
                 <button 
                   onClick={() => {
-                    setTargetCredits(tempTargetCredits);
+                    const finalVal = Math.max(1, Number(tempTargetCredits) || 1);
+                    setTargetCredits(finalVal);
+                    setTempTargetCredits(finalVal);
                     setIsEditingTargetCredits(false);
                   }}
                   className="p-1 hover:bg-slate-800 rounded text-emerald-400 hover:text-emerald-300 cursor-pointer flex items-center justify-center"
@@ -2819,7 +2828,10 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                                               type="number"
                                               min="1"
                                               value={editCredits}
-                                              onChange={(e) => setEditCredits(Math.max(1, parseInt(e.target.value) || 0))}
+                                              onChange={(e) => {
+                                                const val = e.target.value;
+                                                setEditCredits(val === '' ? '' : parseInt(val) || 0);
+                                              }}
                                               className="w-12 bg-slate-950 border border-slate-800 rounded px-1 py-0.5 text-xs text-white text-center font-bold focus:outline-none focus:border-indigo-500"
                                             />
                                           ) : (
@@ -2996,7 +3008,10 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                                   type="number"
                                   min="1"
                                   value={editCredits}
-                                  onChange={(e) => setEditCredits(Math.max(1, parseInt(e.target.value) || 0))}
+                                  onChange={(e) => {
+                                    const val = e.target.value;
+                                    setEditCredits(val === '' ? '' : parseInt(val) || 0);
+                                  }}
                                   className="w-12 bg-slate-950 border border-slate-800 rounded px-1 py-0.5 text-xs text-white text-center font-bold focus:outline-none focus:border-indigo-500"
                                 />
                               ) : (
@@ -3151,7 +3166,10 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                                   type="number"
                                   min="1"
                                   value={editCurriculumCredits}
-                                  onChange={(e) => setEditCurriculumCredits(Math.max(1, parseInt(e.target.value) || 0))}
+                                  onChange={(e) => {
+                                    const val = e.target.value;
+                                    setEditCurriculumCredits(val === '' ? '' : parseInt(val) || 0);
+                                  }}
                                   className="w-10 bg-slate-950 border border-slate-700 rounded text-center text-xs text-white p-0.5 font-bold"
                                   autoFocus
                                   onKeyDown={(e) => {
@@ -3213,7 +3231,10 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                                   type="number"
                                   min="1"
                                   value={editCurriculumCredits}
-                                  onChange={(e) => setEditCurriculumCredits(Math.max(1, parseInt(e.target.value) || 0))}
+                                  onChange={(e) => {
+                                    const val = e.target.value;
+                                    setEditCurriculumCredits(val === '' ? '' : parseInt(val) || 0);
+                                  }}
                                   className="w-10 bg-slate-950 border border-slate-700 rounded text-center text-xs text-white p-0.5 font-bold"
                                   autoFocus
                                   onKeyDown={(e) => {
@@ -3275,7 +3296,10 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                                   type="number"
                                   min="1"
                                   value={editCurriculumCredits}
-                                  onChange={(e) => setEditCurriculumCredits(Math.max(1, parseInt(e.target.value) || 0))}
+                                  onChange={(e) => {
+                                    const val = e.target.value;
+                                    setEditCurriculumCredits(val === '' ? '' : parseInt(val) || 0);
+                                  }}
                                   className="w-10 bg-slate-950 border border-slate-700 rounded text-center text-xs text-white p-0.5 font-bold"
                                   autoFocus
                                   onKeyDown={(e) => {
@@ -3337,7 +3361,10 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                                   type="number"
                                   min="1"
                                   value={editCurriculumCredits}
-                                  onChange={(e) => setEditCurriculumCredits(Math.max(1, parseInt(e.target.value) || 0))}
+                                  onChange={(e) => {
+                                    const val = e.target.value;
+                                    setEditCurriculumCredits(val === '' ? '' : parseInt(val) || 0);
+                                  }}
                                   className="w-10 bg-slate-950 border border-slate-700 rounded text-center text-xs text-white p-0.5 font-bold"
                                   autoFocus
                                   onKeyDown={(e) => {

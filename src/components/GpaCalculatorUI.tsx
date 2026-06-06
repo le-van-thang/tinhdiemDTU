@@ -447,21 +447,48 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
 
       const parsedCourses: CurriculumCourse[] = [];
       
+      // Nhận diện định dạng: Nếu có các từ khóa trạng thái, đây là định dạng Cây chương trình học (có nhiều môn tự chọn chưa đăng ký)
+      const isTreeFormat = /hoàn tất|chưa học|đang học|đăng ký|hoàn thành|miễn|đạt/i.test(curriculumInputText);
+
       for (let i = 0; i < cells.length; i++) {
         const cell = cells[i];
+        
+        // Nhận diện Mã môn học (Ví dụ: CS 201, CMU-SE 100, MTH 103, DTE-IS 102)
         if (/^[a-zA-Z]{2,6}(\-[a-zA-Z]{1,4})?\s*\d{1,4}$/.test(cell)) {
           if (i + 2 < cells.length) {
             const courseCode = cell.toUpperCase();
             const courseName = cells[i + 1];
-            const credits = parseInt(cells[i + 2], 10);
+            // Bóc tách số tín chỉ (ép kiểu số từ chuỗi ví dụ: "3 Tín Chỉ" -> 3)
+            const credits = parseInt(cells[i + 2].replace(/[^0-9]/g, ''), 10);
 
             if (!isNaN(credits) && credits > 0 && credits <= 15) {
-              if (!parsedCourses.some(c => c.courseCode === courseCode)) {
-                parsedCourses.push({
-                  courseCode,
-                  courseName,
-                  credits
-                });
+              let shouldAdd = true;
+
+              // Đối với định dạng Cây chương trình học: Chỉ thêm môn học nếu nó có nhãn Trạng thái hoạt động
+              if (isTreeFormat) {
+                // Kiểm tra xem ô tiếp theo (ô thứ 4 của hàng) có phải là Trạng thái không
+                const statusCell = cells[i + 3];
+                const nextCellIsCourseCode = statusCell && /^[a-zA-Z]{2,6}(\-[a-zA-Z]{1,4})?\s*\d{1,4}$/.test(statusCell);
+                const isStatusIndicator = statusCell && /hoàn tất|chưa học|đang học|đăng ký|hoàn thành|miễn|đạt|chưa đạt/i.test(statusCell);
+                
+                const hasStatus = statusCell && !nextCellIsCourseCode && isStatusIndicator;
+                
+                if (!hasStatus) {
+                  shouldAdd = false;
+                } else {
+                  // Đã xử lý ô trạng thái ở cells[i + 3], ta nhảy bước thêm 1 ô nữa
+                  i++; 
+                }
+              }
+
+              if (shouldAdd) {
+                if (!parsedCourses.some(c => c.courseCode === courseCode)) {
+                  parsedCourses.push({
+                    courseCode,
+                    courseName,
+                    credits
+                  });
+                }
               }
               i += 2;
             }
@@ -475,7 +502,12 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
         setTargetCredits(totalCredits);
         setIsCurriculumModalOpen(false);
         setCurriculumInputText('');
-        showToast(`Thành công! Đã nhận diện ${parsedCourses.length} môn học. Tổng số tín chỉ tự động cập nhật: ${totalCredits} TC!`, 'success');
+        
+        const formatMsg = isTreeFormat 
+          ? 'Đã phát hiện cây chương trình cá nhân - Hệ thống tự động lọc bỏ các môn tự chọn bạn không đăng ký học.'
+          : 'Đã phát hiện bảng danh sách khung dự kiến - Hệ thống đã nạp toàn bộ các môn.';
+        
+        showToast(`Thành công! Đã nhận diện ${parsedCourses.length} môn học. Tổng số tín chỉ: ${totalCredits} TC. ${formatMsg}`, 'success');
       } else {
         showToast('Không nhận diện được môn học nào hợp lệ. Vui lòng copy đúng bảng khung chương trình.', 'error');
       }

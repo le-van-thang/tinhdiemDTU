@@ -200,6 +200,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
   const [simulatorRemainingCredits, setSimulatorRemainingCredits] = useState<number | ''>(30);
   const [isCustomTarget, setIsCustomTarget] = useState(false);
   const [customTargetGpa, setCustomTargetGpa] = useState('3.50');
+  const [isRemainingCreditsEdited, setIsRemainingCreditsEdited] = useState(false);
 
   // State quản lý Modal Cảnh báo (Xóa toàn bộ/Xóa học kỳ)
   const [confirmModal, setConfirmModal] = useState<{
@@ -555,6 +556,14 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
   // 3. Tính toán các chỉ số lớn dựa trên logic của DTU
   const dtuResult = useMemo(() => calculateDTUGPA(courses), [courses]);
   const summaryResult = useMemo(() => calculateGpaSummary(courses), [courses]);
+
+  // Tự động đồng bộ số tín chỉ còn lại theo chương trình đào tạo
+  useEffect(() => {
+    if (!isRemainingCreditsEdited) {
+      const remaining = targetCredits - dtuResult.accumulatedCredits;
+      setSimulatorRemainingCredits(remaining > 0 ? remaining : 30);
+    }
+  }, [targetCredits, dtuResult.accumulatedCredits, isRemainingCreditsEdited]);
   
   // Tính toán danh sách nợ môn (F) chưa được học lại/thay thế
   const { failedCourses, totalFailedCredits } = useMemo(() => {
@@ -1165,6 +1174,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
         updateCoursesState([]);
         setTargetCredits(144);
         setIsMockDataLoaded(false);
+        setIsRemainingCreditsEdited(false);
         setConfirmModal(prev => ({ ...prev, isOpen: false }));
       }
     });
@@ -1540,6 +1550,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
               } catch (e) {}
               updateCoursesState([]);
               setIsMockDataLoaded(false);
+              setIsRemainingCreditsEdited(false);
             }}
             className="flex-shrink-0 flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold rounded-lg bg-rose-500 hover:bg-rose-600 text-white shadow-md active:scale-95 transition-all cursor-pointer border-0"
           >
@@ -2417,6 +2428,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                   onChange={(e) => {
                     const val = parseInt(e.target.value);
                     setSimulatorRemainingCredits(isNaN(val) ? 0 : val);
+                    setIsRemainingCreditsEdited(true);
                   }}
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500"
                   id="simulator-remaining-credits"

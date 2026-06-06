@@ -1856,17 +1856,18 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                   );
                 })}
 
-                {/* Vùng diện tích Gradient phía dưới GPA Tích lũy */}
-                <path d={chartSvgPath.area} fill="url(#area-gradient)" />
+                {/* Vùng diện tích Gradient phía dưới GPA Tích lũy - không chặn hover */}
+                <path d={chartSvgPath.area} fill="url(#area-gradient)" style={{ pointerEvents: 'none' }} />
 
-                {/* Đường biểu đồ GPA Tích lũy (Line) */}
+                {/* Đường biểu đồ GPA Tích lũy (Line) - không chặn hover */}
                 <path 
                   d={chartSvgPath.line} 
                   fill="none" 
                   stroke="url(#line-gradient)" 
                   strokeWidth="3.5" 
                   strokeLinecap="round"
-                  strokeLinejoin="round" 
+                  strokeLinejoin="round"
+                  style={{ pointerEvents: 'none' }}
                 />
 
                 {/* Các chấm nút (Circles) GPA Tích lũy */}

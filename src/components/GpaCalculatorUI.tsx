@@ -1311,10 +1311,12 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
         try {
           localStorage.removeItem('dtu_gpa_courses');
           localStorage.removeItem('dtu_gpa_target_credits');
+          localStorage.removeItem('dtu_gpa_curriculum');
         } catch (e) {
           console.error('Lỗi khi làm sạch localStorage:', e);
         }
         updateCoursesState([]);
+        setCurriculumCourses([]);
         setTargetCredits(144);
         setIsMockDataLoaded(false);
         setIsRemainingCreditsEdited(false);

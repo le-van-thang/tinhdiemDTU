@@ -22,7 +22,8 @@ import {
   FolderKanban,
   Pencil,
   Check,
-  X
+  X,
+  HelpCircle
 } from 'lucide-react';
 
 interface GpaCalculatorUIProps {
@@ -229,6 +230,25 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
   const [editCourseCode, setEditCourseCode] = useState('');
   const [editCourseName, setEditCourseName] = useState('');
   const [editCredits, setEditCredits] = useState<number>(3);
+
+  // State quản lý Modal Hướng dẫn (Help Modal)
+  const [isHelpModalOpen, setIsHelpModalOpen] = useState(false);
+
+  // State quản lý xem dữ liệu hiện tại có phải là dữ liệu ví dụ mẫu hay không
+  const [isMockDataLoaded, setIsMockDataLoaded] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('dtu_gpa_is_mock') === 'true';
+    } catch (e) {
+      return false;
+    }
+  });
+
+  // Đồng bộ trạng thái isMockDataLoaded vào localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('dtu_gpa_is_mock', isMockDataLoaded.toString());
+    } catch (e) {}
+  }, [isMockDataLoaded]);
 
   // State quản lý sửa tín chỉ môn học trong Khung chương trình
   const [editingCurriculumCode, setEditingCurriculumCode] = useState<string | null>(null);
@@ -625,6 +645,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
     };
 
     updateCoursesState([...courses, newCourse]);
+    setIsMockDataLoaded(false);
 
     // Reset Form (giữ lại năm học và học kỳ để tiện nhập tiếp)
     setCourseCode('');
@@ -782,6 +803,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
 
       if (importedCount > 0) {
         updateCoursesState([...courses, ...newCourses]);
+        setIsMockDataLoaded(false);
         setSmartPasteText('');
         const dupMsg = duplicateCount > 0 ? ` (Đã bỏ qua ${duplicateCount} môn trùng lặp)` : '';
         setSmartPasteStatus({ message: `Hoàn tất! Đã thêm ${importedCount} môn học.${dupMsg}`, type: 'success' });
@@ -931,6 +953,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
         }
       ];
       updateCoursesState(mockData);
+      setIsMockDataLoaded(true);
       
       // Mở tất cả các nhóm học kỳ mặc định
       setExpandedSemesters({
@@ -970,6 +993,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
         }
         updateCoursesState([]);
         setTargetCredits(144);
+        setIsMockDataLoaded(false);
         setConfirmModal(prev => ({ ...prev, isOpen: false }));
       }
     });
@@ -1100,8 +1124,15 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
             <span className="p-2 bg-indigo-500/10 rounded-xl text-indigo-400 border border-indigo-500/20 shadow-inner">
               <GraduationCap className="w-6 h-6" />
             </span>
-            <h1 className="text-2xl font-bold tracking-tight bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">
+            <h1 className="text-2xl font-bold tracking-tight bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent flex items-center gap-2">
               Ứng Dụng Tính Điểm GPA Duy Tân (DTU)
+              <button 
+                onClick={() => setIsHelpModalOpen(true)}
+                className="text-slate-500 hover:text-indigo-400 hover:scale-110 active:scale-95 transition-all cursor-pointer p-1"
+                title="Hướng dẫn sử dụng & Nhập điểm từ myDTU"
+              >
+                <HelpCircle className="w-5 h-5" />
+              </button>
             </h1>
           </div>
           <p className="text-slate-400 text-sm">
@@ -1131,6 +1162,36 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
           </button>
         </div>
       </header>
+
+      {/* CẢNH BÁO DỮ LIỆU MẪU */}
+      {isMockDataLoaded && courses.length > 0 && (
+        <div className="mb-6 bg-indigo-500/10 border border-indigo-500/20 rounded-2xl p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 shadow-lg animate-fadeIn">
+          <div className="flex items-start gap-3">
+            <span className="p-2 bg-indigo-500/20 rounded-xl text-indigo-400 mt-0.5">
+              <Sparkles className="w-5 h-5 animate-pulse" />
+            </span>
+            <div>
+              <h4 className="text-sm font-bold text-white mb-0.5">💡 Bạn đang xem dữ liệu ví dụ mẫu (Demo)</h4>
+              <p className="text-xs text-slate-300">
+                Toàn bộ dữ liệu hiển thị bên dưới chỉ là dữ liệu ví dụ mẫu để bạn chạy thử tính năng.
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => {
+              try {
+                localStorage.removeItem('dtu_gpa_courses');
+              } catch (e) {}
+              updateCoursesState([]);
+              setIsMockDataLoaded(false);
+            }}
+            className="flex-shrink-0 flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold rounded-lg bg-rose-500 hover:bg-rose-600 text-white shadow-md active:scale-95 transition-all cursor-pointer border-0"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+            Xóa dữ liệu mẫu này
+          </button>
+        </div>
+      )}
 
       {/* DASHBOARD METRICS */}
       <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-6">
@@ -1509,6 +1570,14 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
             <h2 className="text-sm font-bold text-white flex items-center gap-2">
               <Plus className="w-4.5 h-4.5 text-indigo-400" />
               Thêm Môn Học
+              <button
+                type="button"
+                onClick={() => setIsHelpModalOpen(true)}
+                className="text-slate-500 hover:text-indigo-400 transition-all p-0.5 rounded cursor-pointer"
+                title="Hướng dẫn nhập điểm từ myDTU"
+              >
+                <HelpCircle className="w-4 h-4" />
+              </button>
             </h2>
             
             <div className="flex bg-slate-950 rounded-lg p-0.5 border border-slate-800">
@@ -1737,6 +1806,17 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
             </form>
           ) : (
             <div className="space-y-3.5 animate-fadeIn">
+              <div className="flex justify-between items-center mb-1">
+                <span className="text-[10px] font-bold text-emerald-450 tracking-wider">TỰ ĐỘNG THÊM MÔN NHANH</span>
+                <button
+                  type="button"
+                  onClick={() => setIsHelpModalOpen(true)}
+                  className="flex items-center gap-1.5 text-[10px] text-slate-300 hover:text-white bg-slate-900 border border-slate-800 hover:border-slate-700 px-2 py-1 rounded-lg transition-all cursor-pointer font-bold"
+                >
+                  <HelpCircle className="w-3.5 h-3.5 text-indigo-400" />
+                  Hướng dẫn copy-paste
+                </button>
+              </div>
               <p className="text-[11px] text-slate-400 leading-relaxed border-l-2 border-emerald-500/50 pl-2">
                 Hãy vào trang <b>Bảng điểm Sinh viên</b> trên myDTU, <b className="text-white">bôi đen toàn bộ bảng từ trên xuống</b>, copy (Ctrl+C) và dán (Ctrl+V) vào ô dưới đây.
               </p>
@@ -2862,6 +2942,132 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
               >
                 <Sparkles className="w-4 h-4" />
                 Phân tích & Cập nhật
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL HƯỚNG DẪN SỬ DỤNG (Help Modal) */}
+      {isHelpModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div 
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm" 
+            onClick={() => setIsHelpModalOpen(false)}
+          ></div>
+          <div className="relative bg-slate-900 border border-slate-700/80 rounded-2xl p-6 w-full max-w-3xl shadow-2xl animate-in fade-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
+            {/* Header */}
+            <div className="flex justify-between items-center pb-3 border-b border-slate-800 mb-4">
+              <h3 className="text-base font-bold text-white uppercase tracking-wide flex items-center gap-2">
+                <HelpCircle className="w-5 h-5 text-indigo-400" />
+                Hướng Dẫn Sử Dụng & Nhập Điểm Từ myDTU
+              </h3>
+              <button 
+                onClick={() => setIsHelpModalOpen(false)}
+                className="text-slate-500 hover:text-white hover:bg-slate-800 p-1.5 rounded-lg transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Scrollable Content */}
+            <div className="space-y-6 overflow-y-auto pr-2 flex-grow text-xs leading-relaxed text-slate-300">
+              
+              <div className="space-y-2">
+                <span className="text-[13px] font-extrabold text-white block">
+                  CÁC BƯỚC NHẬP ĐIỂM TỰ ĐỘNG BẰNG COPY - PASTE:
+                </span>
+                <ol className="list-decimal list-inside space-y-3 pl-1">
+                  <li>
+                    Đăng nhập vào cổng thông tin đào tạo <a href="https://mydtu.duytan.edu.vn" target="_blank" rel="noopener noreferrer" className="text-indigo-400 hover:underline">myDTU của bạn</a>.
+                  </li>
+                  <li>
+                    Vào trang <strong>Bảng điểm học tập cá nhân</strong> (Bảng điểm hiển thị tất cả các học kỳ có điểm số của bạn).
+                  </li>
+                  <li>
+                    Bắt đầu bôi đen (quét khối) từ <strong>Mã Môn / Tên Môn đầu tiên</strong> kéo dài xuống đến hết bảng điểm (như ảnh minh họa bên dưới).
+                  </li>
+                </ol>
+              </div>
+
+              {/* Ảnh bôi đen bảng điểm myDTU */}
+              <div className="space-y-2.5">
+                <span className="text-[10px] font-bold text-slate-400 tracking-wider block">
+                  HÌNH 1: QUÉT KHỐI BẢNG ĐIỂM TRÊN MYDTU (VÍ DỤ CẢ NĂM 1 VÀ NĂM 2)
+                </span>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-950/40 p-3 rounded-xl border border-slate-800/60">
+                  <div className="space-y-1.5">
+                    <span className="text-[10px] text-slate-500 font-bold block text-center uppercase">1. Phần đầu bảng điểm (Bắt đầu quét)</span>
+                    <img 
+                      src="/guide_step1.png" 
+                      alt="Quét bảng điểm myDTU đầu" 
+                      className="rounded-lg border border-slate-800/80 w-full object-contain shadow-md" 
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <span className="text-[10px] text-slate-500 font-bold block text-center uppercase">2. Phần cuối bảng điểm (Quét hết bảng)</span>
+                    <img 
+                      src="/guide_step2.png" 
+                      alt="Quét bảng điểm myDTU cuối" 
+                      className="rounded-lg border border-slate-800/80 w-full object-contain shadow-md" 
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <ol className="list-decimal list-inside space-y-3 pl-1" start={4}>
+                  <li>
+                    Nhấn tổ hợp phím <strong>Ctrl + C</strong> (hoặc nhấn chuột phải và chọn <strong>Sao chép</strong>).
+                  </li>
+                  <li>
+                    Quay lại ứng dụng này, ở khung <strong>Thêm Môn Học</strong>, nhấp chọn thẻ <strong>"Dán từ myDTU"</strong>.
+                  </li>
+                  <li>
+                    Click chuột vào ô nhập và nhấn <strong>Ctrl + V</strong> (hoặc nhấn chuột phải và chọn <strong>Dán</strong>) (như hình minh họa bên dưới).
+                  </li>
+                </ol>
+              </div>
+
+              {/* Ảnh dán vào ứng dụng */}
+              <div className="space-y-2.5">
+                <span className="text-[10px] font-bold text-slate-400 tracking-wider block">
+                  HÌNH 2: DÂN VÀO ỨNG DỤNG VÀ NHẤN "PHÂN TÍCH & TỰ ĐỘNG THÊM"
+                </span>
+                <div className="bg-slate-950/40 p-3 rounded-xl border border-slate-800/60 max-w-lg mx-auto">
+                  <img 
+                    src="/guide_step3.png" 
+                    alt="Dán dữ liệu và phân tích" 
+                    className="rounded-lg border border-slate-800/80 w-full object-contain shadow-md" 
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <ol className="list-decimal list-inside space-y-3 pl-1" start={7}>
+                  <li>
+                    Nhấn nút <strong>"Phân tích & Tự Động Thêm"</strong>. Ứng dụng sẽ tự động nhận diện tất cả môn học, số tín chỉ, điểm chữ và phân bổ chính xác theo từng Năm học & Học kỳ hoàn toàn tự động!
+                  </li>
+                </ol>
+              </div>
+
+              <div className="bg-indigo-500/5 border border-indigo-500/10 rounded-xl p-3.5 text-[11px] space-y-1">
+                <span className="font-bold text-white block">💡 LƯU Ý HỮU ÍCH:</span>
+                <ul className="list-disc list-inside space-y-1 text-slate-450 pl-1">
+                  <li>Ứng dụng hỗ trợ tự động phát hiện và gộp các môn học cải thiện / học lại dựa trên mã môn và số tín chỉ.</li>
+                  <li>Bạn có thể nhấp chọn biểu tượng <Pencil className="w-3.5 h-3.5 inline text-indigo-400 mx-0.5" /> ngay bên cạnh điểm chữ trong bảng điểm hoặc tên môn học để sửa thông tin trực tiếp bất cứ lúc nào.</li>
+                </ul>
+              </div>
+
+            </div>
+
+            {/* Footer */}
+            <div className="flex justify-end pt-4 border-t border-slate-800 mt-4">
+              <button 
+                onClick={() => setIsHelpModalOpen(false)}
+                className="px-5 py-2 rounded-xl text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-500 shadow-lg shadow-indigo-900/20 transition-all active:scale-95 cursor-pointer"
+              >
+                Đã hiểu, đóng hướng dẫn
               </button>
             </div>
           </div>

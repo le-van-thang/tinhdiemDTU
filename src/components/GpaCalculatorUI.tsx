@@ -1998,11 +1998,13 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                   style={{ 
                     left: mousePos.x,
                     top: mousePos.y,
-                    transform: 'translate(-50%, calc(-100% - 12px))'
+                    transform: mousePos.y < 100 ? 'translate(-50%, 12px)' : 'translate(-50%, calc(-100% - 12px))'
                   }}
                 >
-                  {/* Mũi tên nhỏ phía dưới tooltip */}
-                  <div className="absolute left-1/2 -translate-x-1/2 -bottom-1.5 w-3 h-3 bg-slate-950/95 border-r border-b border-indigo-500/40 rotate-45" />
+                  {/* Mũi tên nhỏ phía dưới hoặc phía trên tooltip */}
+                  <div className={`absolute left-1/2 -translate-x-1/2 w-3 h-3 bg-slate-950/95 border-indigo-500/40 rotate-45 ${
+                    mousePos.y < 100 ? '-top-1.5 border-l border-t' : '-bottom-1.5 border-r border-b'
+                  }`} />
                   <span className="font-bold text-indigo-400 block mb-1.5 text-center border-b border-slate-800/80 pb-1.5">{hoveredPoint.label}</span>
                   <div className="space-y-1.5">
                     <div className="flex justify-between items-center">
@@ -2699,7 +2701,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                           >
                             <div className="flex items-center gap-1.5 flex-wrap">
                               <span className="font-black text-xs text-indigo-200 bg-indigo-600/35 px-2 py-0.5 rounded-lg border border-indigo-500/30 shadow-inner whitespace-nowrap">
-                                {sem}
+                                {sem} (Năm học {year})
                               </span>
                               
                               {/* Điểm GPA Học kỳ */}

@@ -27,7 +27,8 @@ import {
   MessageSquare,
   Mail,
   Paperclip,
-  Upload
+  Upload,
+  Database
 } from 'lucide-react';
 
 interface GpaCalculatorUIProps {
@@ -1463,7 +1464,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
               className="flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-lg bg-indigo-600 hover:bg-indigo-500 active:scale-95 transition-all shadow-md shadow-indigo-600/20 border border-indigo-400/20 cursor-pointer"
               id="btn-load-mock"
             >
-              <Sparkles className="w-3.5 h-3.5" />
+              <Database className="w-3.5 h-3.5" />
               Tải Dữ Liệu Mẫu (Nhiều Kỳ)
             </button>
           )}
@@ -1494,7 +1495,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
         <div className="mb-6 bg-indigo-500/10 border border-indigo-500/20 rounded-2xl p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 shadow-lg animate-fadeIn">
           <div className="flex items-start gap-3">
             <span className="p-2 bg-indigo-500/20 rounded-xl text-indigo-400 mt-0.5">
-              <Sparkles className="w-5 h-5 animate-pulse" />
+              <Database className="w-5 h-5 animate-pulse" />
             </span>
             <div>
               <h4 className="text-sm font-bold text-white mb-0.5">💡 Bạn đang xem dữ liệu ví dụ mẫu (Demo)</h4>
@@ -2450,12 +2451,12 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                 sortedAcademicYears.map(year => (
                   <div key={year} className="space-y-3">
                     {/* Label Năm Học */}
-                    <div className="flex items-center gap-2 px-1">
+                    <div className="flex items-center gap-2 px-1 pt-2">
                       <Calendar className="w-4 h-4 text-indigo-400" />
-                      <span className="text-xs font-extrabold text-slate-300 tracking-wider">
+                      <span className="text-xs font-extrabold text-indigo-400 tracking-wider bg-indigo-500/10 px-2.5 py-1 rounded-md border border-indigo-500/20 shadow-inner">
                         NĂM HỌC {year}
                       </span>
-                      <div className="h-px bg-slate-800 flex-grow ml-2"></div>
+                      <div className="h-[2px] bg-gradient-to-r from-indigo-500/40 to-transparent flex-grow ml-2"></div>
                     </div>
 
                     {/* Accordion từng học kỳ trong năm học */}
@@ -2476,7 +2477,9 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                             className="flex items-center justify-between px-4 py-3 bg-slate-900/60 hover:bg-slate-900/80 cursor-pointer select-none border-b border-slate-800/40"
                           >
                             <div className="flex items-center gap-2 flex-wrap">
-                              <span className="font-bold text-xs text-white mr-1">{sem}</span>
+                              <span className="font-black text-xs text-indigo-200 bg-indigo-600/35 px-2.5 py-1 rounded-lg border border-indigo-500/30 mr-1 shadow-inner">
+                                {sem}
+                              </span>
                               
                               {/* Điểm GPA Học kỳ */}
                               <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-950 font-bold border border-slate-800/60 text-emerald-400">

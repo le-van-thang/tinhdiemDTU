@@ -1976,18 +1976,19 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
         )}
       </section>
 
-      {/* MAIN LAYOUT - luôn 2 cột cạnh nhau: form 1/3, bảng 2/3 */}
-      <div className="grid grid-cols-3 sm:grid-cols-12 gap-3 sm:gap-6">
+      {/* MAIN LAYOUT - 2/5 form + 3/5 bảng trên mobile; 4/12 + 8/12 trên tablet+ */}
+      <div className="grid grid-cols-5 sm:grid-cols-12 gap-3 sm:gap-6">
         
-        {/* LEFT COLUMN: FORM & SIMULATOR – 1/3 width on mobile, 4/12 on desktop */}
-        <div className="col-span-1 sm:col-span-4 space-y-3 sm:space-y-6">
+        {/* LEFT COLUMN: FORM - 2/5 width on mobile, 4/12 on sm+ */}
+        <div className="col-span-2 sm:col-span-4 space-y-3 sm:space-y-6 min-w-0">
           
           {/* QUICK ADD FORM */}
           <div className="bg-slate-900/50 backdrop-blur-md border border-slate-800/80 rounded-xl sm:rounded-2xl p-3 sm:p-5 shadow-md">
-          <div className="flex items-center justify-between mb-3 sm:mb-4 pb-2 sm:pb-2.5 border-b border-slate-800/80">
+          <div className="flex items-center justify-between mb-2 sm:mb-4 pb-2 sm:pb-2.5 border-b border-slate-800/80">
             <h2 className="text-xs sm:text-sm font-bold text-white flex items-center gap-1.5">
               <Plus className="w-4.5 h-4.5 text-indigo-400" />
-              Thêm Môn Học
+              <span className="hidden sm:inline">Thêm Môn Học</span>
+              <span className="sm:hidden">Nhập Môn</span>
               <button
                 type="button"
                 onClick={() => setIsHelpModalOpen(true)}
@@ -1998,7 +1999,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
               </button>
             </h2>
             
-            <div className="flex bg-slate-950 rounded-lg p-0.5 border border-slate-800">
+            <div className="flex bg-slate-950 rounded-lg p-0.5 border border-slate-800 shrink-0">
               <button
                 onClick={() => setAddMode('manual')}
                 className={`px-1.5 sm:px-3 py-1 text-[9px] sm:text-[10px] font-bold rounded-md transition-all ${addMode === 'manual' ? 'bg-indigo-500 text-white shadow-sm' : 'text-slate-400 hover:text-white'}`}
@@ -2448,8 +2449,8 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
         </div>
         </div>
 
-        {/* RIGHT COLUMN: COURSE LIST – 2/3 width on mobile, 8/12 on desktop */}
-        <div className="col-span-2 sm:col-span-8 space-y-4 min-w-0">
+        {/* RIGHT COLUMN: TABLE - 3/5 width on mobile, 8/12 on sm+ */}
+        <div className="col-span-3 sm:col-span-8 space-y-4 min-w-0 overflow-hidden">
           
           {/* SEARCH, CATEGORIES, AND VIEW MODES */}
           <div className="flex flex-col gap-3 justify-between items-start bg-slate-900/25 backdrop-blur-md border border-slate-800/80 p-3 sm:p-4 rounded-xl shadow-inner">
@@ -2544,11 +2545,11 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                   <div key={year} className="space-y-3">
                     {/* Label Năm Học */}
                     <div className="flex items-center gap-2 px-1 pt-2">
-                      <Calendar className="w-4 h-4 text-indigo-400" />
-                      <span className="text-xs font-extrabold text-indigo-400 tracking-wider bg-indigo-500/10 px-2.5 py-1 rounded-md border border-indigo-500/20 shadow-inner">
+                      <Calendar className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+                      <span className="text-[10px] sm:text-xs font-extrabold text-indigo-400 tracking-wider bg-indigo-500/10 px-2 py-0.5 rounded-md border border-indigo-500/20 shadow-inner whitespace-nowrap">
                         NĂM HỌC {year}
                       </span>
-                      <div className="h-[2px] bg-gradient-to-r from-indigo-500/40 to-transparent flex-grow ml-2"></div>
+                      <div className="h-[2px] bg-gradient-to-r from-indigo-500/40 to-transparent flex-grow ml-1"></div>
                     </div>
 
                     {/* Accordion từng học kỳ trong năm học */}
@@ -2564,23 +2565,23 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                       return (
                         <div key={sem} className="bg-slate-900/40 border border-slate-800/80 rounded-xl overflow-hidden shadow-sm">
                           {/* Accordion Header */}
-                          <div 
+                      <div 
                             onClick={() => toggleSemester(semKey)}
-                            className="flex items-center justify-between px-4 py-3 bg-slate-900/60 hover:bg-slate-900/80 cursor-pointer select-none border-b border-slate-800/40"
+                            className="flex items-center justify-between px-3 sm:px-4 py-2.5 sm:py-3 bg-slate-900/60 hover:bg-slate-900/80 cursor-pointer select-none border-b border-slate-800/40"
                           >
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <span className="font-black text-xs text-indigo-200 bg-indigo-600/35 px-2.5 py-1 rounded-lg border border-indigo-500/30 mr-1 shadow-inner">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="font-black text-xs text-indigo-200 bg-indigo-600/35 px-2 py-0.5 rounded-lg border border-indigo-500/30 shadow-inner whitespace-nowrap">
                                 {sem}
                               </span>
                               
                               {/* Điểm GPA Học kỳ */}
-                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-950 font-bold border border-slate-800/60 text-emerald-400">
-                                GPA Kỳ: {semGPA.toFixed(2)}
+                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-950 font-bold border border-slate-800/60 text-emerald-400 whitespace-nowrap">
+                                GPA: {semGPA.toFixed(2)}
                               </span>
 
                               {/* Tổng số tín chỉ kỳ này */}
-                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-950 font-semibold border border-slate-800/60 text-slate-400">
-                                {semCredits} Tín chỉ
+                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-950 font-semibold border border-slate-800/60 text-slate-400 whitespace-nowrap hidden sm:inline">
+                                {semCredits} TC
                               </span>
 
                               {/* Đánh giá học lực riêng cho kỳ */}
@@ -2678,8 +2679,8 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                                               className="w-full bg-slate-950 border border-slate-800 rounded px-1.5 py-0.5 text-xs text-white focus:outline-none focus:border-indigo-500"
                                             />
                                           ) : (
-                                            <div>
-                                              <span className="font-semibold text-slate-200">{pc.courseName}</span>
+                                            <div className="min-w-0">
+                                              <span className="font-semibold text-slate-200 text-xs leading-tight line-clamp-2">{pc.courseName}</span>
                                               {replacedCourse && (
                                                 <div className="text-[9px] text-indigo-400 mt-0.5 flex items-center gap-1 font-semibold">
                                                   <RefreshCw className="w-2.5 h-2.5" />

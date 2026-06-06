@@ -286,6 +286,17 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
   const [isSendingBug, setIsSendingBug] = useState(false);
   const [isSendingSuggestion, setIsSendingSuggestion] = useState(false);
 
+  // State quản lý Hover vẽ Tooltip biểu đồ
+  const [hoveredPoint, setHoveredPoint] = useState<{
+    x: number;
+    y: number;
+    label: string;
+    semesterGpa: number;
+    cumulativeGpa: number;
+    diffGpa?: number;
+    diffPercent?: string;
+  } | null>(null);
+
   // Helper chuyển đổi ảnh thành PNG blob để copy vào clipboard (Luôn đi qua canvas để chuẩn hóa định dạng)
   const convertToPngBlob = (file: File): Promise<Blob | null> => {
     return new Promise((resolve) => {
@@ -1790,8 +1801,14 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                 })}
 
                 {/* Vẽ các cột GPA Học kỳ trước (nằm phía dưới đường line) */}
-                {chartSvgPath.points.map((p) => {
+                {chartSvgPath.points.map((p, idx) => {
                   const barHeight = chartSvgPath.yBase - p.ySem;
+                  const prevPoint = idx > 0 ? chartSvgPath.points[idx - 1].point : null;
+                  const diffGpa = prevPoint ? p.point.cumulativeGpa - prevPoint.cumulativeGpa : undefined;
+                  const diffPercent = prevPoint && prevPoint.cumulativeGpa > 0
+                    ? `${(diffGpa! >= 0 ? '+' : '')}${((diffGpa! / prevPoint.cumulativeGpa) * 100).toFixed(1)}%`
+                    : undefined;
+
                   return (
                     <g key={`bar-${p.point.semesterId}`}>
                       <rect 
@@ -1805,6 +1822,18 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                         strokeOpacity="0.25"
                         rx="3.5" 
                         className="transition-all hover:opacity-80 cursor-pointer"
+                        onMouseEnter={() => {
+                          setHoveredPoint({
+                            x: p.x,
+                            y: p.ySem,
+                            label: p.point.label,
+                            semesterGpa: p.point.semesterGpa,
+                            cumulativeGpa: p.point.cumulativeGpa,
+                            diffGpa,
+                            diffPercent
+                          });
+                        }}
+                        onMouseLeave={() => setHoveredPoint(null)}
                       />
                       {/* Trị số GPA Học kỳ nằm phía trên cột hoặc bên trong */}
                       <text 
@@ -1836,43 +1865,103 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                 />
 
                 {/* Các chấm nút (Circles) GPA Tích lũy */}
-                {chartSvgPath.points.map((p) => (
-                  <g key={`point-${p.point.semesterId}`}>
-                    {/* Circle nút tròn */}
-                    <circle 
-                      cx={p.x} 
-                      cy={p.yCum} 
-                      r="5.5" 
-                      fill="#4f46e5" 
-                      stroke="#ffffff" 
-                      strokeWidth="2.5" 
-                      className="cursor-pointer hover:r-7 transition-all duration-150"
-                    />
-                    {/* Nhãn điểm số ở trên nút */}
-                    <text 
-                      x={p.x} 
-                      y={p.yCum - 10} 
-                      textAnchor="middle" 
-                      fill="#ffffff" 
-                      fontSize="9.5" 
-                      fontWeight="extrabold"
-                    >
-                      {p.point.cumulativeGpa.toFixed(2)}
-                    </text>
-                    {/* Nhãn học kỳ ở trục X */}
-                    <text 
-                      x={p.x} 
-                      y="172" 
-                      textAnchor="middle" 
-                      fill="#64748b" 
-                      fontSize="9" 
-                      fontWeight="600"
-                    >
-                      {p.point.label}
-                    </text>
-                  </g>
-                ))}
+                {chartSvgPath.points.map((p, idx) => {
+                  const prevPoint = idx > 0 ? chartSvgPath.points[idx - 1].point : null;
+                  const diffGpa = prevPoint ? p.point.cumulativeGpa - prevPoint.cumulativeGpa : undefined;
+                  const diffPercent = prevPoint && prevPoint.cumulativeGpa > 0
+                    ? `${(diffGpa! >= 0 ? '+' : '')}${((diffGpa! / prevPoint.cumulativeGpa) * 100).toFixed(1)}%`
+                    : undefined;
+
+                  return (
+                    <g key={`point-${p.point.semesterId}`}>
+                      {/* Circle nút tròn */}
+                      <circle 
+                        cx={p.x} 
+                        cy={p.yCum} 
+                        r="5.5" 
+                        fill="#4f46e5" 
+                        stroke="#ffffff" 
+                        strokeWidth="2.5" 
+                        className="cursor-pointer hover:r-7 transition-all duration-150"
+                        onMouseEnter={() => {
+                          setHoveredPoint({
+                            x: p.x,
+                            y: p.yCum,
+                            label: p.point.label,
+                            semesterGpa: p.point.semesterGpa,
+                            cumulativeGpa: p.point.cumulativeGpa,
+                            diffGpa,
+                            diffPercent
+                          });
+                        }}
+                        onMouseLeave={() => setHoveredPoint(null)}
+                      />
+                      {/* Nhãn điểm số ở trên nút */}
+                      <text 
+                        x={p.x} 
+                        y={p.yCum - 10} 
+                        textAnchor="middle" 
+                        fill="#ffffff" 
+                        fontSize="9.5" 
+                        fontWeight="extrabold"
+                      >
+                        {p.point.cumulativeGpa.toFixed(2)}
+                      </text>
+                      {/* Nhãn học kỳ ở trục X */}
+                      <text 
+                        x={p.x} 
+                        y="172" 
+                        textAnchor="middle" 
+                        fill="#64748b" 
+                        fontSize="9" 
+                        fontWeight="600"
+                      >
+                        {p.point.label}
+                      </text>
+                    </g>
+                  );
+                })}
               </svg>
+
+              {/* FLOATING TOOLTIP */}
+              {hoveredPoint && (
+                <div 
+                  className="absolute bg-slate-950/95 border border-indigo-500/35 rounded-xl p-2.5 shadow-2xl backdrop-blur-md text-[11px] pointer-events-none transition-all duration-100 z-35 w-48 text-left animate-fadeIn"
+                  style={{ 
+                    left: `${(hoveredPoint.x / 560) * 100}%`,
+                    top: `${(hoveredPoint.y / 180) * 100}%`,
+                    transform: 'translate(-50%, -100%) translateY(-10px)'
+                  }}
+                >
+                  <span className="font-bold text-indigo-400 block mb-1.5 text-center border-b border-slate-800/80 pb-1">{hoveredPoint.label}</span>
+                  <div className="space-y-1">
+                    <div className="flex justify-between items-center">
+                      <span className="text-slate-400">GPA Học kỳ:</span>
+                      <span className="font-bold text-emerald-400">{hoveredPoint.semesterGpa.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-slate-400">GPA Tích lũy:</span>
+                      <span className="font-bold text-white">{hoveredPoint.cumulativeGpa.toFixed(2)}</span>
+                    </div>
+                    {hoveredPoint.diffGpa !== undefined && (
+                      <div className="pt-1.5 mt-1 border-t border-slate-800/60 flex items-center justify-between font-bold">
+                        <span className="text-slate-400">Biến động:</span>
+                        {hoveredPoint.diffGpa > 0 ? (
+                          <span className="text-emerald-400">
+                            +{hoveredPoint.diffGpa.toFixed(2)} ({hoveredPoint.diffPercent})
+                          </span>
+                        ) : hoveredPoint.diffGpa < 0 ? (
+                          <span className="text-rose-400">
+                            -{Math.abs(hoveredPoint.diffGpa).toFixed(2)} ({hoveredPoint.diffPercent})
+                          </span>
+                        ) : (
+                          <span className="text-slate-400">➖ Không đổi</span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         ) : (

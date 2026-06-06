@@ -455,43 +455,55 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
         
         // Nhận diện Mã môn học (Ví dụ: CS 201, CMU-SE 100, MTH 103, DTE-IS 102)
         if (/^[a-zA-Z]{2,6}(\-[a-zA-Z]{1,4})?\s*\d{1,4}$/.test(cell)) {
-          if (i + 2 < cells.length) {
+          if (i + 1 < cells.length) {
             const courseCode = cell.toUpperCase();
             const courseName = cells[i + 1];
-            // Bóc tách số tín chỉ (ép kiểu số từ chuỗi ví dụ: "3 Tín Chỉ" -> 3)
-            const credits = parseInt(cells[i + 2].replace(/[^0-9]/g, ''), 10);
+            
+            let credits = 3;
+            let hasStatus = false;
+            let foundCredits = false;
+            let nextCourseIndex = cells.length; // Mặc định nhảy tới cuối nếu đây là môn cuối cùng
 
-            if (!isNaN(credits) && credits > 0 && credits <= 15) {
-              let shouldAdd = true;
-
-              // Đối với định dạng Cây chương trình học: Chỉ thêm môn học nếu nó có nhãn Trạng thái hoạt động
-              if (isTreeFormat) {
-                // Kiểm tra xem ô tiếp theo (ô thứ 4 của hàng) có phải là Trạng thái không
-                const statusCell = cells[i + 3];
-                const nextCellIsCourseCode = statusCell && /^[a-zA-Z]{2,6}(\-[a-zA-Z]{1,4})?\s*\d{1,4}$/.test(statusCell);
-                const isStatusIndicator = statusCell && /hoàn tất|chưa học|đang học|đăng ký|hoàn thành|miễn|đạt|chưa đạt/i.test(statusCell);
-                
-                const hasStatus = statusCell && !nextCellIsCourseCode && isStatusIndicator;
-                
-                if (!hasStatus) {
-                  shouldAdd = false;
-                } else {
-                  // Đã xử lý ô trạng thái ở cells[i + 3], ta nhảy bước thêm 1 ô nữa
-                  i++; 
-                }
+            // Tìm kiếm tín chỉ và trạng thái ở các ô tiếp theo trước khi gặp mã môn khác
+            for (let j = i + 2; j < cells.length; j++) {
+              const cellVal = cells[j];
+              
+              // Nếu gặp mã môn tiếp theo thì dừng tìm kiếm ở đây
+              if (/^[a-zA-Z]{2,6}(\-[a-zA-Z]{1,4})?\s*\d{1,4}$/.test(cellVal)) {
+                nextCourseIndex = j - 1;
+                break;
               }
 
-              if (shouldAdd) {
-                if (!parsedCourses.some(c => c.courseCode === courseCode)) {
-                  parsedCourses.push({
-                    courseCode,
-                    courseName,
-                    credits
-                  });
-                }
+              // Nhận diện số tín chỉ
+              const parsedNum = parseInt(cellVal.replace(/[^0-9]/g, ''), 10);
+              if (!isNaN(parsedNum) && parsedNum > 0 && parsedNum <= 15 && !foundCredits) {
+                credits = parsedNum;
+                foundCredits = true;
               }
-              i += 2;
+
+              // Nhận diện trạng thái hoạt động
+              if (/hoàn tất|chưa học|đang học|đăng ký|hoàn thành|miễn|đạt|chưa đạt/i.test(cellVal)) {
+                hasStatus = true;
+              }
             }
+
+            let shouldAdd = true;
+            if (isTreeFormat && !hasStatus) {
+              shouldAdd = false;
+            }
+
+            if (shouldAdd) {
+              if (!parsedCourses.some(c => c.courseCode === courseCode)) {
+                parsedCourses.push({
+                  courseCode,
+                  courseName,
+                  credits
+                });
+              }
+            }
+            
+            // Nhảy tới vị trí cuối phần thông tin của môn hiện tại để tiếp tục
+            i = nextCourseIndex;
           }
         }
       }

@@ -240,6 +240,19 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
   // State quản lý Modal Hướng dẫn (Help Modal)
   const [isHelpModalOpen, setIsHelpModalOpen] = useState(false);
 
+  // State quản lý gợi ý nhập tín chỉ lần đầu tiên
+  const [showCreditsHint, setShowCreditsHint] = useState<boolean>(() => {
+    try {
+      const saved = localStorage.getItem('dtu_gpa_dismissed_credits_hint');
+      return saved !== 'true';
+    } catch (e) {
+      return true;
+    }
+  });
+
+  // State quản lý tab hiển thị trên mobile ('transcript' | 'add' | 'simulator')
+  const [activeMobileTab, setActiveMobileTab] = useState<'transcript' | 'add' | 'simulator'>('transcript');
+
   // State quản lý xem dữ liệu hiện tại có phải là dữ liệu ví dụ mẫu hay không
   const [isMockDataLoaded, setIsMockDataLoaded] = useState<boolean>(() => {
     try {
@@ -800,6 +813,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
 
     updateCoursesState([...courses, newCourse]);
     setIsMockDataLoaded(false);
+    setActiveMobileTab('transcript');
 
     // Reset Form (giữ lại năm học và học kỳ để tiện nhập tiếp)
     setCourseCode('');
@@ -961,6 +975,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
         setSmartPasteText('');
         const dupMsg = duplicateCount > 0 ? ` (Đã bỏ qua ${duplicateCount} môn trùng lặp)` : '';
         setSmartPasteStatus({ message: `Hoàn tất! Đã thêm ${importedCount} môn học.${dupMsg}`, type: 'success' });
+        setActiveMobileTab('transcript');
         
         setTimeout(() => setSmartPasteStatus({ message: '', type: 'idle' }), 5000);
       } else if (duplicateCount > 0) {
@@ -1108,6 +1123,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
       ];
       updateCoursesState(mockData);
       setIsMockDataLoaded(true);
+      setActiveMobileTab('transcript');
       
       // Mở tất cả các nhóm học kỳ mặc định
       setExpandedSemesters({
@@ -1652,6 +1668,30 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
               Khung chương trình
             </button>
           </div>
+
+          {showCreditsHint && courses.length === 0 && curriculumCourses.length === 0 && (
+            <div className="mt-3 p-2 bg-indigo-500/10 border border-indigo-500/20 rounded-xl relative animate-fadeIn">
+              <button 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowCreditsHint(false);
+                  try {
+                    localStorage.setItem('dtu_gpa_dismissed_credits_hint', 'true');
+                  } catch (err) {}
+                }}
+                className="absolute top-1 right-1 text-slate-500 hover:text-indigo-400 transition cursor-pointer p-0.5"
+                title="Đóng thông báo"
+              >
+                <X className="w-2.5 h-2.5" />
+              </button>
+              <div className="flex gap-1.5 items-start pr-3">
+                <Sparkles className="w-3.5 h-3.5 text-indigo-400 shrink-0 mt-0.5 animate-pulse" />
+                <p className="text-[10px] leading-normal text-slate-300">
+                  👋 <strong>Mẹo:</strong> Nhấp vào <strong>Khung chương trình</strong> ở dưới để dán khung từ myDTU hoặc nhập trực tiếp tổng tín chỉ ngành của bạn để app tự động thiết lập nhanh chóng nhé!
+                </p>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* RETAKES CARD */}
@@ -1977,14 +2017,55 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
         )}
       </section>
 
-      {/* MAIN LAYOUT - 2/5 form + 3/5 bảng trên mobile; 4/12 + 8/12 trên tablet+ */}
-      <div className="grid grid-cols-5 sm:grid-cols-12 gap-3 sm:gap-6">
+      {/* MOBILE TAB NAVIGATION (Visible only on mobile) */}
+      <div className="sm:hidden flex items-center justify-between p-1 bg-slate-900/80 border border-slate-800 backdrop-blur-md rounded-xl mb-4 gap-1">
+        <button
+          onClick={() => setActiveMobileTab('transcript')}
+          className={`flex-1 flex flex-col items-center gap-1 py-1.5 rounded-lg text-[10px] font-bold transition-all ${
+            activeMobileTab === 'transcript' 
+              ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20' 
+              : 'text-slate-400 hover:text-slate-200'
+          }`}
+        >
+          <ClipboardList className="w-4 h-4" />
+          Bảng điểm
+        </button>
+        <button
+          onClick={() => setActiveMobileTab('add')}
+          className={`flex-1 flex flex-col items-center gap-1 py-1.5 rounded-lg text-[10px] font-bold transition-all ${
+            activeMobileTab === 'add' 
+              ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20' 
+              : 'text-slate-400 hover:text-slate-200'
+          }`}
+        >
+          <Plus className="w-4 h-4" />
+          Nhập điểm
+        </button>
+        <button
+          onClick={() => setActiveMobileTab('simulator')}
+          className={`flex-1 flex flex-col items-center gap-1 py-1.5 rounded-lg text-[10px] font-bold transition-all ${
+            activeMobileTab === 'simulator' 
+              ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20' 
+              : 'text-slate-400 hover:text-slate-200'
+          }`}
+        >
+          <TrendingUp className="w-4 h-4" />
+          Giả lập GPA
+        </button>
+      </div>
+
+      {/* MAIN LAYOUT - 12 columns on desktop, active tab takes 100% on mobile */}
+      <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 sm:gap-6">
         
-        {/* LEFT COLUMN: FORM - 2/5 width on mobile, 4/12 on sm+ */}
-        <div className="col-span-2 sm:col-span-4 space-y-3 sm:space-y-6 min-w-0">
+        {/* LEFT COLUMN: FORM & SIMULATOR */}
+        <div className={`sm:col-span-4 space-y-3 sm:space-y-6 min-w-0 ${
+          activeMobileTab === 'transcript' ? 'hidden sm:block' : 'block'
+        }`}>
           
           {/* QUICK ADD FORM */}
-          <div className="bg-slate-900/50 backdrop-blur-md border border-slate-800/80 rounded-xl sm:rounded-2xl p-3 sm:p-5 shadow-md">
+          <div className={`bg-slate-900/50 backdrop-blur-md border border-slate-800/80 rounded-xl sm:rounded-2xl p-3 sm:p-5 shadow-md ${
+            activeMobileTab === 'add' ? 'block' : 'hidden sm:block'
+          }`}>
           {/* Form Header: luôn 2 dòng - title trên, mode tabs dưới */}
           <div className="flex flex-col gap-2.5 mb-3 pb-3 border-b border-slate-800/80">
             {/* Dòng 1: Title + Help */}
@@ -2290,7 +2371,9 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
           </div>
 
           {/* TARGET GPA SIMULATOR PANEL */}
-          <div className="bg-slate-900/50 backdrop-blur-md border border-slate-800/80 rounded-2xl p-5 shadow-md">
+          <div className={`bg-slate-900/50 backdrop-blur-md border border-slate-800/80 rounded-2xl p-5 shadow-md ${
+            activeMobileTab === 'simulator' ? 'block' : 'hidden sm:block'
+          }`}>
             <h2 className="text-sm font-bold text-white mb-3 flex items-center gap-2 pb-2.5 border-b border-slate-800/80">
             <TrendingUp className="w-4.5 h-4.5 text-emerald-400" />
             Giả Lập GPA Mục Tiêu
@@ -2466,8 +2549,10 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
         </div>
         </div>
 
-        {/* RIGHT COLUMN: TABLE - 3/5 width on mobile, 8/12 on sm+ */}
-        <div className="col-span-3 sm:col-span-8 space-y-4 min-w-0 overflow-hidden">
+        {/* RIGHT COLUMN: TABLE */}
+        <div className={`sm:col-span-8 space-y-4 min-w-0 overflow-hidden ${
+          activeMobileTab === 'transcript' ? 'block' : 'hidden sm:block'
+        }`}>
           
           {/* SEARCH, CATEGORIES, AND VIEW MODES */}
           <div className="flex flex-col gap-3 justify-between items-start bg-slate-900/25 backdrop-blur-md border border-slate-800/80 p-3 sm:p-4 rounded-xl shadow-inner">

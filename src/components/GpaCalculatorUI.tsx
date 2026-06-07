@@ -28,6 +28,7 @@ import {
   Mail,
   Paperclip,
   Upload,
+  Download,
   Database,
   ClipboardList
 } from 'lucide-react';
@@ -968,15 +969,22 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
     return recipes;
   }, [simulationResult, simulatorRemainingCredits]);
 
+  const hasGrades = useMemo(() => {
+    return courses.some(c => !c.isConditionCourse && c.gradeChar !== '');
+  }, [courses]);
+
   // Phân loại học lực theo GPA tích lũy hệ 4
   const gpaClassification = useMemo(() => {
+    if (!hasGrades) {
+      return { name: 'Chưa xếp loại', color: 'text-slate-400 bg-slate-500/10 border-slate-500/20' };
+    }
     const gpa = dtuResult.cumulativeGpa;
     if (gpa >= 3.6) return { name: 'Xuất sắc', color: 'text-violet-400 bg-violet-500/10 border-violet-500/20' };
     if (gpa >= 3.2) return { name: 'Giỏi', color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' };
     if (gpa >= 2.5) return { name: 'Khá', color: 'text-indigo-400 bg-indigo-500/10 border-indigo-500/20' };
     if (gpa >= 2.0) return { name: 'Trung bình', color: 'text-amber-400 bg-amber-500/10 border-amber-500/20' };
-    return { name: 'Yếu / Kém', color: 'text-rose-400 bg-rose-500/10 border-rose-500/20' };
-  }, [dtuResult.cumulativeGpa]);
+    return { name: 'Yêu / Kém', color: 'text-rose-400 bg-rose-500/10 border-rose-500/20' };
+  }, [dtuResult.cumulativeGpa, hasGrades]);
 
   // Tính tỷ lệ % tín chỉ học lại
   const retakeRatio = useMemo(() => {
@@ -1386,6 +1394,408 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
     });
   };
 
+  // Ref cho thẻ input file nhập dữ liệu ẩn
+  const importFileInputRef = useRef<HTMLInputElement>(null);
+
+  // Hàm Xuất dữ liệu bảng điểm dưới dạng file HTML tự chứa dữ liệu JSON
+  const handleExportData = () => {
+    try {
+      const dataToExport = {
+        courses,
+        targetCredits,
+        curriculumCourses
+      };
+      const jsonString = JSON.stringify(dataToExport, null, 2);
+
+      // Nhóm môn học theo học kỳ và năm học để vẽ bảng điểm HTML
+      const coursesBySemesters: { [key: string]: Course[] } = {};
+      courses.forEach(c => {
+        const key = `${c.academicYear} | ${c.semester}`;
+        if (!coursesBySemesters[key]) {
+          coursesBySemesters[key] = [];
+        }
+        coursesBySemesters[key].push(c);
+      });
+
+      const exportHasGrades = courses.some(c => !c.isConditionCourse && c.gradeChar !== '');
+      const displayGpa = exportHasGrades ? dtuResult.cumulativeGpa.toFixed(2) : '--';
+      const displayClassification = exportHasGrades ? gpaClassification.name : 'Chưa xếp loại';
+
+      // Sắp xếp các kỳ học từ cũ đến mới
+      const sortedSemesterKeys = Object.keys(coursesBySemesters).sort((a, b) => {
+        const [yearA, semA] = a.split(' | ');
+        const [yearB, semB] = b.split(' | ');
+        if (yearA !== yearB) {
+          return yearA.localeCompare(yearB);
+        }
+        return semA.localeCompare(semB);
+      });
+
+      // Tạo chuỗi HTML các bảng điểm
+      let semestersHtml = '';
+      sortedSemesterKeys.forEach(semKey => {
+        const semCourses = coursesBySemesters[semKey];
+        const [year, sem] = semKey.split(' | ');
+        
+        let rowsHtml = semCourses.map((c, i) => {
+          const gradeValue = GRADE_SCALE_MAP[c.gradeChar];
+          const gradePoints = gradeValue !== null ? gradeValue.toFixed(2) : '-';
+          return `
+            <tr>
+              <td style="text-align: center;">${i + 1}</td>
+              <td style="font-weight: bold; color: #4f46e5;">${c.courseCode}</td>
+              <td>${c.courseName}</td>
+              <td style="text-align: center; font-weight: bold;">${c.credits}</td>
+              <td style="text-align: center;" class="grade-${c.gradeChar}">${c.gradeChar}</td>
+              <td style="text-align: center; font-weight: bold;">${gradePoints}</td>
+              <td style="text-align: center; color: #64748b;">${c.isConditionCourse ? 'Có' : 'Không'}</td>
+              <td style="text-align: center; color: #ef4444;">${c.isRetake ? 'Có' : 'Không'}</td>
+            </tr>
+          `;
+        }).join('');
+
+        semestersHtml += `
+          <div class="semester-section">
+            <h3 class="semester-title">${sem} - Năm học ${year}</h3>
+            <table>
+              <thead>
+                <tr>
+                  <th style="width: 50px; text-align: center;">STT</th>
+                  <th style="width: 120px;">Mã Môn</th>
+                  <th>Tên Môn Học</th>
+                  <th style="width: 80px; text-align: center;">Số TC</th>
+                  <th style="width: 80px; text-align: center;">Điểm Chữ</th>
+                  <th style="width: 80px; text-align: center;">Hệ 4</th>
+                  <th style="width: 100px; text-align: center;">Môn Điều Kiện</th>
+                  <th style="width: 80px; text-align: center;">Học Lại</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${rowsHtml}
+              </tbody>
+            </table>
+          </div>
+        `;
+      });
+
+      const exportDate = new Date().toLocaleString('vi-VN');
+
+      const htmlContent = `<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bảng Điểm Học Tập Cá Nhân - Đại Học Duy Tân</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      line-height: 1.5;
+      color: #1e293b;
+      background-color: #f8fafc;
+      margin: 0;
+      padding: 24px;
+    }
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      background: #ffffff;
+      padding: 32px;
+      border-radius: 16px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+      border: 1px solid #e2e8f0;
+    }
+    .header-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 24px;
+      border-bottom: 2px solid #e2e8f0;
+    }
+    .header-table td {
+      border: none;
+      vertical-align: middle;
+      padding: 12px 0;
+    }
+    .brand-title {
+      font-size: 16px;
+      font-weight: 800;
+      color: #1e3a8a;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .brand-sub {
+      font-size: 11px;
+      color: #64748b;
+      font-weight: 550;
+    }
+    .doc-title {
+      text-align: center;
+      font-size: 20px;
+      font-weight: 800;
+      color: #0f172a;
+      margin-top: 16px;
+      margin-bottom: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .doc-subtitle {
+      text-align: center;
+      font-size: 12px;
+      color: #64748b;
+      margin-bottom: 32px;
+    }
+    .summary-grid {
+      display: grid;
+      grid-template-cols: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+    .summary-card {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      padding: 16px;
+      border-radius: 12px;
+      text-align: center;
+    }
+    .summary-label {
+      font-size: 10px;
+      font-weight: 700;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 6px;
+    }
+    .summary-value {
+      font-size: 20px;
+      font-weight: 800;
+      color: #0f172a;
+    }
+    .semester-section {
+      margin-bottom: 32px;
+    }
+    .semester-title {
+      font-size: 13px;
+      font-weight: 800;
+      color: #0f172a;
+      border-left: 4px solid #4f46e5;
+      padding-left: 12px;
+      margin-bottom: 12px;
+      text-transform: uppercase;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+      margin-bottom: 12px;
+    }
+    th, td {
+      border: 1px solid #e2e8f0;
+      padding: 10px 12px;
+      text-align: left;
+    }
+    th {
+      background-color: #f1f5f9;
+      color: #475569;
+      font-weight: 700;
+      text-transform: uppercase;
+      font-size: 10px;
+      letter-spacing: 0.5px;
+    }
+    tr:nth-child(even) {
+      background-color: #f8fafc;
+    }
+    .grade-A, .grade-A_PLUS { color: #10b981; font-weight: bold; }
+    .grade-B, .grade-B_PLUS { color: #3b82f6; font-weight: bold; }
+    .grade-C, .grade-C_PLUS { color: #f59e0b; font-weight: bold; }
+    .grade-D { color: #64748b; font-weight: bold; }
+    .grade-F { color: #ef4444; font-weight: bold; }
+    
+    .btn-print {
+      display: inline-block;
+      background-color: #4f46e5;
+      color: #ffffff;
+      padding: 10px 20px;
+      font-size: 12px;
+      font-weight: 700;
+      border-radius: 8px;
+      text-decoration: none;
+      cursor: pointer;
+      border: none;
+      margin-bottom: 24px;
+      box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.2);
+      transition: all 0.2s;
+    }
+    .btn-print:hover {
+      background-color: #4338ca;
+    }
+    .footer-note {
+      text-align: center;
+      font-size: 10px;
+      color: #94a3b8;
+      margin-top: 40px;
+      border-top: 1px dashed #cbd5e1;
+      padding-top: 16px;
+    }
+    @media print {
+      body {
+        background-color: #ffffff;
+        padding: 0;
+      }
+      .container {
+        box-shadow: none;
+        border: none;
+        padding: 0;
+        max-width: 100%;
+      }
+      .btn-print {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <table class="header-table">
+      <tr>
+        <td style="width: 50%;">
+          <div class="brand-title">Đại Học Duy Tân</div>
+          <div class="brand-sub">Duy Tan University (DTU) - Công Cụ Tính GPA</div>
+        </td>
+        <td style="text-align: right; width: 50%; font-size: 11px; color: #64748b;">
+          Xuất ngày: ${exportDate}
+        </td>
+      </tr>
+    </table>
+
+    <div style="text-align: center;">
+      <button class="btn-print" onclick="window.print()">🖨️ In Bảng Điểm / Lưu PDF</button>
+    </div>
+
+    <h2 class="doc-title">Bảng Điểm Học Tập Cá Nhân</h2>
+    <div class="doc-subtitle">Dữ liệu kết quả học tập tạm tính được lưu từ ứng dụng tính GPA DTU</div>
+
+    <div class="summary-grid">
+      <div class="summary-card">
+        <div class="summary-label">GPA Tích Lũy</div>
+        <div class="summary-value">${displayGpa}</div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-label">Xếp Loại Tốt Nghiệp</div>
+        <div class="summary-value" style="font-size: 15px; padding-top: 4px; font-weight: 800;">${displayClassification}</div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-label">Tín Chỉ Đạt</div>
+        <div class="summary-value">${dtuResult.accumulatedCredits} / ${targetCredits}</div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-label">Học Lại / Cải Thiện</div>
+        <div class="summary-value">${dtuResult.totalRetakeCredits} TC (${retakeRatio.toFixed(1)}%)</div>
+      </div>
+    </div>
+
+    ${semestersHtml.length > 0 ? semestersHtml : '<p style="text-align: center; color: #64748b;">Chưa có dữ liệu môn học.</p>'}
+
+    <div class="footer-note">
+      Bảng điểm này được sinh ra từ Công cụ tính điểm GPA Đại học Duy Tân (DTU).<br>
+      Dữ liệu cấu trúc gốc được đính kèm bảo mật bên trong tệp tin này và có thể được nhập trở lại ứng dụng bất cứ lúc nào.
+    </div>
+  </div>
+
+  <!-- DỮ LIỆU CẤU TRÚC ĐỂ IMPORT TRỞ LẠI APP (KHÔNG ĐƯỢC XÓA DÒNG NÀY) -->
+  <script id="dtu-gpa-data" type="application/json">${jsonString}</script>
+</body>
+</html>`;
+
+      const blob = new Blob([htmlContent], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `bang_diem_dtu_${new Date().toISOString().slice(0, 10)}.html`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      showToast('Đã xuất file bảng điểm HTML thành công!', 'success');
+    } catch (e) {
+      console.error(e);
+      showToast('Lỗi khi xuất tệp dữ liệu!', 'error');
+    }
+  };
+
+  // Hàm Nhập dữ liệu bảng điểm từ file JSON hoặc HTML
+  const handleImportFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const text = event.target?.result as string;
+        let jsonData: any = null;
+
+        if (text.includes('<!DOCTYPE html>') || text.includes('id="dtu-gpa-data"')) {
+          const parser = new DOMParser();
+          const doc = parser.parseFromString(text, 'text/html');
+          const scriptTag = doc.getElementById('dtu-gpa-data');
+          if (scriptTag && scriptTag.textContent) {
+            jsonData = JSON.parse(scriptTag.textContent);
+          } else {
+            throw new Error('Không tìm thấy dữ liệu cấu trúc trong file HTML!');
+          }
+        } else {
+          jsonData = JSON.parse(text);
+        }
+
+        if (jsonData && typeof jsonData === 'object') {
+          // Validate và làm sạch courses
+          if (Array.isArray(jsonData.courses)) {
+            const validatedCourses = jsonData.courses.map((c: any) => ({
+              id: c.id || `course-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+              courseCode: String(c.courseCode || '').trim().toUpperCase(),
+              courseName: String(c.courseName || '').trim(),
+              credits: Math.max(1, Number(c.credits) || 3),
+              gradeChar: String(c.gradeChar || '') as GradeChar,
+              isConditionCourse: !!c.isConditionCourse,
+              isRetake: !!c.isRetake,
+              replacesCourseId: c.replacesCourseId || null,
+              academicYear: String(c.academicYear || '2025-2026'),
+              semester: String(c.semester || 'Học kỳ 1') as any
+            }));
+            updateCoursesState(validatedCourses);
+          }
+
+          // Validate targetCredits
+          if (typeof jsonData.targetCredits === 'number' && jsonData.targetCredits > 0) {
+            setTargetCredits(jsonData.targetCredits);
+          }
+
+          // Validate curriculumCourses
+          if (Array.isArray(jsonData.curriculumCourses)) {
+            const validatedCurriculum = jsonData.curriculumCourses.map((cc: any) => ({
+              courseCode: String(cc.courseCode || '').trim().toUpperCase(),
+              courseName: String(cc.courseName || '').trim(),
+              credits: Math.max(1, Number(cc.credits) || 3)
+            }));
+            setCurriculumCourses(validatedCurriculum);
+          }
+
+          showToast('Đã nhập và khôi phục dữ liệu bảng điểm thành công!', 'success');
+          setIsMockDataLoaded(false);
+        } else {
+          showToast('Tệp dữ liệu không đúng định dạng!', 'error');
+        }
+      } catch (err) {
+        console.error(err);
+        showToast('Lỗi đọc tệp tin! Hãy đảm bảo đây là file dữ liệu được xuất từ app.', 'error');
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = ''; // Reset file input
+  };
+
+  const handleTriggerImport = () => {
+    importFileInputRef.current?.click();
+  };
+
   // Xóa tất cả môn học trong 1 học kỳ cụ thể
   const handleDeleteSemester = (year: string, sem: string, e: React.MouseEvent) => {
     e.stopPropagation(); // Ngăn chặn sự kiện click mở rộng/thu gọn header
@@ -1686,7 +2096,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
             <span className="p-2 bg-indigo-500/10 rounded-xl text-indigo-400 border border-indigo-500/20 shadow-inner">
               <GraduationCap className="w-6 h-6" />
             </span>
-            <h1 className="text-xl sm:text-2xl font-bold tracking-tight bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent flex items-center gap-2">
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight bg-gradient-to-r from-white via-slate-100 to-slate-300 bg-clip-text text-transparent flex items-center gap-2">
               Ứng Dụng Tính Điểm GPA Duy Tân (DTU)
               <button 
                 onClick={() => setIsHelpModalOpen(true)}
@@ -1702,7 +2112,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
           </p>
         </div>
         
-        <div className="flex flex-wrap items-center gap-2.5">
+        <div className="flex flex-wrap items-center gap-2">
           {courses.length === 0 && (
             <button
               onClick={loadMockScenario}
@@ -1713,6 +2123,35 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
               Tải Dữ Liệu Mẫu (Nhiều Kỳ)
             </button>
           )}
+
+          <button
+            onClick={handleExportData}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 sm:px-3 sm:py-2 text-xs font-semibold rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20 active:scale-95 transition-all cursor-pointer shadow-sm shadow-emerald-500/5"
+            title="Tải xuống bản điểm dạng file HTML tuyệt đẹp để xem hoặc in ấn"
+            id="btn-export"
+          >
+            <Download className="w-3.5 h-3.5" />
+            <span>Xuất Bản Điểm</span>
+          </button>
+          
+          <button
+            onClick={handleTriggerImport}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 sm:px-3 sm:py-2 text-xs font-semibold rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 hover:bg-indigo-500/20 active:scale-95 transition-all cursor-pointer shadow-sm shadow-indigo-500/5"
+            title="Tải lên tệp HTML hoặc JSON đã xuất để khôi phục dữ liệu"
+            id="btn-import"
+          >
+            <Upload className="w-3.5 h-3.5" />
+            <span>Nhập File</span>
+          </button>
+          
+          <input 
+            type="file" 
+            ref={importFileInputRef} 
+            onChange={handleImportFileChange} 
+            accept=".json,.html" 
+            className="hidden" 
+            id="input-import-file"
+          />
           
           <button
             onClick={() => setIsFeedbackModalOpen(true)}
@@ -1726,7 +2165,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
           
           <button
             onClick={handleResetApp}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 sm:px-3 sm:py-2 text-xs font-semibold rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-400 hover:bg-rose-500/20 active:scale-95 transition-all cursor-pointer shadow-sm shadow-rose-500/5"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 sm:px-3 sm:py-2 text-xs font-semibold rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-450 hover:bg-rose-500/20 active:scale-95 transition-all cursor-pointer shadow-sm shadow-rose-500/5"
             id="btn-reset"
           >
             <RefreshCw className="w-3.5 h-3.5" />
@@ -1777,13 +2216,18 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
               <Award className="w-4 h-4 text-indigo-400" />
               GPA TÍCH LŨY HỆ 4.0
             </span>
-            <span className={`text-[10px] px-2 py-0.5 rounded-full border font-bold ${gpaClassification.color}`}>
+            <span 
+              onClick={() => setIsHelpModalOpen(true)}
+              className={`text-[10px] px-2.5 py-0.5 rounded-full border font-bold ${gpaClassification.color} cursor-pointer hover:bg-slate-800 transition-all flex items-center gap-1`}
+              title="Nhấp để xem Quy chế xếp loại tốt nghiệp DTU"
+            >
               {gpaClassification.name}
+              <HelpCircle className="w-3 h-3 opacity-85" />
             </span>
           </div>
           <div className="flex items-baseline gap-1.5">
             <span className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white" id="dashboard-gpa">
-              {dtuResult.cumulativeGpa.toFixed(2)}
+              {hasGrades ? dtuResult.cumulativeGpa.toFixed(2) : '--'}
             </span>
             <span className="text-slate-500 text-xs">/ 4.00</span>
           </div>
@@ -1822,7 +2266,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                     const val = e.target.value;
                     setTempTargetCredits(val === '' ? '' : parseInt(val) || 0);
                   }}
-                  className="w-16 bg-slate-950 border border-emerald-500 rounded px-1.5 py-0.5 text-center text-xs font-semibold text-emerald-400 focus:outline-none"
+                  className="w-16 bg-slate-950 border border-emerald-500 rounded px-1.5 py-0.5 text-center text-xs font-semibold text-emerald-400 focus:outline-none focus:border-emerald-500"
                   autoFocus
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
@@ -1854,7 +2298,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                     setTempTargetCredits(targetCredits);
                     setIsEditingTargetCredits(false);
                   }}
-                  className="p-1 hover:bg-slate-850 rounded text-rose-450 hover:text-rose-400 cursor-pointer flex items-center justify-center"
+                  className="p-1 hover:bg-slate-850 rounded text-rose-400 hover:text-rose-400 cursor-pointer flex items-center justify-center"
                   title="Hủy"
                 >
                   <X className="w-4 h-4" />
@@ -1869,7 +2313,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                 }}
                 title="Nhấp để thay đổi tổng số tín chỉ tốt nghiệp của ngành bạn"
               >
-                <span className="text-slate-300 text-[11px] hover:text-emerald-450 font-bold transition">
+                <span className="text-slate-300 text-[11px] hover:text-emerald-400 font-bold transition">
                   {targetCredits} TC (Nhấp để sửa)
                 </span>
                 <Pencil className="w-2.5 h-2.5 text-slate-500 group-hover/credits:text-emerald-400 transition opacity-80" />
@@ -1934,7 +2378,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
             }`} id="retake-badge">
               {isRetakeExceeded ? (
                 <>
-                  <AlertTriangle className="w-3 h-3 text-rose-450" />
+                  <AlertTriangle className="w-3 h-3 text-rose-400" />
                   Vượt ngưỡng 5%
                 </>
               ) : (
@@ -1970,7 +2414,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
           <div className="absolute top-0 right-0 w-24 h-24 bg-rose-500/10 rounded-full blur-2xl group-hover:bg-rose-500/15 transition-all"></div>
           <div className="flex items-center justify-between mb-3.5">
             <span className="text-xs font-bold text-slate-400 tracking-wider flex items-center gap-1.5">
-              <AlertTriangle className="w-4 h-4 text-rose-455" />
+              <AlertTriangle className="w-4 h-4 text-rose-400" />
               NỢ MÔN / CHƯA ĐẠT (F)
             </span>
             <span className={`text-[10px] px-2 py-0.5 rounded-full border font-bold ${
@@ -2131,7 +2575,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                 <path 
                   d={chartSvgPath.line} 
                   fill="none" 
-                  stroke="url(#line-gradient)" 
+                  stroke="#6366f1" 
                   strokeWidth="3.5" 
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -2556,7 +3000,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
           ) : (
             <div className="space-y-3.5 animate-fadeIn">
               <div className="flex justify-between items-center mb-1">
-                <span className="text-[10px] font-bold text-emerald-450 tracking-wider">TỰ ĐỘNG THÊM MÔN NHANH</span>
+                <span className="text-[10px] font-bold text-emerald-400 tracking-wider">TỰ ĐỘNG THÊM MÔN NHANH</span>
                 <button
                   type="button"
                   onClick={() => setIsHelpModalOpen(true)}
@@ -2692,7 +3136,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                     <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
                     Mục tiêu đã đạt!
                   </p>
-                  <p className="text-slate-450 text-[11px]">{simulationResult.message}</p>
+                  <p className="text-slate-400 text-[11px]">{simulationResult.message}</p>
                 </div>
               )}
 
@@ -2895,6 +3339,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                       // Tính toán điểm số riêng biệt cho từng kỳ
                       const semGPA = calculateSemesterGpa(semCourses);
                       const semCredits = semCourses.reduce((sum, c) => c.isConditionCourse ? sum : sum + c.credits, 0);
+                      const gradedSemCoursesCount = semCourses.filter(c => !c.isConditionCourse && c.gradeChar !== '').length;
 
                       return (
                         <div key={sem} className="bg-slate-900/40 border border-slate-800/80 rounded-xl overflow-hidden shadow-sm">
@@ -2909,8 +3354,8 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                               </span>
                               
                               {/* Điểm GPA Học kỳ */}
-                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-950 font-bold border border-slate-800/60 text-emerald-400 whitespace-nowrap">
-                                GPA: {semGPA.toFixed(2)}
+                              <span className={`text-[10px] px-1.5 py-0.5 rounded bg-slate-950 font-bold border border-slate-800/60 ${gradedSemCoursesCount > 0 ? 'text-emerald-400' : 'text-slate-400'} whitespace-nowrap`}>
+                                GPA: {gradedSemCoursesCount > 0 ? semGPA.toFixed(2) : '--'}
                               </span>
 
                               {/* Tổng số tín chỉ kỳ này */}
@@ -2920,9 +3365,16 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
 
                               {/* Đánh giá học lực riêng cho kỳ */}
                               {(() => {
+                                if (gradedSemCoursesCount === 0) {
+                                  return (
+                                    <span className="text-[9px] px-2 py-0.5 rounded-full border border-slate-700/30 bg-slate-800/40 text-slate-400 font-bold">
+                                      Chưa xếp loại
+                                    </span>
+                                  );
+                                }
                                 const getSemClass = (gpa: number) => {
                                   if (gpa >= 3.6) return { name: 'Xuất sắc', color: 'text-violet-400 bg-violet-500/10 border-violet-500/20' };
-                                  if (gpa >= 3.2) return { name: 'Giỏi', color: 'text-emerald-450 bg-emerald-500/10 border-emerald-500/20' };
+                                  if (gpa >= 3.2) return { name: 'Giỏi', color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' };
                                   if (gpa >= 2.5) return { name: 'Khá', color: 'text-indigo-400 bg-indigo-500/10 border-indigo-500/20' };
                                   if (gpa >= 2.0) return { name: 'Trung bình', color: 'text-amber-400 bg-amber-500/10 border-amber-500/20' };
                                   return { name: 'Yêu / Kém', color: 'text-rose-400 bg-rose-500/10 border-rose-500/20' };
@@ -2938,7 +3390,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                               {/* Huy hiệu xét Học bổng khuyến khích học tập */}
                               {semGPA >= 3.2 && semCredits >= 5 && semCourses.every(c => c.gradeChar !== 'F') && (
                                 <span 
-                                  className="text-[9px] px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-450 font-extrabold flex items-center gap-0.5 animate-pulse"
+                                  className="text-[9px] px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-extrabold flex items-center gap-0.5 animate-pulse"
                                   title="Đủ điều kiện xét học bổng (GPA kỳ ≥ 3.2, đăng ký ≥ 5 TC và không trượt môn F nào)"
                                 >
                                   🎁 Xét học bổng
@@ -3549,11 +4001,11 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                     {/* COLUMN 4: ĐÃ HOÀN THÀNH */}
                     <div className="bg-slate-900/30 border border-slate-800/80 rounded-2xl p-4 flex flex-col h-[500px]">
                       <div className="flex justify-between items-center mb-3 pb-2 border-b border-slate-800/60">
-                        <span className="text-xs font-bold text-emerald-450 flex items-center gap-1.5">
+                        <span className="text-xs font-bold text-emerald-400 flex items-center gap-1.5">
                           <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
                           ĐÃ ĐẠT ({curriculumProgress.completed.length})
                         </span>
-                        <span className="text-[10px] font-bold text-emerald-450 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">{curriculumProgress.completedCredits} TC</span>
+                        <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">{curriculumProgress.completedCredits} TC</span>
                       </div>
                       <div className="space-y-2.5 overflow-y-auto flex-grow pr-1.5 custom-scrollbar bg-transparent">
                         {curriculumProgress.completed.map(c => (
@@ -3868,6 +4320,58 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                   <li>Ứng dụng hỗ trợ tự động phát hiện và gộp các môn học cải thiện / học lại dựa trên mã môn và số tín chỉ.</li>
                   <li>Bạn có thể nhấp chọn biểu tượng <Pencil className="w-3.5 h-3.5 inline text-indigo-400 mx-0.5" /> ngay bên cạnh điểm chữ trong bảng điểm hoặc tên môn học để sửa thông tin trực tiếp bất cứ lúc nào.</li>
                 </ul>
+              </div>
+
+              {/* Quy chế xếp loại tốt nghiệp DTU */}
+              <div className="space-y-3 pt-4 border-t border-slate-800" id="graduation-rules">
+                <span className="text-[13px] font-extrabold text-white block uppercase tracking-wider">
+                  🎓 Quy Chế Xếp Loại Tốt Nghiệp Đại Học Duy Tân (DTU):
+                </span>
+                
+                <div className="overflow-x-auto rounded-xl border border-slate-850 bg-slate-950/20">
+                  <table className="w-full text-left border-collapse text-[11px]">
+                    <thead>
+                      <tr className="bg-slate-900 border-b border-slate-800 text-slate-400 font-bold">
+                        <th className="p-2.5">Xếp Loại Tốt Nghiệp</th>
+                        <th className="p-2.5">Yêu Cầu GPA Tích Lũy</th>
+                        <th className="p-2.5">Điều Kiện Khống Chế (Tín Chỉ Học Lại / Cải Thiện)</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-800/60 text-slate-300">
+                      <tr>
+                        <td className="p-2.5 font-bold text-violet-400">Xuất Sắc</td>
+                        <td className="p-2.5 font-bold text-white">3.60 – 4.00</td>
+                        <td className="p-2.5 text-xs" rowSpan={2}>
+                          Tổng số tín chỉ thi lại, học lại hoặc cải thiện <strong className="text-rose-450">không vượt quá 5%</strong> tổng số tín chỉ của toàn khóa học (ví dụ: tối đa 7.2 tín chỉ trên tổng 144 tín chỉ).
+                          <div className="text-[10px] text-slate-500 mt-1 italic">
+                            * Nếu vượt quá 5%, thứ hạng tốt nghiệp sẽ bị hạ xuống 1 bậc.
+                          </div>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td className="p-2.5 font-bold text-emerald-400">Giỏi</td>
+                        <td className="p-2.5 font-bold text-white">3.20 – 3.59</td>
+                      </tr>
+                      <tr>
+                        <td className="p-2.5 font-bold text-indigo-400">Khá</td>
+                        <td className="p-2.5 font-bold text-white">2.50 – 3.19</td>
+                        <td className="p-2.5 text-slate-500 italic">Không áp dụng điều kiện khống chế học lại.</td>
+                      </tr>
+                      <tr>
+                        <td className="p-2.5 font-bold text-amber-400">Trung Bình</td>
+                        <td className="p-2.5 font-bold text-white">2.00 – 2.49</td>
+                        <td className="p-2.5 text-slate-500 italic">Không áp dụng điều kiện khống chế học lại.</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                <div className="bg-rose-500/5 border border-rose-500/10 rounded-xl p-3 text-[11px] space-y-1">
+                  <span className="font-bold text-rose-400 block">⚠️ CẢNH BÁO TỐT NGHIỆP:</span>
+                  <p className="text-slate-400 leading-normal">
+                    Ứng dụng sẽ tự động phân tích tỷ lệ phần trắng số tín chỉ học lại của bạn dựa trên tổng số tín chỉ mục tiêu của chương trình học (mặc định là 144 tín chỉ, bạn có thể chỉnh sửa). Hãy theo dõi cảnh báo học lại ở màn hình chính để tránh bị hạ bậc tốt nghiệp đáng tiếc!
+                  </p>
+                </div>
               </div>
 
             </div>

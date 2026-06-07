@@ -4136,60 +4136,67 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
             className="absolute inset-0 bg-black/60 backdrop-blur-sm" 
             onClick={() => setIsCurriculumModalOpen(false)}
           ></div>
-          <div className="relative bg-slate-900 border border-slate-700/80 rounded-2xl p-6 w-full max-w-lg shadow-2xl animate-in fade-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
-            <h3 className="text-base font-bold text-white mb-2 uppercase tracking-wide flex items-center gap-2">
-              <BookOpen className="w-5 h-5 text-indigo-405" />
+          <div className="relative bg-slate-900 border border-slate-700/80 rounded-2xl p-5 sm:p-6 w-full max-w-lg shadow-2xl animate-in fade-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
+            <h3 className="text-base font-bold text-white mb-2.5 uppercase tracking-wide flex items-center gap-2">
+              <BookOpen className="w-5 h-5 text-indigo-400" />
               Cài Đặt Khung Chương Trình Đào Tạo
             </h3>
-            <p className="text-[11px] text-slate-400 leading-relaxed mb-4">
-              Hãy vào trang <b>Khung Chương Trình</b> trên myDTU, bôi đơn/bôi đen toàn bộ bảng danh sách môn học, copy (Ctrl+C) và dán (Ctrl+V) vào ô dưới đây. Hệ thống sẽ tự động bóc tách mã môn, tên môn và số tín chỉ của từng môn học.
-            </p>
-
-            <div className="mb-4 space-y-1.5">
-              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Chọn Khung Chương Trình Mẫu:</label>
-              <select
-                onChange={(e) => {
-                  const val = e.target.value;
-                  if (val === 'K29_CMU_SE') {
-                    setCurriculumCourses(K29_CMU_SE_PRESET);
-                    setTargetCredits(144);
-                    setIsCurriculumModalOpen(false);
-                    setCurriculumInputText('');
-                    showToast('Đã nạp Khung chương trình K29 Công nghệ Phần mềm CMU (144 TC)!', 'success');
-                  }
-                }}
-                defaultValue=""
-                className="w-full bg-slate-950/80 border border-slate-800 rounded-xl px-3 py-2 text-xs text-indigo-400 font-semibold focus:outline-none focus:border-indigo-500 cursor-pointer hover:border-indigo-500/50 transition-colors"
-              >
-                <option value="">-- Chọn ngành học để nạp nhanh --</option>
-                <option value="K29_CMU_SE">K29 - Công nghệ Phần mềm Chuẩn CMU (144 TC)</option>
-              </select>
-            </div>
             
-            <textarea
-              value={curriculumInputText}
-              onChange={(e) => setCurriculumInputText(e.target.value)}
-              placeholder="Hoặc dán nội dung khung chương trình copy từ myDTU vào đây..."
-              className="w-full bg-slate-950/80 border border-slate-800 rounded-xl p-3 text-xs text-indigo-205 placeholder-slate-600 focus:outline-none focus:border-indigo-500 flex-grow h-44 resize-none font-mono mb-4"
-            />
+            {/* Scrollable Modal Content */}
+            <div className="overflow-y-auto pr-1 flex-grow mb-4 space-y-4 custom-scrollbar">
+              <p className="text-[11px] text-slate-400 leading-relaxed">
+                Thiết lập danh sách môn học khung của ngành học giúp bạn theo dõi tiến độ tích lũy và xem các môn còn lại chưa học để giả lập điểm.
+              </p>
 
-            <div className="flex items-center gap-2 mb-4">
-              <input 
-                type="checkbox"
-                id="curriculum-merge-checkbox"
-                checked={isCurriculumMerge}
-                onChange={(e) => setIsCurriculumMerge(e.target.checked)}
-                className="w-4 h-4 rounded bg-slate-950 border border-slate-800 text-indigo-600 focus:ring-indigo-500 focus:ring-offset-slate-900 focus:outline-none cursor-pointer"
-              />
-              <label 
-                htmlFor="curriculum-merge-checkbox" 
-                className="text-xs text-slate-350 hover:text-white transition-colors cursor-pointer select-none font-semibold"
-              >
-                Cộng dồn vào khung hiện tại (không xóa môn học cũ)
-              </label>
+              {/* Hướng dẫn lấy khung chương trình */}
+              <div className="bg-slate-950/40 border border-slate-800/80 rounded-xl p-3.5 space-y-2.5">
+                <span className="text-[10px] font-extrabold text-emerald-400 tracking-wider uppercase block">
+                  💡 Hướng Dẫn Từng Bước (Nhanh):
+                </span>
+                <ol className="list-decimal list-inside text-[11px] text-slate-300 space-y-1.5 pl-0.5 leading-relaxed">
+                  <li>Truy cập myDTU &rarr; chọn mục <strong>Chương Trình Học</strong>.</li>
+                  <li>Bôi đen (quét khối) từ <strong>Mã Môn / Tên Môn đầu tiên</strong> kéo xuống hết toàn bộ danh sách (như ảnh bên dưới).</li>
+                  <li>Nhấn <strong>Ctrl + C</strong> để sao chép.</li>
+                  <li>Dán (<strong>Ctrl + V</strong>) vào ô nhập bên dưới và nhấn phân tích.</li>
+                </ol>
+                <div className="pt-2 border-t border-slate-800/50">
+                  <span className="text-[9px] text-slate-500 font-bold block mb-1.5 uppercase">Ảnh minh họa bôi đen:</span>
+                  <img 
+                    src="/guide_curriculum.png" 
+                    alt="Ảnh minh họa bôi đen khung chương trình myDTU" 
+                    className="rounded-lg border border-slate-800/80 w-full object-contain max-h-[180px] shadow-md"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Dán nội dung vào đây:</label>
+                <textarea
+                  value={curriculumInputText}
+                  onChange={(e) => setCurriculumInputText(e.target.value)}
+                  placeholder="Nhấp vào đây và nhấn Ctrl+V..."
+                  className="w-full bg-slate-950/80 border border-slate-800 rounded-xl p-3 text-xs text-indigo-200 placeholder-slate-600 focus:outline-none focus:border-indigo-500 h-28 resize-none font-mono"
+                />
+              </div>
+
+              <div className="flex items-center gap-2">
+                <input 
+                  type="checkbox"
+                  id="curriculum-merge-checkbox"
+                  checked={isCurriculumMerge}
+                  onChange={(e) => setIsCurriculumMerge(e.target.checked)}
+                  className="w-4 h-4 rounded bg-slate-950 border border-slate-800 text-indigo-600 focus:ring-indigo-500 focus:ring-offset-slate-900 focus:outline-none cursor-pointer"
+                />
+                <label 
+                  htmlFor="curriculum-merge-checkbox" 
+                  className="text-xs text-slate-350 hover:text-white transition-colors cursor-pointer select-none font-semibold"
+                >
+                  Cộng dồn vào khung hiện tại (không xóa môn học cũ)
+                </label>
+              </div>
             </div>
 
-            <div className="flex gap-3 justify-end">
+            <div className="flex gap-3 justify-end pt-3 border-t border-slate-800/60">
               <button 
                 onClick={() => {
                   setIsCurriculumModalOpen(false);

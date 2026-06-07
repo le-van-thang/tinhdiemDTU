@@ -91,7 +91,13 @@ const K29_CMU_SE_PRESET: CurriculumCourse[] = [
   { courseCode: 'CMU-CS 462', courseName: 'Software Measurements & Analysis', credits: 3 },
   { courseCode: 'CMU-CS 447', courseName: 'Đồ Án CDIO (Chuyên ngành)', credits: 1 },
   { courseCode: 'CMU-SE 450', courseName: 'Capstone Project for Software Engineering 1', credits: 3 },
-  { courseCode: 'CMU-SE 451', courseName: 'Capstone Project for Software Engineering 2', credits: 3 }
+  { courseCode: 'CMU-SE 451', courseName: 'Capstone Project for Software Engineering 2', credits: 3 },
+
+  // MÔN ĐIỀU KIỆN (Hiển thị để theo dõi nhưng tự động loại trừ khỏi tổng tích lũy mục tiêu 144 TC)
+  { courseCode: 'ES 101', courseName: 'Chạy Ngắn & Bài Thể Dục Tay Không (GDTC 1)', credits: 1 },
+  { courseCode: 'ES 226', courseName: 'Cầu Lông Sơ Cấp (GDTC 2)', credits: 1 },
+  { courseCode: 'ES 276', courseName: 'Cầu Lông Nâng Cao (GDTC 3)', credits: 1 },
+  { courseCode: 'ES 100', courseName: 'Giáo Dục Quốc Phòng & An Ninh', credits: 8 }
 ];
 
 interface GpaCalculatorUIProps {

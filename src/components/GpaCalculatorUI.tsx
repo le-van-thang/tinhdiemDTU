@@ -299,7 +299,15 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
     return [];
   });
   const [isCurriculumModalOpen, setIsCurriculumModalOpen] = useState(false);
+  const [showCurriculumGuide, setShowCurriculumGuide] = useState(false);
   const [curriculumInputText, setCurriculumInputText] = useState('');
+  
+  useEffect(() => {
+    if (!isCurriculumModalOpen) {
+      setShowCurriculumGuide(false);
+    }
+  }, [isCurriculumModalOpen]);
+
   const [isCurriculumMerge, setIsCurriculumMerge] = useState(() => {
     try {
       return localStorage.getItem('dtu_gpa_curriculum_merge') === 'true';
@@ -4148,34 +4156,53 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                 Thiết lập danh sách môn học khung của ngành học giúp bạn theo dõi tiến độ tích lũy và xem các môn còn lại chưa học để giả lập điểm.
               </p>
 
-              {/* Hướng dẫn lấy khung chương trình */}
-              <div className="bg-slate-950/40 border border-slate-800/80 rounded-xl p-3.5 space-y-2.5">
-                <span className="text-[10px] font-extrabold text-emerald-400 tracking-wider uppercase block">
-                  💡 Hướng Dẫn Từng Bước (Nhanh):
+              {/* Nút toggle Hướng dẫn sử dụng */}
+              <div className="flex items-center justify-between bg-slate-950/20 border border-slate-850/60 rounded-xl px-3 py-2 gap-2">
+                <span className="text-[11px] font-semibold text-slate-400 flex items-center gap-1.5">
+                  <HelpCircle className="w-3.5 h-3.5 text-indigo-400" />
+                  Bạn chưa biết cách lấy khung môn học?
                 </span>
-                <ol className="list-decimal list-inside text-[11px] text-slate-300 space-y-1.5 pl-0.5 leading-relaxed">
-                  <li>Truy cập myDTU &rarr; chọn mục <strong>Chương Trình Học</strong>.</li>
-                  <li>Bôi đen (quét khối) từ <strong>Mã Môn / Tên Môn đầu tiên</strong> kéo xuống hết toàn bộ danh sách (như ảnh bên dưới).</li>
-                  <li>Nhấn <strong>Ctrl + C</strong> để sao chép.</li>
-                  <li>Dán (<strong>Ctrl + V</strong>) vào ô nhập bên dưới và nhấn phân tích.</li>
-                </ol>
-                <div className="pt-2 border-t border-slate-800/50">
-                  <span className="text-[9px] text-slate-500 font-bold block mb-1.5 uppercase">Ảnh minh họa bôi đen:</span>
-                  <img 
-                    src="/guide_curriculum.png" 
-                    alt="Ảnh minh họa bôi đen khung chương trình myDTU" 
-                    className="rounded-lg border border-slate-800/80 w-full object-contain max-h-[180px] shadow-md"
-                  />
-                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowCurriculumGuide(!showCurriculumGuide)}
+                  className="px-2.5 py-1 rounded-lg text-[10px] font-bold text-indigo-400 hover:text-indigo-300 hover:bg-indigo-500/10 border border-indigo-500/20 transition-all cursor-pointer select-none whitespace-nowrap"
+                >
+                  {showCurriculumGuide ? 'Ẩn Hướng dẫn' : 'Xem Hướng dẫn'}
+                </button>
               </div>
 
+              {/* Hướng dẫn lấy khung chương trình */}
+              {showCurriculumGuide && (
+                <div className="bg-slate-950/40 border border-slate-800/80 rounded-xl p-3.5 space-y-2.5 animate-in fade-in slide-in-from-top-1 duration-200">
+                  <span className="text-[10px] font-extrabold text-emerald-400 tracking-wider uppercase block">
+                    💡 Hướng Dẫn Từng Bước (Nhanh):
+                  </span>
+                  <ol className="list-decimal list-inside text-[11px] text-slate-300 space-y-1.5 pl-0.5 leading-relaxed">
+                    <li>Truy cập myDTU &rarr; chọn mục <strong>Chương Trình Học</strong>.</li>
+                    <li>Bôi đen (quét khối) từ <strong>Mã Môn / Tên Môn đầu tiên</strong> kéo xuống hết toàn bộ danh sách (như ảnh bên dưới).</li>
+                    <li>Nhấn <strong>Ctrl + C</strong> để sao chép.</li>
+                    <li>Dán (<strong>Ctrl + V</strong>) vào ô nhập bên dưới và nhấn phân tích.</li>
+                  </ol>
+                  <div className="pt-2 border-t border-slate-800/50">
+                    <span className="text-[9px] text-slate-500 font-bold block mb-1.5 uppercase">Ảnh minh họa bôi đen:</span>
+                    <img 
+                      src="/guide_curriculum.png" 
+                      alt="Ảnh minh họa bôi đen khung chương trình myDTU" 
+                      className="rounded-lg border border-slate-800/80 w-full object-contain max-h-[180px] shadow-md"
+                    />
+                  </div>
+                </div>
+              )}
+
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Dán nội dung vào đây:</label>
+                <label className="text-[11px] font-bold text-slate-300 leading-normal block">
+                  Dán nội dung vào đây để tính tổng tín chỉ chuyên ngành của bạn cho nhanh:
+                </label>
                 <textarea
                   value={curriculumInputText}
                   onChange={(e) => setCurriculumInputText(e.target.value)}
                   placeholder="Nhấp vào đây và nhấn Ctrl+V..."
-                  className="w-full bg-slate-950/80 border border-slate-800 rounded-xl p-3 text-xs text-indigo-200 placeholder-slate-600 focus:outline-none focus:border-indigo-500 h-28 resize-none font-mono"
+                  className="w-full bg-slate-950/80 border border-slate-850 rounded-xl p-3 text-xs text-indigo-200 placeholder-slate-600 focus:outline-none focus:border-indigo-500 h-28 resize-none font-mono"
                 />
               </div>
 

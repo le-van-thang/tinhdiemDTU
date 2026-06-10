@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { Course, GradeChar, ProcessedCourse, GRADE_SCALE_MAP, CurriculumCourse } from '../types/gpa';
+import { Course, GradeChar, ProcessedCourse, GRADE_SCALE_MAP, CurriculumCourse, DetailedGradeItem } from '../types/gpa';
 import { calculateDTUGPA, calculateGpaSummary, calculateGpaTrend, calculateSemesterGpa, GpaTrendPoint } from '../utils/gpaCalculator';
 import { 
   Plus, 
@@ -100,6 +100,64 @@ const K29_CMU_SE_PRESET: CurriculumCourse[] = [
   { courseCode: 'ES 276', courseName: 'Cầu Lông Nâng Cao (GDTC 3)', credits: 1 },
   { courseCode: 'ES 100', courseName: 'Giáo Dục Quốc Phòng & An Ninh', credits: 8 }
 ];
+
+export function getDTUGradeCharFromScore(score: number): GradeChar {
+  if (score >= 9.0) return 'A+';
+  if (score >= 8.5) return 'A';
+  if (score >= 8.0) return 'A-';
+  if (score >= 7.5) return 'B+';
+  if (score >= 7.0) return 'B';
+  if (score >= 6.5) return 'B-';
+  if (score >= 6.0) return 'C+';
+  if (score >= 5.5) return 'C';
+  if (score >= 5.0) return 'C-';
+  if (score >= 4.0) return 'D';
+  return 'F';
+}
+
+export function calculateDetailedScore(detailedGrades?: DetailedGradeItem[]) {
+  if (!detailedGrades || detailedGrades.length === 0) return null;
+  let totalWeight = 0;
+  let weightedScoreSum = 0;
+  let hasMissingScores = false;
+
+  for (const item of detailedGrades) {
+    totalWeight += item.weight;
+    if (item.score !== null) {
+      weightedScoreSum += item.score * (item.weight / 100);
+    } else {
+      hasMissingScores = true;
+    }
+  }
+
+  const completedWeights = detailedGrades
+    .filter(item => item.score !== null)
+    .reduce((sum, item) => sum + item.weight, 0);
+
+  if (completedWeights === 0) {
+    return {
+      score: 0,
+      hasMissingScores: true,
+      totalWeight,
+      completedWeights,
+      currentWeightedSum: 0
+    };
+  }
+
+  const currentWeightedSum = detailedGrades
+    .filter(item => item.score !== null)
+    .reduce((sum, item) => sum + item.score! * (item.weight / 100), 0);
+
+  const overallScore = totalWeight > 0 ? (currentWeightedSum / (totalWeight / 100)) : 0;
+
+  return {
+    score: Math.round(overallScore * 100) / 100,
+    hasMissingScores,
+    totalWeight,
+    completedWeights,
+    currentWeightedSum: Math.round(currentWeightedSum * 100) / 100
+  };
+}
 
 interface GpaCalculatorUIProps {
   initialCourses: Course[];
@@ -343,7 +401,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
 
   // State quản lý Bottom Sheet Drawer trên Mobile
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
-  const [mobileDrawerTab, setMobileDrawerTab] = useState<'add' | 'simulator'>('add');
+  const [mobileDrawerTab, setMobileDrawerTab] = useState<'add' | 'simulator' | 'detailed'>('add');
 
   // State quản lý xem dữ liệu hiện tại có phải là dữ liệu ví dụ mẫu hay không
   const [isMockDataLoaded, setIsMockDataLoaded] = useState<boolean>(() => {
@@ -360,6 +418,19 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
       localStorage.setItem('dtu_gpa_is_mock', isMockDataLoaded.toString());
     } catch (e) {}
   }, [isMockDataLoaded]);
+
+  // State quản lý tính điểm chi tiết môn học (Sidebar)
+  const [selectedDetailedCourse, setSelectedDetailedCourse] = useState<Course | null>(null);
+  const [tempDetailedGrades, setTempDetailedGrades] = useState<DetailedGradeItem[]>([]);
+  const [sandboxDetailedGrades, setSandboxDetailedGrades] = useState<DetailedGradeItem[]>([
+    { id: 'sb-1', name: 'Điểm danh / Chuyên cần', weight: 10, score: 10 },
+    { id: 'sb-2', name: 'Kiểm tra giữa kỳ', weight: 20, score: 7 },
+    { id: 'sb-3', name: 'Bài tập lớn / Đồ án', weight: 20, score: 8 },
+    { id: 'sb-4', name: 'Thi cuối kỳ', weight: 50, score: null }
+  ]);
+  const [detailedPasteText, setDetailedPasteText] = useState('');
+  const [detailedPasteError, setDetailedPasteError] = useState('');
+  const [isPasteSectionExpanded, setIsPasteSectionExpanded] = useState(false);
 
   // State quản lý Hỗ trợ & Đóng góp ý kiến (Feedback Modal)
   const [isFeedbackModalOpen, setIsFeedbackModalOpen] = useState(false);
@@ -1215,6 +1286,222 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
     } catch (e) {
       console.error(e);
       setSmartPasteStatus({ message: 'Lỗi trong quá trình xử lý văn bản.', type: 'error' });
+    }
+  };
+
+  // Mở máy tính điểm chi tiết cho một môn
+  const handleOpenDetailedGradeModal = (course: Course) => {
+    setSelectedDetailedCourse(course);
+    setTempDetailedGrades(course.detailedGrades || []);
+    setDetailedPasteText('');
+    setDetailedPasteError('');
+    setIsPasteSectionExpanded(false);
+
+    // Hỗ trợ hiển thị mượt mà trên từng loại thiết bị
+    if (window.innerWidth < 640) {
+      // Mobile: Mở drawer và chuyển qua tab Điểm Chi Tiết
+      setMobileDrawerTab('detailed');
+      setIsMobileDrawerOpen(true);
+    } else {
+      // Desktop: Cuộn mượt về cột bên trái nơi đặt máy tính chi tiết
+      setTimeout(() => {
+        const panel = document.getElementById('detailed-grade-calculator-panel');
+        if (panel) {
+          panel.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          panel.classList.add('animate-widgetGlow');
+          setTimeout(() => {
+            panel.classList.remove('animate-widgetGlow');
+          }, 1500);
+        }
+      }, 100);
+    }
+    showToast(`Đã nạp điểm chi tiết môn: ${course.courseCode}`, 'info');
+  };
+
+  // Render ô hiển thị Điểm Chi Tiết
+  const renderDetailedGradeCell = (pc: Course) => {
+    const result = calculateDetailedScore(pc.detailedGrades);
+    if (!result) {
+      return (
+        <button
+          onClick={() => handleOpenDetailedGradeModal(pc)}
+          className="px-2 py-1 bg-slate-800 hover:bg-indigo-650 hover:text-white text-[10px] text-slate-400 rounded-md border border-slate-700/80 hover:border-indigo-500/50 transition-all font-semibold cursor-pointer"
+        >
+          + Chi tiết
+        </button>
+      );
+    }
+
+    const { score, hasMissingScores, currentWeightedSum } = result;
+    
+    if (hasMissingScores) {
+      return (
+        <button
+          onClick={() => handleOpenDetailedGradeModal(pc)}
+          className="px-2 py-1 bg-amber-500/10 hover:bg-amber-500/25 text-[10px] text-amber-400 rounded-md border border-amber-500/20 hover:border-amber-500/40 transition-all font-bold cursor-pointer"
+          title="Nhấp để nhập điểm còn thiếu"
+        >
+          {currentWeightedSum.toFixed(2)} (--)
+        </button>
+      );
+    }
+
+    const calculatedGrade = getDTUGradeCharFromScore(score);
+    const isFailed = score < 4.0;
+    
+    return (
+      <button
+        onClick={() => handleOpenDetailedGradeModal(pc)}
+        className={`px-2 py-1 text-[10px] rounded-md border transition-all font-bold cursor-pointer ${
+          isFailed 
+            ? 'bg-rose-500/10 hover:bg-rose-500/25 text-rose-400 border-rose-500/20 hover:border-rose-500/40' 
+            : 'bg-emerald-500/10 hover:bg-emerald-500/25 text-emerald-400 border-emerald-500/20 hover:border-emerald-500/40'
+        }`}
+        title={`Điểm chi tiết: ${score.toFixed(2)} (${calculatedGrade}) - Nhấp để sửa`}
+      >
+        {score.toFixed(2)} ({calculatedGrade})
+      </button>
+    );
+  };
+
+  const handleSaveDetailedGrades = () => {
+    if (!selectedDetailedCourse) return;
+
+    // Tính tổng tỉ lệ % để validate
+    const totalWeight = tempDetailedGrades.reduce((sum, item) => sum + item.weight, 0);
+    if (tempDetailedGrades.length > 0 && Math.abs(totalWeight - 100) > 0.01) {
+      showToast(`Tổng tỷ lệ phần trăm các đầu điểm phải bằng 100% (Hiện tại: ${totalWeight.toFixed(1)}%)`, 'error');
+      return;
+    }
+
+    const calculated = calculateDetailedScore(tempDetailedGrades);
+    let finalGradeChar: GradeChar = selectedDetailedCourse.gradeChar;
+
+    if (calculated) {
+      if (!calculated.hasMissingScores && Math.abs(calculated.totalWeight - 100) < 0.01) {
+        finalGradeChar = getDTUGradeCharFromScore(calculated.score);
+      } else {
+        finalGradeChar = '';
+      }
+    }
+
+    // Cập nhật môn học chính
+    const updatedCourses = courses.map(c => {
+      if (c.id === selectedDetailedCourse.id) {
+        return {
+          ...c,
+          gradeChar: finalGradeChar,
+          detailedGrades: tempDetailedGrades
+        };
+      }
+      return c;
+    });
+
+    updateCoursesState(updatedCourses);
+    setSelectedDetailedCourse(null);
+    if (window.innerWidth < 640) {
+      setIsMobileDrawerOpen(false);
+    }
+    showToast('Đã lưu điểm chi tiết môn học thành công!', 'success');
+  };
+
+  const handleParseDetailedPaste = () => {
+    if (!detailedPasteText.trim()) {
+      setDetailedPasteError('Vui lòng dán nội dung bảng điểm chi tiết.');
+      return;
+    }
+
+    try {
+      const lines = detailedPasteText.split('\n');
+      const parsedItems: DetailedGradeItem[] = [];
+      let totalParsedWeight = 0;
+
+      for (let line of lines) {
+        line = line.trim();
+        if (!line || /tổng|bài giao|điểm lần/i.test(line)) continue;
+
+        // Thử split bằng tab
+        let parts = line.split('\t').map(p => p.trim());
+        if (parts.length >= 4) {
+          const name = parts[1] || parts[0];
+          let weightStr = parts.find((p, idx) => idx > 2 && p.includes('%')) || parts[parts.length - 1];
+          if (!weightStr) weightStr = parts[parts.length - 1];
+          const weight = parseFloat(weightStr.replace('%', '')) || 0;
+          
+          const scoreStr = parts[2];
+          const score = scoreStr && scoreStr.trim() !== '' ? parseFloat(scoreStr) : null;
+
+          if (name && weight > 0) {
+            parsedItems.push({
+              id: `item-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+              name,
+              weight,
+              score: isNaN(score as number) || score === null ? null : score
+            });
+            totalParsedWeight += weight;
+            continue;
+          }
+        }
+
+        // Regex fallback cho copy-paste space-separated
+        const percentMatches = [...line.matchAll(/(\d+(\.\d+)?)\s*%/g)];
+        if (percentMatches.length > 0) {
+          const lastPercentMatch = percentMatches[percentMatches.length - 1];
+          const weight = parseFloat(lastPercentMatch[1]) || 0;
+
+          let lineWithoutPercents = line;
+          percentMatches.forEach(m => {
+            lineWithoutPercents = lineWithoutPercents.replace(m[0], '');
+          });
+
+          const numbers = [...lineWithoutPercents.matchAll(/(\d+(\.\d+)?)/g)];
+          let score: number | null = null;
+          let nameLine = lineWithoutPercents;
+
+          if (numbers.length >= 2) {
+            const lastNumIdx = numbers.length - 1;
+            const possibleThangDiem = parseFloat(numbers[lastNumIdx][1]);
+            if (possibleThangDiem === 10 || possibleThangDiem === 100) {
+              if (numbers.length >= 3) {
+                score = parseFloat(numbers[lastNumIdx - 1][1]);
+                nameLine = nameLine.substring(0, numbers[lastNumIdx - 1].index).trim();
+              } else {
+                score = null;
+                nameLine = nameLine.substring(0, numbers[lastNumIdx].index).trim();
+              }
+            }
+          }
+
+          let name = nameLine.replace(/^\d+\s+/, '').trim();
+          name = name.replace(/^[|#\s]+|[|#\s]+$/g, '').trim();
+
+          if (name && weight > 0) {
+            parsedItems.push({
+              id: `item-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+              name,
+              weight,
+              score: isNaN(score as number) || score === null ? null : score
+            });
+            totalParsedWeight += weight;
+          }
+        }
+      }
+
+      if (parsedItems.length > 0) {
+        if (selectedDetailedCourse) {
+          setTempDetailedGrades(parsedItems);
+        } else {
+          setSandboxDetailedGrades(parsedItems);
+        }
+        setDetailedPasteText('');
+        setDetailedPasteError('');
+        showToast(`Thành công! Nhận diện được ${parsedItems.length} cột điểm chi tiết.`, 'success');
+      } else {
+        setDetailedPasteError('Không tìm thấy dữ liệu cột điểm hợp lệ. Hãy đảm bảo copy đúng bảng điểm chi tiết.');
+      }
+    } catch (e) {
+      console.error(e);
+      setDetailedPasteError('Lỗi trong quá trình phân tích văn bản dán.');
     }
   };
 
@@ -2093,6 +2380,9 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
     showToast('Đã sao chép địa chỉ email levanthang0166@gmail.com!', 'success');
     setTimeout(() => setCopiedEmail(false), 2000);
   };
+
+  const activeGrades = selectedDetailedCourse ? tempDetailedGrades : sandboxDetailedGrades;
+  const setActiveGrades = selectedDetailedCourse ? setTempDetailedGrades : setSandboxDetailedGrades;
 
   return (
     <div className="max-w-6xl mx-auto px-3 sm:px-4 py-4 sm:py-8 text-slate-100">
@@ -3233,7 +3523,445 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
             )}
           </div>
         </div>
+
+        {/* DETAILED GRADE CALCULATOR & PREDICTOR WIDGET */}
+        <div 
+          id="detailed-grade-calculator-panel"
+          className={`bg-slate-900/50 backdrop-blur-md border border-slate-800/80 rounded-2xl p-5 shadow-md transition-all duration-300 ${
+            isMobileDrawerOpen 
+              ? (mobileDrawerTab === 'detailed' ? 'block animate-fadeIn' : 'hidden')
+              : 'block'
+          }`}
+        >
+          <h2 className="text-sm font-bold text-white mb-3 flex items-center justify-between pb-2.5 border-b border-slate-800/80">
+            <span className="flex items-center gap-2">
+              <ClipboardList className="w-4.5 h-4.5 text-indigo-400" />
+              {selectedDetailedCourse ? `Điểm chi tiết: ${selectedDetailedCourse.courseCode}` : 'Máy Tính Điểm Chi Tiết'}
+            </span>
+            {selectedDetailedCourse && (
+              <button
+                type="button"
+                onClick={() => setSelectedDetailedCourse(null)}
+                className="flex items-center gap-1 text-[10px] text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 px-2.5 py-1 rounded-lg transition cursor-pointer font-bold animate-fadeIn border border-slate-700/60 hover:border-slate-600"
+                title="Quay lại máy tính thử"
+              >
+                <X className="w-3 h-3" />
+                Thoát sửa
+              </button>
+            )}
+          </h2>
+
+          {/* INFO BANNER — khác nhau tùy chế độ */}
+          {selectedDetailedCourse ? (
+            <div className="flex items-start gap-2.5 p-2.5 bg-indigo-500/8 border border-indigo-500/15 rounded-xl mb-3.5 animate-fadeIn">
+              <span className="w-2 h-2 rounded-full bg-indigo-400 animate-pulse shrink-0 mt-1"></span>
+              <div className="min-w-0">
+                <div className="text-[10.5px] text-indigo-200 font-black">ĐANG SỬA MÔN: {selectedDetailedCourse.courseCode}</div>
+                <div className="text-[10px] text-slate-400 font-medium mt-0.5">{selectedDetailedCourse.courseName} ({selectedDetailedCourse.credits} TC)</div>
+                <div className="text-[9.5px] text-slate-500 mt-1">Nhập đúng tỷ lệ % và điểm → nhấn <b className="text-indigo-400">Lưu điểm</b> để cập nhật bảng điểm.</div>
+              </div>
+            </div>
+          ) : (
+            <div className="p-3 bg-amber-500/5 border border-amber-500/12 rounded-xl mb-3.5">
+              <p className="text-[10px] text-amber-300/90 font-bold flex items-start gap-1.5 leading-relaxed">
+                <span className="text-lg leading-none shrink-0">💡</span>
+                <span>
+                  <b>Bảng dưới đây là dữ liệu mẫu phổ biến</b> — Hãy sửa trực tiếp <b>tên, tỷ lệ %</b> và <b>điểm số</b> cho đúng môn của bạn. Nhấn <b>"+ Thêm đầu điểm"</b> để thêm cột mới, hoặc nhấn <b>"+ Chi tiết"</b> trên bất kỳ môn nào trong bảng điểm để tính và lưu điểm môn đó ngay.
+                </span>
+              </p>
+            </div>
+          )}
+
+          {/* COLLAPSIBLE SMART PASTE SECTION */}
+          <div className="bg-slate-950/40 border border-slate-850 rounded-xl mb-3.5 overflow-hidden">
+            <button
+              type="button"
+              onClick={() => setIsPasteSectionExpanded(!isPasteSectionExpanded)}
+              className="w-full flex items-center justify-between p-2.5 text-left text-[10.5px] font-bold text-emerald-450 hover:bg-slate-900/40 transition-colors cursor-pointer"
+            >
+              <span className="flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+                Dán nhanh từ myDTU 📋
+              </span>
+              <span className="text-[9.5px] text-slate-500 font-bold">
+                {isPasteSectionExpanded ? 'Thu gọn ▲' : 'Mở rộng ▼'}
+              </span>
+            </button>
+            
+            {isPasteSectionExpanded && (
+              <div className="p-3 border-t border-slate-850 space-y-2.5 animate-fadeIn bg-slate-950/20">
+                <p className="text-[9.5px] text-slate-400 leading-normal font-semibold">
+                  Cách dùng: Copy bảng điểm chi tiết môn học trên myDTU và dán vào đây để tự động điền các cột điểm:
+                </p>
+                <textarea
+                  value={detailedPasteText}
+                  onChange={(e) => setDetailedPasteText(e.target.value)}
+                  placeholder="Dán toàn bộ bảng điểm chi tiết của môn học..."
+                  className="w-full bg-slate-950 border border-slate-850 rounded-lg p-2 text-[10.5px] text-emerald-100 placeholder-slate-700 focus:outline-none focus:border-emerald-500/50 h-16 resize-none font-mono"
+                />
+                {detailedPasteError && (
+                  <p className="text-[9px] font-bold text-rose-400 flex items-center gap-1">
+                    <AlertTriangle className="w-3 h-3 shrink-0" />
+                    {detailedPasteError}
+                  </p>
+                )}
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleParseDetailedPaste();
+                    setIsPasteSectionExpanded(false);
+                  }}
+                  className="w-full flex items-center justify-center gap-1.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-[10px] font-bold transition-all active:scale-98 cursor-pointer shadow shadow-emerald-950/20"
+                >
+                  <Sparkles className="w-3.5 h-3.5" />
+                  Phân tích điểm myDTU
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* GRADE COMPONENT TABLE — đẹp như bảng thật */}
+          <div className="rounded-xl border border-slate-800/80 overflow-hidden mb-2.5">
+            {/* Header */}
+            <div className="grid bg-slate-900 border-b border-slate-800/80" style={{gridTemplateColumns: '1fr 58px 62px 36px'}}>
+              <div className="px-3 py-2.5 text-[9px] font-black text-slate-400 uppercase tracking-widest">Tên đầu điểm / bài giao</div>
+              <div className="px-1 py-2.5 text-[9px] font-black text-indigo-400 uppercase tracking-widest text-center border-l border-slate-800/70">Tỷ lệ %</div>
+              <div className="px-1 py-2.5 text-[9px] font-black text-emerald-400 uppercase tracking-widest text-center border-l border-slate-800/70">Điểm /10</div>
+              <div className="px-1 py-2.5 text-[9px] font-black text-slate-600 uppercase tracking-widest text-center border-l border-slate-800/70"></div>
+            </div>
+
+            {/* Rows */}
+            <div className="divide-y divide-slate-800/40 max-h-52 overflow-y-auto custom-scrollbar">
+              {activeGrades.length > 0 ? (
+                activeGrades.map((item, index) => (
+                  <div
+                    key={item.id}
+                    className="grid items-start bg-slate-950/15 hover:bg-slate-900/30 transition-colors group"
+                    style={{gridTemplateColumns: '1fr 58px 62px 36px'}}
+                  >
+                    {/* Tên — textarea tự mở rộng khi chữ dài, kể cả lúc load */}
+                    <div className="px-1.5 py-1.5 flex items-start gap-1 min-w-0">
+                      <button
+                        type="button"
+                        title="Nhấp để chỉnh sửa tên"
+                        onClick={() => document.getElementById(`grade-name-${item.id}`)?.focus()}
+                        className="shrink-0 mt-0.5 p-1 rounded hover:bg-indigo-500/10 text-slate-600 hover:text-indigo-400 transition-all cursor-pointer"
+                      >
+                        <Pencil className="w-2.5 h-2.5" />
+                      </button>
+                      <textarea
+                        id={`grade-name-${item.id}`}
+                        rows={1}
+                        value={item.name}
+                        ref={(el) => {
+                          if (el) {
+                            el.style.height = 'auto';
+                            el.style.height = el.scrollHeight + 'px';
+                          }
+                        }}
+                        onChange={(e) => {
+                          const updated = activeGrades.map((g, idx) =>
+                            idx === index ? { ...g, name: e.target.value } : g
+                          );
+                          setActiveGrades(updated);
+                        }}
+                        onInput={(e) => {
+                          const t = e.target as HTMLTextAreaElement;
+                          t.style.height = 'auto';
+                          t.style.height = t.scrollHeight + 'px';
+                        }}
+                        className="min-w-0 flex-1 bg-transparent text-[11px] text-white font-medium focus:outline-none focus:bg-slate-950/40 px-1 py-0.5 rounded transition-colors placeholder-slate-600 resize-none overflow-hidden leading-normal"
+                        placeholder="Nhập tên…"
+                      />
+                    </div>
+
+                    {/* Tỷ lệ % */}
+                    <div className="border-l border-slate-800/50 px-1.5 py-1.5 flex items-center justify-center">
+                      <input
+                        type="number"
+                        min="0"
+                        max="100"
+                        value={item.weight || ''}
+                        onChange={(e) => {
+                          const val = parseFloat(e.target.value) || 0;
+                          const updated = activeGrades.map((g, idx) =>
+                            idx === index ? { ...g, weight: val } : g
+                          );
+                          setActiveGrades(updated);
+                        }}
+                        className="w-full bg-indigo-950/40 border border-indigo-900/50 rounded-lg text-center text-[11px] font-black text-indigo-300 focus:outline-none focus:border-indigo-400 focus:bg-indigo-950/70 py-1.5 transition-all"
+                        placeholder="0"
+                      />
+                    </div>
+
+                    {/* Điểm số */}
+                    <div className="border-l border-slate-800/50 px-1.5 py-1.5 flex items-center justify-center">
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        max="10"
+                        value={item.score !== null ? item.score : ''}
+                        placeholder="--"
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          const scoreVal = val === '' ? null : Math.max(0, Math.min(10, parseFloat(val) || 0));
+                          const updated = activeGrades.map((g, idx) =>
+                            idx === index ? { ...g, score: scoreVal } : g
+                          );
+                          setActiveGrades(updated);
+                        }}
+                        className={`w-full rounded-lg text-center text-[11px] font-black focus:outline-none py-1.5 border transition-all ${
+                          item.score !== null
+                            ? 'bg-emerald-950/30 border-emerald-900/40 text-emerald-300 focus:border-emerald-400 focus:bg-emerald-950/60'
+                            : 'bg-slate-900/50 border-slate-800/60 text-slate-500 focus:border-slate-600 focus:text-white placeholder-slate-700'
+                        }`}
+                      />
+                    </div>
+
+                    {/* Xóa — luôn hiện, xám nhạt bình thường, đỏ khi hover */}
+                    <div className="border-l border-slate-800/50 flex items-center justify-center">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const updated = activeGrades.filter((_, idx) => idx !== index);
+                          setActiveGrades(updated);
+                        }}
+                        className="p-1.5 rounded text-slate-600 hover:text-rose-400 hover:bg-rose-500/10 transition-all cursor-pointer"
+                        title="Xóa cột điểm này"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </button>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="py-8 text-center">
+                  <p className="text-slate-600 text-[11px] leading-relaxed">
+                    Chưa có đầu điểm nào.<br />
+                    <span className="text-slate-700">Dán dữ liệu myDTU hoặc bấm "+ Thêm".</span>
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex justify-between items-center mb-3.5">
+            <button
+              type="button"
+              onClick={() => {
+                const newItem = {
+                  id: `item-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                  name: '',
+                  weight: 10,
+                  score: null
+                };
+                setActiveGrades([...activeGrades, newItem]);
+              }}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600/15 hover:bg-indigo-600/30 text-[10.5px] text-indigo-400 hover:text-indigo-200 rounded-lg border border-indigo-600/25 hover:border-indigo-500/50 transition-all font-bold cursor-pointer"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              Thêm đầu điểm
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveGrades([])}
+              className="text-[10px] text-slate-600 hover:text-rose-400 transition cursor-pointer font-semibold flex items-center gap-1"
+            >
+              <Trash2 className="w-3 h-3" />
+              Xóa sạch
+            </button>
+          </div>
+
+          {/* RESULTS AND STATS BLOCK */}
+          {activeGrades.length > 0 && (() => {
+            const totalWeight = activeGrades.reduce((sum, item) => sum + item.weight, 0);
+            const isWeightValid = Math.abs(totalWeight - 100) < 0.01;
+            const calc = calculateDetailedScore(activeGrades);
+
+            return (
+              <div className="mt-4 p-3 bg-slate-950/50 border border-slate-850 rounded-2xl space-y-3">
+                <div className="grid grid-cols-2 gap-2 text-center">
+                  <div className="p-1.5 bg-slate-950/40 border border-slate-855 rounded-xl">
+                    <span className="text-[9px] font-black text-slate-500 uppercase tracking-wider block">Tổng tỷ lệ %</span>
+                    <span className={`text-xs font-black block mt-0.5 ${isWeightValid ? 'text-emerald-400' : 'text-rose-400'}`}>
+                      {totalWeight.toFixed(1)}%
+                    </span>
+                    {!isWeightValid && (
+                      <span className="text-[8px] text-rose-500 block leading-tight mt-0.5 font-bold">Cần bằng 100% để lưu</span>
+                    )}
+                  </div>
+                  <div className="p-1.5 bg-slate-950/40 border border-slate-855 rounded-xl">
+                    <span className="text-[9px] font-black text-slate-500 uppercase tracking-wider block">Tỷ lệ đã học</span>
+                    <span className="text-xs font-black text-indigo-400 block mt-0.5">
+                      {calc ? calc.completedWeights : 0}%
+                    </span>
+                  </div>
+                  <div className="p-1.5 bg-slate-950/40 border border-slate-855 rounded-xl">
+                    <span className="text-[9px] font-black text-slate-500 uppercase tracking-wider block">Tổng điểm hệ 10</span>
+                    <span className="text-xs font-black text-white block mt-0.5">
+                      {calc ? calc.score.toFixed(2) : '--'}
+                    </span>
+                    {calc && calc.hasMissingScores && (
+                      <span className="text-[8px] text-amber-500 block leading-tight font-bold">Tạm tính</span>
+                    )}
+                  </div>
+                  <div className="p-1.5 bg-slate-950/40 border border-slate-855 rounded-xl">
+                    <span className="text-[9px] font-black text-slate-500 uppercase tracking-wider block">Hạng điểm quy đổi</span>
+                    {calc ? (
+                      (() => {
+                        if (calc.hasMissingScores) {
+                          return <span className="text-xs font-black text-slate-400 block mt-0.5">--</span>;
+                        }
+                        const grade = getDTUGradeCharFromScore(calc.score);
+                        const isF = grade === 'F';
+                        return (
+                          <span className={`text-xs font-black block mt-0.5 ${isF ? 'text-rose-400' : 'text-emerald-400'}`}>
+                            {grade}
+                          </span>
+                        );
+                      })()
+                    ) : (
+                      <span className="text-xs font-black text-slate-400 block mt-0.5">--</span>
+                    )}
+                  </div>
+                </div>
+
+                {calc && (
+                  <div className="pt-2 border-t border-slate-855 text-[10px] leading-normal font-semibold">
+                    {calc.hasMissingScores ? (
+                      <div className="space-y-3">
+                        <div className="flex gap-1.5 p-2 bg-amber-500/5 border border-amber-500/10 rounded-xl text-amber-400">
+                          <Info className="w-3.5 h-3.5 shrink-0 text-amber-400" />
+                          <div>
+                            Đã có điểm cho <b>{calc.completedWeights}%</b> trọng số. Xem dự báo điểm thi còn lại cần đạt bên dưới để lập kế hoạch ôn thi:
+                          </div>
+                        </div>
+
+                        {/* FINAL EXAM PREDICTOR TABLE */}
+                        <div className="space-y-1.5">
+                          <span className="block text-[9px] font-black text-indigo-400 tracking-wider">
+                            🎯 ĐIỂM CẦN ĐẠT CỦA CÁC ĐẦU ĐIỂM CÒN LẠI ({100 - calc.completedWeights}%):
+                          </span>
+                          
+                          <div className="space-y-1.5">
+                            {[
+                              { label: 'Qua môn (Điểm D >= 4.0)', score: 4.0 },
+                              { label: 'Khá (Điểm B- >= 6.5)', score: 6.5 },
+                              { label: 'Giỏi (Điểm A- >= 8.0)', score: 8.0 },
+                              { label: 'Xuất sắc (Điểm A >= 8.5)', score: 8.5 },
+                              { label: 'Tối đa (Điểm A+ >= 9.0)', score: 9.0 }
+                            ].map((target) => {
+                              const completedSum = activeGrades
+                                .filter(item => item.score !== null)
+                                .reduce((sum, item) => sum + item.score! * (item.weight / 100), 0);
+                              const missingWeight = Math.max(0, 100 - calc.completedWeights);
+                              
+                              let requiredScore = 0;
+                              if (missingWeight > 0) {
+                                  requiredScore = (target.score - completedSum) / (missingWeight / 100);
+                              }
+
+                              let statusText = '';
+                              let badgeClass = '';
+
+                              if (requiredScore <= 0) {
+                                statusText = 'Chắc chắn đạt';
+                                badgeClass = 'bg-emerald-500/10 text-emerald-450 border-emerald-500/25';
+                              } else if (requiredScore <= 10.0) {
+                                statusText = `Cần >= ${requiredScore.toFixed(2)}`;
+                                badgeClass = 'bg-indigo-500/10 text-indigo-300 border-indigo-500/25';
+                              } else {
+                                statusText = 'Không thể đạt';
+                                badgeClass = 'bg-slate-800/40 text-slate-500 border-slate-800/80';
+                              }
+
+                              return (
+                                <div key={target.label} className="flex justify-between items-center text-[10.5px] py-1 border-b border-slate-850/40 last:border-b-0">
+                                  <span className="text-slate-400">{target.label}</span>
+                                  <span className={`px-2 py-0.5 rounded-lg text-[9px] font-bold border ${badgeClass} shrink-0`}>
+                                    {statusText}
+                                  </span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      // All grades completed
+                      (() => {
+                        const grade = getDTUGradeCharFromScore(calc.score);
+                        const isF = grade === 'F';
+                        if (isF) {
+                          return (
+                            <div className="flex gap-1.5 p-2 bg-rose-500/5 border border-rose-500/10 rounded-xl text-rose-455">
+                              <AlertTriangle className="w-4 h-4 shrink-0 text-rose-455" />
+                              <div>
+                                Môn này bị điểm <b>F (Dưới 4.0)</b>. Bạn không đủ điều kiện qua môn và bắt buộc phải học lại / thi lại học phần này.
+                              </div>
+                            </div>
+                          );
+                        } else {
+                          return (
+                            <div className="flex gap-1.5 p-2 bg-emerald-500/5 border border-emerald-500/10 rounded-xl text-emerald-400">
+                              <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-400" />
+                              <div>
+                                Môn học đủ điều kiện qua môn với điểm chữ <b>{grade}</b> (Quy đổi hệ 4: <b>{GRADE_SCALE_MAP[grade]?.toFixed(2)}</b>).
+                              </div>
+                            </div>
+                          );
+                        }
+                      })()
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+
+          {/* BUTTONS ACTIONS FOR THE CALCULATOR */}
+          {selectedDetailedCourse ? (
+            <div className="mt-4 pt-3.5 border-t border-slate-850 flex items-center justify-between gap-3">
+              <span className="text-[9px] text-slate-500 font-medium leading-none">
+                * Điểm chữ chính sẽ tự động cập nhật.
+              </span>
+              <div className="flex gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setSelectedDetailedCourse(null)}
+                  className="px-2.5 py-1.5 text-[10.5px] font-bold text-slate-400 hover:text-white bg-slate-800/40 hover:bg-slate-800 rounded-xl transition cursor-pointer"
+                >
+                  Hủy
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSaveDetailedGrades}
+                  className="px-3 py-1.5 bg-indigo-650 hover:bg-indigo-600 text-white rounded-xl text-[10.5px] font-bold transition shadow-md shadow-indigo-900/30 cursor-pointer border border-indigo-400/20"
+                >
+                  Lưu môn học
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="mt-4 pt-3.5 border-t border-slate-850 space-y-2 text-[10px] text-slate-500 leading-relaxed font-semibold">
+              <p className="flex items-start gap-1">
+                <Info className="w-3.5 h-3.5 shrink-0 text-slate-500 mt-0.5" />
+                <span>
+                  Chế độ Máy tính nháp (Sandbox). Nhập nhanh trọng số & điểm quá trình để dự báo điểm thi cần đạt.
+                </span>
+              </p>
+              <p className="flex items-start gap-1">
+                <CheckCircle2 className="w-3.5 h-3.5 shrink-0 text-indigo-500 mt-0.5" />
+                <span>
+                  Để sửa điểm cho môn học chính thức, hãy bấm nút <b>"+ Chi tiết"</b> hoặc ô điểm của môn đó.
+                </span>
+              </p>
+            </div>
+          )}
         </div>
+      </div>
 
         {/* RIGHT COLUMN: TABLE */}
         <div className="sm:col-span-8 space-y-4 min-w-0 overflow-hidden">

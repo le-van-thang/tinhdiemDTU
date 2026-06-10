@@ -35,6 +35,13 @@ export const GRADE_SCALE_MAP: Record<GradeChar, number | null> = {
   '': null,  // Môn chưa có điểm không tính GPA
 };
 
+export interface DetailedGradeItem {
+  id: string;
+  name: string;
+  weight: number;      // Tỷ lệ phần trăm (ví dụ: 10 đại diện cho 10%)
+  score: number | null; // Điểm số hệ 10 (ví dụ: 9.7, null nếu chưa có)
+}
+
 /**
  * Interface đại diện cho một môn học (Course) tại DTU.
  */
@@ -68,6 +75,9 @@ export interface Course {
 
   /** Học kỳ của môn học ('Học kỳ 1' | 'Học kỳ 2' | 'Học kỳ Hè') */
   semester: 'Học kỳ 1' | 'Học kỳ 2' | 'Học kỳ Hè';
+
+  /** Điểm chi tiết thành phần môn học */
+  detailedGrades?: DetailedGradeItem[];
 }
 
 /**

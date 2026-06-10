@@ -3027,11 +3027,11 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
           {/* Header of Drawer (Only visible on mobile when drawer is open) */}
           {isMobileDrawerOpen && (
             <div className="sm:hidden flex items-center justify-between pb-3 mb-3 border-b border-slate-800">
-              <div className="flex gap-2 p-0.5 bg-slate-950 rounded-xl border border-slate-800/80">
+              <div className="flex gap-1 p-0.5 bg-slate-950 rounded-xl border border-slate-800/80 overflow-x-auto scrollbar-none flex-nowrap max-w-[calc(100%-40px)] shrink-0">
                 <button
                   type="button"
                   onClick={() => setMobileDrawerTab('add')}
-                  className={`px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all ${
+                  className={`px-2.5 py-1.5 rounded-lg text-[10.5px] font-bold transition-all shrink-0 whitespace-nowrap ${
                     mobileDrawerTab === 'add' ? 'bg-indigo-600 text-white shadow shadow-indigo-600/30' : 'text-slate-400'
                   }`}
                 >
@@ -3039,8 +3039,17 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                 </button>
                 <button
                   type="button"
+                  onClick={() => setMobileDrawerTab('detailed')}
+                  className={`px-2.5 py-1.5 rounded-lg text-[10.5px] font-bold transition-all shrink-0 whitespace-nowrap ${
+                    mobileDrawerTab === 'detailed' ? 'bg-indigo-600 text-white shadow shadow-indigo-600/30' : 'text-slate-400'
+                  }`}
+                >
+                  Tính điểm chi tiết
+                </button>
+                <button
+                  type="button"
                   onClick={() => setMobileDrawerTab('simulator')}
-                  className={`px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all ${
+                  className={`px-2.5 py-1.5 rounded-lg text-[10.5px] font-bold transition-all shrink-0 whitespace-nowrap ${
                     mobileDrawerTab === 'simulator' ? 'bg-indigo-600 text-white shadow shadow-indigo-600/30' : 'text-slate-400'
                   }`}
                 >
@@ -3050,7 +3059,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
               <button
                 type="button"
                 onClick={() => setIsMobileDrawerOpen(false)}
-                className="p-1.5 bg-slate-800 hover:bg-slate-700 rounded-full text-slate-400 hover:text-white transition cursor-pointer"
+                className="p-1.5 bg-slate-800 hover:bg-slate-700 rounded-full text-slate-400 hover:text-white transition cursor-pointer shrink-0"
               >
                 <X className="w-4 h-4" />
               </button>

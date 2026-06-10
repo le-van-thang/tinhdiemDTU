@@ -121,6 +121,22 @@ export function calculateDetailedScore(detailedGrades?: DetailedGradeItem[]) {
   let weightedScoreSum = 0;
   let hasMissingScores = false;
 
+  // Quy chế DTU: điểm thi cuối kỳ phải >= 1.0/10 mới được qua môn
+  const FINAL_EXAM_KEYWORDS = ['cuối kỳ', 'cuối kì', 'cuoi ky', 'cuoi ki', 'thi cuối', 'thi cuoi', 'final', 'cuối học kỳ'];
+  const finalExamItem = detailedGrades.find(item =>
+    FINAL_EXAM_KEYWORDS.some(kw => item.name.toLowerCase().includes(kw))
+  );
+
+  const finalExamScoreRaw = finalExamItem?.score ?? null;
+
+  // Điểm thi cuối kỳ được làm tròn đến 1 chữ số thập phân trước khi xét điều kiện dưới 1.0
+  const finalExamScoreRounded = finalExamItem?.score !== null && finalExamItem?.score !== undefined
+    ? Math.round(finalExamItem.score * 10) / 10
+    : null;
+  const finalExamFailed =
+    finalExamScoreRounded !== null &&
+    finalExamScoreRounded < 1.0;
+
   for (const item of detailedGrades) {
     totalWeight += item.weight;
     if (item.score !== null) {
@@ -137,7 +153,11 @@ export function calculateDetailedScore(detailedGrades?: DetailedGradeItem[]) {
   if (completedWeights === 0) {
     return {
       score: 0,
+      roundedScore: 0,
       hasMissingScores: true,
+      finalExamFailed: false,
+      finalExamScoreRaw: null,
+      finalExamScore: null,
       totalWeight,
       completedWeights,
       currentWeightedSum: 0
@@ -151,8 +171,12 @@ export function calculateDetailedScore(detailedGrades?: DetailedGradeItem[]) {
   const overallScore = totalWeight > 0 ? (currentWeightedSum / (totalWeight / 100)) : 0;
 
   return {
-    score: Math.round(overallScore * 100) / 100,
+    score: Math.round(overallScore * 100) / 100, // Điểm thực tế chưa làm tròn (2 chữ số thập phân)
+    roundedScore: Math.round(overallScore * 10) / 10, // Điểm làm tròn hệ 10 (1 chữ số thập phân) theo quy chế DTU
     hasMissingScores,
+    finalExamFailed,
+    finalExamScoreRaw,
+    finalExamScore: finalExamScoreRounded,
     totalWeight,
     completedWeights,
     currentWeightedSum: Math.round(currentWeightedSum * 100) / 100
@@ -1332,7 +1356,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
       );
     }
 
-    const { score, hasMissingScores, currentWeightedSum } = result;
+    const { score, roundedScore, hasMissingScores, currentWeightedSum, finalExamFailed } = result;
     
     if (hasMissingScores) {
       return (
@@ -1346,8 +1370,8 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
       );
     }
 
-    const calculatedGrade = getDTUGradeCharFromScore(score);
-    const isFailed = score < 4.0;
+    const calculatedGrade = finalExamFailed ? 'F' : getDTUGradeCharFromScore(roundedScore!);
+    const isFailed = roundedScore! < 4.0 || finalExamFailed;
     
     return (
       <button
@@ -1357,7 +1381,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
             ? 'bg-rose-500/10 hover:bg-rose-500/25 text-rose-400 border-rose-500/20 hover:border-rose-500/40' 
             : 'bg-emerald-500/10 hover:bg-emerald-500/25 text-emerald-400 border-emerald-500/20 hover:border-emerald-500/40'
         }`}
-        title={`Điểm chi tiết: ${score.toFixed(2)} (${calculatedGrade}) - Nhấp để sửa`}
+        title={`Điểm chi tiết thực tế: ${score.toFixed(2)} (Làm tròn: ${roundedScore!.toFixed(1)} - ${calculatedGrade}) - Nhấp để sửa`}
       >
         {score.toFixed(2)} ({calculatedGrade})
       </button>
@@ -1379,7 +1403,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
 
     if (calculated) {
       if (!calculated.hasMissingScores && Math.abs(calculated.totalWeight - 100) < 0.01) {
-        finalGradeChar = getDTUGradeCharFromScore(calculated.score);
+        finalGradeChar = calculated.finalExamFailed ? 'F' : getDTUGradeCharFromScore(calculated.roundedScore);
       } else {
         finalGradeChar = '';
       }
@@ -3814,7 +3838,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                         if (calc.hasMissingScores) {
                           return <span className="text-xs font-black text-slate-400 block mt-0.5">--</span>;
                         }
-                        const grade = getDTUGradeCharFromScore(calc.score);
+                        const grade = calc.finalExamFailed ? 'F' : getDTUGradeCharFromScore(calc.roundedScore);
                         const isF = grade === 'F';
                         return (
                           <span className={`text-xs font-black block mt-0.5 ${isF ? 'text-rose-400' : 'text-emerald-400'}`}>
@@ -3870,7 +3894,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                                 statusText = 'Chắc chắn đạt';
                                 badgeClass = 'bg-emerald-500/10 text-emerald-450 border-emerald-500/25';
                               } else if (requiredScore <= 10.0) {
-                                statusText = `Cần >= ${requiredScore.toFixed(2)}`;
+                                statusText = `Cần >= ${requiredScore.toFixed(1)}`;
                                 badgeClass = 'bg-indigo-500/10 text-indigo-300 border-indigo-500/25';
                               } else {
                                 statusText = 'Không thể đạt';
@@ -3890,26 +3914,81 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                         </div>
                       </div>
                     ) : (
-                      // All grades completed
+                      // All grades completed — kiểm tra quy chế cuối kỳ
                       (() => {
-                        const grade = getDTUGradeCharFromScore(calc.score);
+                        const grade = calc.finalExamFailed ? 'F' : getDTUGradeCharFromScore(calc.roundedScore);
                         const isF = grade === 'F';
-                        if (isF) {
+
+                        const renderRoundingInfo = () => {
+                          const isDifferent = Math.abs(calc.score - calc.roundedScore) > 0.001;
+                          const isFinalDiff = calc.finalExamScoreRaw !== null && calc.finalExamScore !== null && Math.abs(calc.finalExamScoreRaw - calc.finalExamScore) > 0.001;
                           return (
-                            <div className="flex gap-1.5 p-2 bg-rose-500/5 border border-rose-500/10 rounded-xl text-rose-455">
-                              <AlertTriangle className="w-4 h-4 shrink-0 text-rose-455" />
-                              <div>
-                                Môn này bị điểm <b>F (Dưới 4.0)</b>. Bạn không đủ điều kiện qua môn và bắt buộc phải học lại / thi lại học phần này.
+                            <div className="mt-2.5 p-2 bg-slate-900/60 border border-slate-800/80 rounded-xl space-y-1 text-slate-450 text-[9.5px] leading-relaxed font-semibold">
+                              <div className="flex items-center gap-1.5 font-black text-slate-350 uppercase tracking-wider text-[8px]">
+                                <Info className="w-3.5 h-3.5 text-indigo-450 shrink-0" />
+                                <span>Quy chế làm tròn DTU</span>
                               </div>
+                              <p className="text-[9px]">Điểm các bài đánh giá bộ phận và điểm học phần hệ 10 được làm tròn đến <b>1 chữ số thập phân</b>.</p>
+                              {isDifferent && (
+                                <p className="text-indigo-300 font-medium">
+                                  👉 Tổng điểm thực tế là <b className="text-white">{calc.score.toFixed(2)}</b>, được làm tròn thành <b className="text-white">{calc.roundedScore.toFixed(1)}</b>.
+                                </p>
+                              )}
+                              {isFinalDiff && (
+                                <p className="text-amber-400 font-medium">
+                                  👉 Điểm thi cuối kỳ thực tế là <b className="text-white">{calc.finalExamScoreRaw!.toFixed(2)}</b>, được làm tròn thành <b className="text-white">{calc.finalExamScore!.toFixed(1)}</b>.
+                                </p>
+                              )}
+                              {!isDifferent && !isFinalDiff && (
+                                <p className="text-slate-350">
+                                  👉 Điểm thực tế của bạn trùng khớp với điểm làm tròn: <b className="text-white">{calc.score.toFixed(1)}</b>.
+                                </p>
+                              )}
+                            </div>
+                          );
+                        };
+
+                        // QUY CHẾ DTU: điểm thi cuối kỳ < 1.0 → tự động F dù tổng điểm cao
+                        if (calc.finalExamFailed) {
+                          return (
+                            <div className="space-y-2">
+                              <div className="flex gap-1.5 p-2 bg-orange-500/8 border border-orange-500/15 rounded-xl text-orange-300">
+                                <AlertTriangle className="w-4 h-4 shrink-0 text-orange-400 mt-px" />
+                                <div className="text-[10px] leading-relaxed">
+                                  <b className="text-orange-200">Tạch vì điểm cuối kỳ dưới 1.0!</b><br />
+                                  Điểm thi cuối kỳ thực tế: <b className="text-rose-300">{calc.finalExamScoreRaw?.toFixed(2)}/10</b>
+                                  {calc.finalExamScoreRaw !== null && calc.finalExamScore !== null && Math.abs(calc.finalExamScoreRaw! - calc.finalExamScore!) > 0.001 && (
+                                    <> (làm tròn thành <b className="text-rose-200">{calc.finalExamScore!.toFixed(1)}</b>)</>
+                                  )}
+                                  . Theo quy chế DTU, điểm thi cuối kỳ bắt buộc phải <b>≥ 1.0/10</b> mới được tính qua môn, 
+                                  dù tổng điểm có đạt 4.0 hay không.
+                                </div>
+                              </div>
+                              {renderRoundingInfo()}
+                            </div>
+                          );
+                        } else if (isF) {
+                          return (
+                            <div className="space-y-2">
+                              <div className="flex gap-1.5 p-2 bg-rose-500/5 border border-rose-500/10 rounded-xl text-rose-455">
+                                <AlertTriangle className="w-4 h-4 shrink-0 text-rose-455" />
+                                <div>
+                                  Môn này bị điểm <b>F (Tổng điểm dưới 4.0)</b>. Bạn không đủ điều kiện qua môn và bắt buộc phải học lại / thi lại học phần này.
+                                </div>
+                              </div>
+                              {renderRoundingInfo()}
                             </div>
                           );
                         } else {
                           return (
-                            <div className="flex gap-1.5 p-2 bg-emerald-500/5 border border-emerald-500/10 rounded-xl text-emerald-400">
-                              <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-400" />
-                              <div>
-                                Môn học đủ điều kiện qua môn với điểm chữ <b>{grade}</b> (Quy đổi hệ 4: <b>{GRADE_SCALE_MAP[grade]?.toFixed(2)}</b>).
+                            <div className="space-y-2">
+                              <div className="flex gap-1.5 p-2 bg-emerald-500/5 border border-emerald-500/10 rounded-xl text-emerald-400">
+                                <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-400" />
+                                <div>
+                                  Môn học đủ điều kiện qua môn với điểm chữ <b>{grade}</b> (Quy đổi hệ 4: <b>{GRADE_SCALE_MAP[grade]?.toFixed(2)}</b>).
+                                </div>
                               </div>
+                              {renderRoundingInfo()}
                             </div>
                           );
                         }

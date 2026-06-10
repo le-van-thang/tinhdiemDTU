@@ -3574,7 +3574,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
           <h2 className="text-sm font-bold text-white mb-3 flex items-center justify-between pb-2.5 border-b border-slate-800/80">
             <span className="flex items-center gap-2">
               <ClipboardList className="w-4.5 h-4.5 text-indigo-400" />
-              {selectedDetailedCourse ? `Điểm chi tiết: ${selectedDetailedCourse.courseCode}` : 'Máy Tính Điểm Chi Tiết'}
+              {selectedDetailedCourse ? `Điểm chi tiết: ${selectedDetailedCourse.courseCode} (điểm cụ thể mydtu)` : 'Máy Tính Điểm Chi Tiết (điểm cụ thể mydtu)'}
             </span>
             {selectedDetailedCourse && (
               <button
@@ -3839,7 +3839,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                   <div className="p-1.5 bg-slate-950/40 border border-slate-855 rounded-xl">
                     <span className="text-[9px] font-black text-slate-500 uppercase tracking-wider block">Tổng điểm hệ 10</span>
                     <span className="text-xs font-black text-white block mt-0.5">
-                      {calc ? calc.score.toFixed(2) : '--'}
+                      {calc ? `${calc.score.toFixed(2)} (${(calc.score * 10).toFixed(1)}%)` : '--'}
                     </span>
                     {calc && calc.hasMissingScores && (
                       <span className="text-[8px] text-amber-500 block leading-tight font-bold">Tạm tính</span>

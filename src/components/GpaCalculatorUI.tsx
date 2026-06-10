@@ -1448,12 +1448,17 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
         let parts = line.split('\t').map(p => p.trim());
         if (parts.length >= 4) {
           const name = parts[1] || parts[0];
-          let weightStr = parts.find((p, idx) => idx > 2 && p.includes('%')) || parts[parts.length - 1];
+          // Lấy cột chứa % cuối cùng (là % Điểm tối đa) để làm Tỷ lệ %
+          let weightStr = parts.filter(p => p.includes('%')).pop() || parts[parts.length - 1];
           if (!weightStr) weightStr = parts[parts.length - 1];
           const weight = parseFloat(weightStr.replace('%', '')) || 0;
           
-          const scoreStr = parts[2];
-          const score = scoreStr && scoreStr.trim() !== '' ? parseFloat(scoreStr) : null;
+          // Lấy Điểm lần 1 hoặc Điểm lần 2 (nếu Điểm lần 1 trống)
+          const score1Str = parts[2];
+          const score2Str = parts[3];
+          const score1 = score1Str && score1Str.trim() !== '' ? parseFloat(score1Str) : null;
+          const score2 = score2Str && score2Str.trim() !== '' ? parseFloat(score2Str) : null;
+          const score = (score2 !== null && !isNaN(score2)) ? score2 : score1;
 
           if (name && weight > 0) {
             parsedItems.push({

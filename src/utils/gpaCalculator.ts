@@ -263,7 +263,8 @@ export function calculateDTUGPA(courses: Course[]): DTUGPAResult {
     accumulatedCredits: totalCreditsForGpa, // Mẫu số: Tổng tín chỉ tính GPA tích lũy
     cumulativeGpa,                         // Điểm trung bình tích lũy thang 4
     totalRetakeCredits,                     // Tổng tín chỉ đã học lại/cải thiện
-    rawCumulativeGpa                        // Điểm trung bình tích lũy chưa làm tròn
+    rawCumulativeGpa,                       // Điểm trung bình tích lũy chưa làm tròn
+    totalGradePoints                        // Tổng số điểm tích lũy quy đổi (tử số)
   };
 }
 

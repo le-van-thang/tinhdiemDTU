@@ -146,6 +146,9 @@ export interface DTUGPAResult {
 
   /** 4. Điểm trung bình tích lũy GPA chưa làm tròn (chính xác tuyệt đối) */
   rawCumulativeGpa: number;
+
+  /** 5. Tổng số điểm tích lũy quy đổi (tử số trong công thức tính GPA) */
+  totalGradePoints: number;
 }
 
 /**

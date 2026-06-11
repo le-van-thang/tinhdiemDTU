@@ -413,6 +413,9 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
   // State quản lý Modal Hướng dẫn (Help Modal)
   const [isHelpModalOpen, setIsHelpModalOpen] = useState(false);
 
+  // State quản lý Modal Giải thích GPA chi tiết
+  const [isGpaDetailModalOpen, setIsGpaDetailModalOpen] = useState(false);
+
   // State quản lý gợi ý nhập tín chỉ lần đầu tiên
   const [showCreditsHint, setShowCreditsHint] = useState<boolean>(() => {
     try {
@@ -2566,16 +2569,23 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
             <span className="text-slate-500 text-xs">/ 4.00</span>
             {hasGrades && dtuResult.rawCumulativeGpa > 0 && (
               <span 
-                className="text-[11px] text-indigo-400 font-semibold px-2 py-0.5 bg-indigo-500/10 border border-indigo-500/20 rounded cursor-help transition-all duration-150 select-none hover:bg-indigo-500/20"
-                title={`Điểm chính xác chưa làm tròn: ${dtuResult.rawCumulativeGpa.toFixed(6)}`}
+                onClick={() => setIsGpaDetailModalOpen(true)}
+                className="text-[11px] text-indigo-400 font-semibold px-2 py-0.5 bg-indigo-500/10 border border-indigo-500/20 rounded cursor-pointer transition-all duration-150 select-none hover:bg-indigo-500/20 active:scale-95"
+                title="Xem chi tiết cách tính điểm GPA"
               >
                 ({dtuResult.rawCumulativeGpa.toFixed(4)})
               </span>
             )}
           </div>
-          <p className="text-[11px] text-slate-400 mt-3 flex items-center gap-1.5">
-            <Info className="w-3.5 h-3.5 text-slate-500" />
-            Đã trừ điểm gốc của các môn bị học cải thiện.
+          <p 
+            onClick={() => setIsGpaDetailModalOpen(true)}
+            className="text-[11px] text-slate-400 mt-3 flex items-center gap-1.5 cursor-pointer hover:text-indigo-400 transition-colors select-none"
+            title="Nhấp để xem chi tiết cách tính điểm và cơ chế học cải thiện"
+          >
+            <Info className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+            <span className="underline decoration-dotted decoration-slate-600 hover:decoration-indigo-400">
+              Đã trừ điểm gốc của các môn bị học cải thiện.
+            </span>
           </p>
         </div>
 
@@ -5075,6 +5085,110 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
               >
                 <Sparkles className="w-4 h-4" />
                 Phân tích & Cập nhật
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL GIẢI THÍCH CHI TIẾT GPA (GPA Detail Explanation Modal) */}
+      {isGpaDetailModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-fadeIn">
+          <div 
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm" 
+            onClick={() => setIsGpaDetailModalOpen(false)}
+          ></div>
+          <div className="relative bg-slate-900 border border-slate-700/80 rounded-2xl p-5 w-full max-w-lg shadow-2xl animate-in fade-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
+            {/* Header */}
+            <div className="flex justify-between items-center pb-3 border-b border-slate-800 mb-4">
+              <h3 className="text-sm font-bold text-white uppercase tracking-wide flex items-center gap-2">
+                <Award className="w-5 h-5 text-indigo-400" />
+                Chi Tiết Tính Điểm GPA Tích Lũy
+              </h3>
+              <button 
+                onClick={() => setIsGpaDetailModalOpen(false)}
+                className="text-slate-500 hover:text-white hover:bg-slate-800 p-1.5 rounded-lg transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="space-y-4 overflow-y-auto pr-1 flex-grow text-xs leading-relaxed text-slate-300">
+              <div className="p-3 bg-slate-950/50 rounded-xl border border-slate-800/80 space-y-2">
+                <div className="flex justify-between items-center">
+                  <span>GPA Tích lũy (Làm tròn):</span>
+                  <span className="text-base font-black text-emerald-400">
+                    {hasGrades ? dtuResult.cumulativeGpa.toFixed(2) : '--'} / 4.00
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span>GPA Chính xác (Chưa làm tròn):</span>
+                  <span className="text-sm font-bold text-indigo-400">
+                    {hasGrades ? dtuResult.rawCumulativeGpa.toFixed(6) : '--'}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center border-t border-slate-800/60 pt-2 mt-1">
+                  <span>Xếp loại tốt nghiệp hiện tại:</span>
+                  <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${gpaClassification.color}`}>
+                    {gpaClassification.name}
+                  </span>
+                </div>
+              </div>
+
+              {hasGrades && (
+                <div className="space-y-2">
+                  <span className="font-extrabold text-white block uppercase tracking-wider text-[10px]">
+                    🧮 Cấu Trúc Phép Tính GPA Tích Lũy:
+                  </span>
+                  <div className="p-3 bg-indigo-500/5 border border-indigo-500/10 rounded-xl space-y-2">
+                    <div className="flex justify-between">
+                      <span>Tử số (Tổng điểm hệ 4 nhân tín chỉ):</span>
+                      <span className="font-bold text-white">{dtuResult.totalGradePoints.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Mẫu số (Tổng tín chỉ tích lũy tính GPA):</span>
+                      <span className="font-bold text-white">{dtuResult.accumulatedCredits} tín chỉ</span>
+                    </div>
+                    <div className="border-t border-indigo-500/10 my-2"></div>
+                    <div className="flex flex-col gap-1">
+                      <span className="text-slate-400 text-[10px]">Phép toán chia thực tế:</span>
+                      <code className="text-indigo-300 font-bold bg-slate-950 px-2 py-1 rounded text-center block text-xs tracking-wide">
+                        {dtuResult.totalGradePoints.toFixed(2)} / {dtuResult.accumulatedCredits} = {dtuResult.rawCumulativeGpa.toFixed(8)}
+                      </code>
+                      <span className="text-[10px] text-slate-500 text-center italic mt-1">
+                        (Làm tròn 2 chữ số thập phân chuẩn cổng myDTU: {dtuResult.cumulativeGpa.toFixed(2)})
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <span className="font-extrabold text-white block uppercase tracking-wider text-[10px]">
+                  ⚙️ Quy Chế Học Lại & Cải Thiện (Cơ chế "Trừ cũ - Cộng mới"):
+                </span>
+                <div className="space-y-2 bg-slate-950/40 p-3 rounded-xl border border-slate-800/80">
+                  <p>
+                    🔹 <strong>Môn học điều kiện:</strong> Điểm của các môn Giáo dục Thể chất, Giáo dục Quốc phòng (đánh giá bằng P/F) <strong>bị loại hoàn toàn</strong> khỏi công thức tính GPA tích lũy.
+                  </p>
+                  <p>
+                    🔹 <strong>Trừ điểm gốc môn học lại:</strong> Khi bạn đăng ký học cải thiện hoặc học lại một môn đã học trước đó, điểm của lượt học cũ sẽ bị loại ra khỏi tổng điểm và tổng số tín chỉ tích lũy (không tính vào GPA).
+                  </p>
+                  <p>
+                    🔹 <strong>Cộng điểm lượt mới nhất:</strong> Điểm số và số tín chỉ của lượt học mới nhất sẽ được sử dụng để tính vào GPA tích lũy, giúp cải thiện điểm trung bình của bạn.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="flex justify-end pt-3 border-t border-slate-800">
+              <button 
+                onClick={() => setIsGpaDetailModalOpen(false)}
+                className="px-4 py-2 rounded-lg text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-500 shadow-md transition-all active:scale-95 cursor-pointer border-0"
+              >
+                Đã Hiểu
               </button>
             </div>
           </div>

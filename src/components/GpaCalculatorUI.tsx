@@ -30,7 +30,8 @@ import {
   Upload,
   Download,
   Database,
-  ClipboardList
+  ClipboardList,
+  Heart
 } from 'lucide-react';
 
 const K29_CMU_SE_PRESET: CurriculumCourse[] = [
@@ -415,6 +416,9 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
 
   // State quản lý Modal Giải thích GPA chi tiết
   const [isGpaDetailModalOpen, setIsGpaDetailModalOpen] = useState(false);
+
+  // State quản lý Modal Đồng hành cùng dự án (Support Modal)
+  const [isSupportModalOpen, setIsSupportModalOpen] = useState(false);
 
   // State quản lý gợi ý nhập tín chỉ lần đầu tiên
   const [showCreditsHint, setShowCreditsHint] = useState<boolean>(() => {
@@ -2490,6 +2494,16 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
             id="input-import-file"
           />
           
+          <button
+            onClick={() => setIsSupportModalOpen(true)}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 sm:px-3 sm:py-2 text-xs font-semibold rounded-lg bg-pink-500/10 border border-pink-500/20 text-pink-400 hover:bg-pink-500/20 active:scale-95 transition-all cursor-pointer shadow-sm shadow-pink-500/5"
+            title="Đồng hành cùng tác giả duy trì và phát triển ứng dụng"
+            id="btn-support"
+          >
+            <Heart className="w-3.5 h-3.5 fill-pink-500/20" />
+            Đồng Hành Cùng Dự Án
+          </button>
+
           <button
             onClick={() => setIsFeedbackModalOpen(true)}
             className="flex items-center gap-1.5 px-2.5 py-1.5 sm:px-3 sm:py-2 text-xs font-semibold rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 hover:bg-indigo-500/20 active:scale-95 transition-all cursor-pointer shadow-sm shadow-indigo-500/5"
@@ -5194,6 +5208,84 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
           </div>
         </div>
       )}
+
+      {/* MODAL ĐỒNG HÀNH CÙNG DỰ ÁN (Support Development Modal) */}
+      {isSupportModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-fadeIn">
+          <div 
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm" 
+            onClick={() => setIsSupportModalOpen(false)}
+          ></div>
+          <div className="relative bg-slate-900 border border-slate-700/80 rounded-2xl p-5 w-full max-w-md shadow-2xl animate-in fade-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
+            {/* Header */}
+            <div className="flex justify-between items-center pb-3 border-b border-slate-800 mb-4">
+              <h3 className="text-sm font-bold text-white uppercase tracking-wide flex items-center gap-2">
+                <Heart className="w-5 h-5 text-pink-500 fill-pink-500/20 animate-pulse" />
+                Đồng Hành Cùng Dự Án
+              </h3>
+              <button 
+                onClick={() => setIsSupportModalOpen(false)}
+                className="text-slate-500 hover:text-white hover:bg-slate-800 p-1.5 rounded-lg transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="space-y-3 pr-1 text-xs text-slate-350">
+              <p className="text-center text-slate-300 text-[11px] leading-normal px-1">
+                Cảm ơn bạn đã đồng hành cùng <strong>Thắng (Lê Văn Thắng dev)</strong> duy trì hosting và tiếp thêm động lực phát triển ứng dụng tính GPA DTU phi lợi nhuận này!
+              </p>
+
+              <div className="bg-slate-950/65 p-3 rounded-xl border border-slate-800/80 flex flex-col sm:flex-row items-center gap-3">
+                {/* QR Code Image */}
+                <div className="bg-white p-1.5 rounded-lg shadow-md w-[125px] h-[125px] flex-shrink-0 flex items-center justify-center hover:scale-105 transition-transform duration-200">
+                  <img 
+                    src="https://img.vietqr.io/image/970449-0333792162-qr_only.png?addInfo=Dong%20hanh%20cung%20GPA%20DTU&accountName=LE%20VAN%20THANG" 
+                    alt="VietQR Lê Văn Thắng LPBank" 
+                    className="w-full h-full object-contain"
+                  />
+                </div>
+
+                {/* Account Details */}
+                <div className="w-full space-y-1.5 border-t sm:border-t-0 sm:border-l border-slate-800/60 pt-2 sm:pt-0 sm:pl-3">
+                  <div className="flex justify-between sm:flex-col sm:items-start text-[11px]">
+                    <span className="text-slate-500 text-[9px] uppercase tracking-wider">Ngân hàng</span>
+                    <span className="font-bold text-white text-[11px]">LPBank (Ngân hàng Lộc Phát)</span>
+                  </div>
+                  <div className="flex justify-between sm:flex-col sm:items-start text-[11px]">
+                    <span className="text-slate-500 text-[9px] uppercase tracking-wider">Số tài khoản</span>
+                    <span className="font-black text-emerald-400 select-all font-mono text-xs">0333792162</span>
+                  </div>
+                  <div className="flex justify-between sm:flex-col sm:items-start text-[11px]">
+                    <span className="text-slate-500 text-[9px] uppercase tracking-wider">Chủ tài khoản</span>
+                    <span className="font-bold text-white text-[11px]">LÊ VĂN THẮNG</span>
+                  </div>
+                  <div className="flex justify-between sm:flex-col sm:items-start text-[11px]">
+                    <span className="text-slate-500 text-[9px] uppercase tracking-wider">Nội dung chuyển</span>
+                    <span className="font-bold text-indigo-400 select-all text-[11px]">Dong hanh cung GPA DTU</span>
+                  </div>
+                </div>
+              </div>
+
+              <p className="text-[10px] text-slate-500 italic text-center leading-normal">
+                ❤️ Mọi sự ủng hộ đều là động lực to lớn giúp mình duy trì dự án. Cảm ơn bạn rất nhiều!
+              </p>
+            </div>
+
+            {/* Footer */}
+            <div className="flex justify-end pt-3 border-t border-slate-800">
+              <button 
+                onClick={() => setIsSupportModalOpen(false)}
+                className="px-4 py-2 rounded-lg text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-500 shadow-md transition-all active:scale-95 cursor-pointer border-0"
+              >
+                Đóng
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
 
       {/* MODAL HƯỚNG DẪN SỬ DỤNG (Help Modal) */}
       {isHelpModalOpen && (

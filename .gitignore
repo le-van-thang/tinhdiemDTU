@@ -25,3 +25,7 @@ pnpm-debug.log*
 *.sln
 *.sw?
 .DS_Store 
+
+# File log/dump tạm của dev
+cells_dump.txt
+parser_log.txt

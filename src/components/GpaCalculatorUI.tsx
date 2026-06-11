@@ -2000,7 +2000,14 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
     <div class="summary-grid">
       <div class="summary-card">
         <div class="summary-label">GPA Tích Lũy</div>
-        <div class="summary-value">${displayGpa}</div>
+        <div class="summary-value">
+          ${displayGpa}
+          ${exportHasGrades && dtuResult.rawCumulativeGpa > 0 ? `
+            <span style="font-size: 11px; font-weight: normal; color: #64748b; display: block; margin-top: 3px;" title="Điểm chính xác chưa làm tròn: ${dtuResult.rawCumulativeGpa.toFixed(6)}">
+              (${dtuResult.rawCumulativeGpa.toFixed(4)})
+            </span>
+          ` : ''}
+        </div>
       </div>
       <div class="summary-card">
         <div class="summary-label">Xếp Loại Tốt Nghiệp</div>
@@ -2552,11 +2559,19 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
               <HelpCircle className="w-3 h-3 opacity-85" />
             </span>
           </div>
-          <div className="flex items-baseline gap-1.5">
+          <div className="flex items-baseline gap-1.5 flex-wrap">
             <span className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white" id="dashboard-gpa">
               {hasGrades ? dtuResult.cumulativeGpa.toFixed(2) : '--'}
             </span>
             <span className="text-slate-500 text-xs">/ 4.00</span>
+            {hasGrades && dtuResult.rawCumulativeGpa > 0 && (
+              <span 
+                className="text-[11px] text-indigo-400 font-semibold px-2 py-0.5 bg-indigo-500/10 border border-indigo-500/20 rounded cursor-help transition-all duration-150 select-none hover:bg-indigo-500/20"
+                title={`Điểm chính xác chưa làm tròn: ${dtuResult.rawCumulativeGpa.toFixed(6)}`}
+              >
+                ({dtuResult.rawCumulativeGpa.toFixed(4)})
+              </span>
+            )}
           </div>
           <p className="text-[11px] text-slate-400 mt-3 flex items-center gap-1.5">
             <Info className="w-3.5 h-3.5 text-slate-500" />

@@ -143,6 +143,9 @@ export interface DTUGPAResult {
 
   /** 3. Tổng số tín chỉ đã đăng ký học lại / học cải thiện */
   totalRetakeCredits: number;
+
+  /** 4. Điểm trung bình tích lũy GPA chưa làm tròn (chính xác tuyệt đối) */
+  rawCumulativeGpa: number;
 }
 
 /**

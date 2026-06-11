@@ -256,14 +256,14 @@ export function calculateDTUGPA(courses: Course[]): DTUGPAResult {
   }
 
   // 3. Tính GPA tích lũy chung toàn khóa và làm tròn đến 2 chữ số thập phân
-  const cumulativeGpa = totalCreditsForGpa === 0
-    ? 0.00
-    : Math.round((totalGradePoints / totalCreditsForGpa) * 100) / 100;
+  const rawCumulativeGpa = totalCreditsForGpa === 0 ? 0.0000 : totalGradePoints / totalCreditsForGpa;
+  const cumulativeGpa = Math.round(rawCumulativeGpa * 100) / 100;
 
   return {
     accumulatedCredits: totalCreditsForGpa, // Mẫu số: Tổng tín chỉ tính GPA tích lũy
     cumulativeGpa,                         // Điểm trung bình tích lũy thang 4
-    totalRetakeCredits                      // Tổng tín chỉ đã học lại/cải thiện
+    totalRetakeCredits,                     // Tổng tín chỉ đã học lại/cải thiện
+    rawCumulativeGpa                        // Điểm trung bình tích lũy chưa làm tròn
   };
 }
 

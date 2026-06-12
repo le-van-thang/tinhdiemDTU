@@ -2577,8 +2577,8 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
     }
   };
 
-  // Hàm Tải ảnh Khoe Kết Quả chất lượng cao
-  const handleDownloadShareCard = () => {
+  // Hàm Tải ảnh Khoe Kết Quả chất lượng cao với cơ chế tương thích kép cho Safari/iOS
+  const handleDownloadShareCard = async () => {
     if (!shareCardRef.current) {
       showToast('Không tìm thấy dữ liệu thẻ chia sẻ.', 'error');
       return;
@@ -2586,34 +2586,42 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
 
     showToast('Đang tạo ảnh chất lượng cao để chia sẻ...', 'info');
 
-    // Sử dụng html-to-image để xuất
-    toPng(shareCardRef.current, {
+    const renderOptions = {
       quality: 0.95,
       pixelRatio: 2, // Đảm bảo độ sắc nét cao (Retina) khi tải lên Facebook/Story
       cacheBust: true, // Tránh các vấn đề cache ảnh từ nguồn ngoài
       width: 640,
       height: 1136,
-    })
-      .then((dataUrl) => {
-        const link = document.createElement('a');
-        const formattedName = shareStudentName.trim()
-          ? shareStudentName.trim().replace(/\s+/g, '_')
-          : 'Sinh_Vien_DTU';
-        link.download = `GPA_DTU_${formattedName}_${dtuResult.cumulativeGpa.toFixed(2)}.png`;
-        link.href = dataUrl;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        showToast('Đã tạo ảnh chia sẻ thành công!', 'success');
+    };
 
-        // Lưu ảnh đã tạo và mở modal hướng dẫn tải trên di động
-        setDownloadedImageUrl(dataUrl);
-        setIsDownloadModalOpen(true);
-      })
-      .catch((err) => {
-        console.error('Lỗi khi tạo ảnh chia sẻ:', err);
-        showToast('Có lỗi xảy ra khi tạo ảnh. Vui lòng thử lại!', 'error');
-      });
+    try {
+      // Gọi lần 1 để kích hoạt nạp tài nguyên / render trong Safari/iOS
+      await toPng(shareCardRef.current, renderOptions);
+      
+      // Chờ 150ms để Safari cập nhật bộ nhớ đệm canvas
+      await new Promise((resolve) => setTimeout(resolve, 150));
+      
+      // Gọi lần 2 để lấy dữ liệu ảnh thực tế
+      const dataUrl = await toPng(shareCardRef.current, renderOptions);
+
+      const link = document.createElement('a');
+      const formattedName = shareStudentName.trim()
+        ? shareStudentName.trim().replace(/\s+/g, '_')
+        : 'Sinh_Vien_DTU';
+      link.download = `GPA_DTU_${formattedName}_${dtuResult.cumulativeGpa.toFixed(2)}.png`;
+      link.href = dataUrl;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      showToast('Đã tạo ảnh chia sẻ thành công!', 'success');
+
+      // Lưu ảnh đã tạo và mở modal hướng dẫn tải trên di động
+      setDownloadedImageUrl(dataUrl);
+      setIsDownloadModalOpen(true);
+    } catch (err) {
+      console.error('Lỗi khi tạo ảnh chia sẻ:', err);
+      showToast('Có lỗi xảy ra khi tạo ảnh. Vui lòng thử lại!', 'error');
+    }
   };
 
   // Hàm Xử lý Tải ảnh nền tùy chỉnh từ thiết bị

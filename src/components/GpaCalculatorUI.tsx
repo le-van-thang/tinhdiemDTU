@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
+import { toPng } from 'html-to-image';
 import { Course, GradeChar, ProcessedCourse, GRADE_SCALE_MAP, CurriculumCourse, DetailedGradeItem } from '../types/gpa';
 import { calculateDTUGPA, calculateGpaSummary, calculateGpaTrend, calculateSemesterGpa, GpaTrendPoint } from '../utils/gpaCalculator';
 import { 
@@ -31,7 +32,12 @@ import {
   Download,
   Database,
   ClipboardList,
-  Heart
+  Heart,
+  Maximize2,
+  Image as ImageIcon,
+  Trophy,
+  Medal,
+  Star
 } from 'lucide-react';
 
 const K29_CMU_SE_PRESET: CurriculumCourse[] = [
@@ -183,6 +189,423 @@ export function calculateDetailedScore(detailedGrades?: DetailedGradeItem[]) {
     currentWeightedSum: Math.round(currentWeightedSum * 100) / 100
   };
 }
+
+const SparkleIcon = ({ className, style }: { className?: string; style?: React.CSSProperties }) => (
+  <svg className={className} style={style} viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+    <path d="M12 0L14.6 9.4L24 12L14.6 14.6L12 24L9.4 14.6L0 12L9.4 9.4L12 0Z" />
+  </svg>
+);
+
+interface ShareTheme {
+  id: string;
+  name: string;
+  previewClass: string;
+  cardClass: string;
+  pattern: React.ReactNode;
+}
+
+const SHARE_THEMES: ShareTheme[] = [
+  {
+    id: 'space',
+    name: 'Giao Diện App',
+    previewClass: 'bg-gradient-to-br from-slate-900 via-indigo-950 to-pink-950',
+    cardClass: 'bg-[#0B0F19] border border-white/10 shadow-2xl',
+    pattern: (
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-12 -right-12 w-64 h-64 rounded-full" style={{ background: 'radial-gradient(circle, rgba(99, 102, 241, 0.18) 0%, rgba(99, 102, 241, 0) 70%)' }} />
+        <div className="absolute -bottom-16 -left-16 w-64 h-64 rounded-full" style={{ background: 'radial-gradient(circle, rgba(236, 72, 153, 0.1) 0%, rgba(236, 72, 153, 0) 70%)' }} />
+        <div className="absolute inset-0 opacity-[0.03]" style={{
+          backgroundImage: 'linear-gradient(rgba(255,255,255,0.8) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.8) 1px, transparent 1px)',
+          backgroundSize: '24px 24px'
+        }} />
+        <SparkleIcon className="absolute top-[18%] left-[20%] w-4 h-4 text-indigo-400/40 animate-pulse" />
+        <SparkleIcon className="absolute top-[32%] right-[15%] w-3 h-3 text-pink-400/50 animate-pulse" style={{ animationDelay: '300ms', animationDuration: '3s' }} />
+        <SparkleIcon className="absolute bottom-[30%] left-[12%] w-5 h-5 text-white/30 animate-pulse" style={{ animationDelay: '600ms', animationDuration: '4s' }} />
+        <SparkleIcon className="absolute bottom-[15%] right-[22%] w-3.5 h-3.5 text-indigo-300/40 animate-pulse" style={{ animationDelay: '900ms', animationDuration: '2.5s' }} />
+        <svg className="absolute bottom-0 inset-x-0 w-full h-40 opacity-[0.05] text-white" viewBox="0 0 100 100" preserveAspectRatio="none" fill="currentColor">
+          <path d="M0,80 C30,90 60,60 100,80 L100,100 L0,100 Z" />
+          <path d="M0,60 C40,40 70,80 100,60 L100,100 L0,100 Z" opacity="0.5" />
+        </svg>
+      </div>
+    )
+  },
+  {
+    id: 'sunset',
+    name: 'Hoàng Hôn Tím',
+    previewClass: 'bg-gradient-to-br from-indigo-900 via-purple-900 to-rose-900',
+    cardClass: 'bg-[#1A0B1A] border border-white/10 shadow-2xl',
+    pattern: (
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-10 right-10 w-72 h-72 rounded-full" style={{ background: 'radial-gradient(circle, rgba(245, 158, 11, 0.12) 0%, rgba(245, 158, 11, 0) 70%)' }} />
+        <div className="absolute bottom-10 left-10 w-72 h-72 rounded-full" style={{ background: 'radial-gradient(circle, rgba(244, 63, 94, 0.12) 0%, rgba(244, 63, 94, 0) 70%)' }} />
+        <div className="absolute inset-0 opacity-[0.06]" style={{
+          backgroundImage: 'radial-gradient(rgba(255,255,255,0.6) 1px, transparent 1px)',
+          backgroundSize: '16px 16px'
+        }} />
+        <svg className="absolute bottom-[-100px] left-1/2 transform -translate-x-1/2 w-80 h-80 opacity-[0.06] text-amber-400" viewBox="0 0 100 100" fill="none" stroke="currentColor" strokeWidth="1">
+          <circle cx="50" cy="50" r="45" />
+          <circle cx="50" cy="50" r="35" strokeDasharray="3 3" />
+          <circle cx="50" cy="50" r="25" />
+        </svg>
+        <SparkleIcon className="absolute top-[12%] left-[15%] w-4.5 h-4.5 text-amber-300/30 animate-pulse" />
+        <SparkleIcon className="absolute top-[28%] right-[18%] w-3 h-3 text-rose-300/40 animate-pulse" style={{ animationDelay: '400ms', animationDuration: '2.5s' }} />
+        <SparkleIcon className="absolute bottom-[35%] left-[25%] w-5 h-5 text-amber-400/30 animate-pulse" style={{ animationDelay: '800ms', animationDuration: '3.5s' }} />
+        <SparkleIcon className="absolute bottom-[22%] right-[12%] w-4 h-4 text-rose-400/30 animate-pulse" style={{ animationDelay: '1200ms', animationDuration: '4.5s' }} />
+        <svg className="absolute bottom-0 inset-x-0 w-full h-48 opacity-[0.08] text-white" viewBox="0 0 100 100" preserveAspectRatio="none" fill="currentColor">
+          <path d="M0,50 C30,75 70,25 100,50 L100,100 L0,100 Z" />
+          <path d="M0,70 C40,90 60,50 100,70 L100,100 L0,100 Z" opacity="0.4" />
+        </svg>
+      </div>
+    )
+  },
+  {
+    id: 'aurora',
+    name: 'Cực Quang',
+    previewClass: 'bg-gradient-to-br from-slate-900 via-teal-950 to-emerald-900',
+    cardClass: 'bg-[#071915] border border-white/10 shadow-2xl',
+    pattern: (
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-20 right-0 w-72 h-72 rounded-full" style={{ background: 'radial-gradient(circle, rgba(16, 185, 129, 0.18) 0%, rgba(16, 185, 129, 0) 70%)' }} />
+        <div className="absolute bottom-0 left-20 w-60 h-60 rounded-full" style={{ background: 'radial-gradient(circle, rgba(20, 184, 166, 0.08) 0%, rgba(20, 184, 166, 0) 70%)' }} />
+        <div className="absolute inset-0 opacity-[0.04]" style={{
+          backgroundImage: 'radial-gradient(rgba(255,255,255,0.8) 1.5px, transparent 1.5px), radial-gradient(rgba(255,255,255,0.4) 1px, transparent 1px)',
+          backgroundSize: '32px 32px',
+          backgroundPosition: '0 0, 16px 16px'
+        }} />
+        <svg className="absolute inset-0 w-full h-full opacity-[0.08] text-emerald-400" viewBox="0 0 100 150" fill="none" stroke="currentColor" strokeWidth="0.5">
+          <path d="M-10,30 C30,70 70,10 110,50" />
+          <path d="M-10,60 C40,20 60,100 110,60" strokeWidth="0.3" />
+          <path d="M-10,90 C30,120 70,70 110,100" strokeWidth="0.2" />
+        </svg>
+        <SparkleIcon className="absolute top-[15%] left-[25%] w-4 h-4 text-emerald-400/40 animate-pulse" />
+        <SparkleIcon className="absolute top-[8%] right-[20%] w-3.5 h-3.5 text-teal-300/50 animate-pulse" style={{ animationDelay: '500ms', animationDuration: '2s' }} />
+        <SparkleIcon className="absolute bottom-[28%] right-[15%] w-5 h-5 text-white/30 animate-pulse" style={{ animationDelay: '1000ms', animationDuration: '3s' }} />
+        <SparkleIcon className="absolute bottom-[18%] left-[18%] w-3 h-3 text-emerald-300/40 animate-pulse" style={{ animationDelay: '1500ms', animationDuration: '4s' }} />
+      </div>
+    )
+  },
+  {
+    id: 'cyber',
+    name: 'Cyberpunk Neon',
+    previewClass: 'bg-gradient-to-br from-slate-900 via-purple-950 to-cyan-900',
+    cardClass: 'bg-[#0F0C1B] border border-white/10 shadow-2xl',
+    pattern: (
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-10 -left-10 w-64 h-64 rounded-full" style={{ background: 'radial-gradient(circle, rgba(6, 182, 212, 0.2) 0%, rgba(6, 182, 212, 0) 70%)' }} />
+        <div className="absolute -bottom-10 -right-10 w-64 h-64 rounded-full" style={{ background: 'radial-gradient(circle, rgba(217, 70, 239, 0.2) 0%, rgba(217, 70, 239, 0) 70%)' }} />
+        <div className="absolute inset-0 opacity-[0.05]" style={{
+          backgroundImage: 'linear-gradient(rgba(255,255,255,0.6) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.6) 1px, transparent 1px)',
+          backgroundSize: '16px 16px'
+        }} />
+        <svg className="absolute inset-4 opacity-15 text-cyan-400" viewBox="0 0 100 150" fill="none" stroke="currentColor" strokeWidth="0.8">
+          <path d="M5,15 L5,5 L15,5" />
+          <path d="M95,15 L95,5 L85,5" />
+          <path d="M5,135 L5,145 L15,145" />
+          <path d="M95,135 L95,145 L85,145" />
+          <text x="8" y="12" fill="currentColor" fontSize="3" fontWeight="bold" opacity="0.6">SYS_ACT_v3.0</text>
+          <text x="73" y="142" fill="currentColor" fontSize="3" fontWeight="bold" opacity="0.6">GRID_504</text>
+        </svg>
+        <svg className="absolute top-10 right-10 w-32 h-32 opacity-15 text-cyan-400" viewBox="0 0 100 100" fill="none" stroke="currentColor" strokeWidth="1">
+          <circle cx="50" cy="50" r="40" strokeDasharray="4 4" />
+          <circle cx="50" cy="50" r="25" />
+          <line x1="50" y1="5" x2="50" y2="95" strokeDasharray="2 2" />
+          <line x1="5" y1="50" x2="95" y2="50" strokeDasharray="2 2" />
+        </svg>
+        <SparkleIcon className="absolute top-[20%] left-[15%] w-4 h-4 text-cyan-400/50 animate-pulse" />
+        <SparkleIcon className="absolute top-[35%] right-[12%] w-3 h-3 text-fuchsia-400/60 animate-pulse" style={{ animationDelay: '400ms', animationDuration: '3s' }} />
+        <SparkleIcon className="absolute bottom-[25%] left-[20%] w-5 h-5 text-cyan-300/40 animate-pulse" style={{ animationDelay: '800ms', animationDuration: '3.5s' }} />
+        <SparkleIcon className="absolute bottom-[16%] right-[25%] w-3.5 h-3.5 text-fuchsia-300/50 animate-pulse" style={{ animationDelay: '1200ms', animationDuration: '2.5s' }} />
+      </div>
+    )
+  },
+  {
+    id: 'ocean',
+    name: 'Đại Dương',
+    previewClass: 'bg-gradient-to-br from-slate-900 via-blue-900 to-cyan-900',
+    cardClass: 'bg-[#050F1A] border border-white/10 shadow-2xl',
+    pattern: (
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-20 right-0 w-80 h-80 rounded-full" style={{ background: 'radial-gradient(circle, rgba(34, 211, 238, 0.18) 0%, rgba(34, 211, 238, 0) 70%)' }} />
+        <div className="absolute bottom-0 -left-20 w-80 h-80 rounded-full" style={{ background: 'radial-gradient(circle, rgba(99, 102, 241, 0.12) 0%, rgba(99, 102, 241, 0) 70%)' }} />
+        <SparkleIcon className="absolute top-[10%] left-[12%] w-4.5 h-4.5 text-sky-300/40 animate-pulse" />
+        <SparkleIcon className="absolute top-[30%] right-[22%] w-3 h-3 text-blue-300/50 animate-pulse" style={{ animationDelay: '300ms', animationDuration: '3.5s' }} />
+        <SparkleIcon className="absolute bottom-[32%] left-[28%] w-5 h-5 text-cyan-300/30 animate-pulse" style={{ animationDelay: '700ms', animationDuration: '4s' }} />
+        <SparkleIcon className="absolute bottom-[18%] right-[15%] w-4 h-4 text-sky-400/40 animate-pulse" style={{ animationDelay: '1100ms', animationDuration: '2.5s' }} />
+        <svg className="absolute bottom-0 inset-x-0 w-full h-56 opacity-[0.09] text-white" viewBox="0 0 100 100" preserveAspectRatio="none" fill="currentColor">
+          <path d="M0,30 C30,50 60,20 100,40 L100,100 L0,100 Z" />
+          <path d="M0,50 C40,30 70,70 100,50 L100,100 L0,100 Z" opacity="0.6" />
+          <path d="M0,70 C30,80 70,60 100,75 L100,100 L0,100 Z" opacity="0.3" />
+        </svg>
+      </div>
+    )
+  },
+  {
+    id: 'luxury',
+    name: 'Hoàng Gia',
+    previewClass: 'bg-gradient-to-br from-neutral-900 via-amber-950 to-yellow-900',
+    cardClass: 'bg-[#14100C] border border-white/10 shadow-2xl',
+    pattern: (
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-20 -right-20 w-80 h-80 rounded-full" style={{ background: 'radial-gradient(circle, rgba(217, 119, 6, 0.12) 0%, rgba(217, 119, 6, 0) 70%)' }} />
+        <div className="absolute bottom-0 -left-20 w-80 h-80 rounded-full" style={{ background: 'radial-gradient(circle, rgba(234, 179, 8, 0.08) 0%, rgba(234, 179, 8, 0) 70%)' }} />
+        <div className="absolute inset-0 opacity-[0.03]" style={{
+          backgroundImage: 'repeating-linear-gradient(45deg, rgba(255,255,255,0.8) 0px, rgba(255,255,255,0.8) 1px, transparent 1px, transparent 12px)'
+        }} />
+        <svg className="absolute inset-4 opacity-[0.08] text-amber-400" viewBox="0 0 100 150" fill="none" stroke="currentColor" strokeWidth="0.5">
+          <rect x="2" y="2" width="96" height="146" rx="6" />
+          <rect x="5" y="5" width="90" height="140" rx="4" strokeDasharray="2 2" />
+        </svg>
+        <svg className="absolute -bottom-20 -right-20 w-64 h-64 opacity-[0.08] text-amber-400" viewBox="0 0 100 100" fill="none" stroke="currentColor" strokeWidth="0.8">
+          <circle cx="50" cy="50" r="45" />
+          <circle cx="50" cy="50" r="30" strokeDasharray="3 3" />
+          <circle cx="50" cy="50" r="15" />
+        </svg>
+        <SparkleIcon className="absolute top-[14%] left-[18%] w-5 h-5 text-amber-500/50 animate-pulse" />
+        <SparkleIcon className="absolute top-[28%] right-[24%] w-3.5 h-3.5 text-yellow-300/60 animate-pulse" style={{ animationDelay: '4500ms', animationDuration: '2.5s' }} />
+        <SparkleIcon className="absolute bottom-[35%] left-[16%] w-4 h-4 text-amber-600/40 animate-pulse" style={{ animationDelay: '900ms', animationDuration: '3.5s' }} />
+        <SparkleIcon className="absolute bottom-[20%] right-[18%] w-5 h-5 text-yellow-400/50 animate-pulse" style={{ animationDelay: '1350ms', animationDuration: '4.5s' }} />
+      </div>
+    )
+  }
+];
+
+interface ShareCardContentProps {
+  theme: ShareTheme;
+  shareStudentName: string;
+  hasGrades: boolean;
+  cumulativeGpa: number;
+  rawCumulativeGpa: number;
+  gpaClassification: { name: string; color: string };
+  accumulatedCredits: number;
+  shareSlogan: string;
+  isExport?: boolean;
+  customBgImage?: string | null;
+}
+
+const ShareCardContent = ({
+  theme,
+  shareStudentName,
+  hasGrades,
+  cumulativeGpa,
+  rawCumulativeGpa,
+  gpaClassification,
+  accumulatedCredits,
+  shareSlogan,
+  isExport = false,
+  customBgImage = null
+}: ShareCardContentProps) => {
+  const nameLength = (shareStudentName.trim() || 'Nguyễn Văn A').length;
+  let nameFontSizeClass = '';
+  if (isExport) {
+    if (nameLength > 20) nameFontSizeClass = 'text-3xl px-7 py-3 max-w-[540px]';
+    else if (nameLength > 12) nameFontSizeClass = 'text-4xl px-9 py-4 max-w-[540px]';
+    else nameFontSizeClass = 'text-5xl px-10 py-5 max-w-[540px]';
+  } else {
+    if (nameLength > 20) nameFontSizeClass = 'text-xs px-3 py-1.5 max-w-[270px]';
+    else if (nameLength > 12) nameFontSizeClass = 'text-sm px-3.5 py-1.5 max-w-[270px]';
+    else nameFontSizeClass = 'text-base px-4 py-2 max-w-[270px]';
+  }
+
+  const getShareBadge = () => {
+    const gpa = cumulativeGpa;
+    if (!hasGrades) {
+      return {
+        icon: <Star className={isExport ? 'w-6 h-6 text-indigo-400' : 'w-3.5 h-3.5 text-indigo-400'} />,
+        text: 'BẮT ĐẦU CHINH PHỤC',
+        badgeClass: 'bg-indigo-950/40 border-indigo-500/30 text-indigo-400'
+      };
+    }
+    if (gpa >= 3.6) {
+      return {
+        icon: <Trophy className={isExport ? 'w-6 h-6 text-yellow-400 animate-pulse' : 'w-3.5 h-3.5 text-yellow-400 animate-pulse'} />,
+        text: 'DANH HIỆU THỦ KHOA',
+        badgeClass: 'bg-amber-950/40 border-amber-500/40 text-amber-400'
+      };
+    }
+    if (gpa >= 3.2) {
+      return {
+        icon: <Medal className={isExport ? 'w-6 h-6 text-indigo-300' : 'w-3.5 h-3.5 text-indigo-300'} />,
+        text: 'SINH VIÊN TIÊU BIỂU',
+        badgeClass: 'bg-indigo-950/40 border-indigo-500/40 text-indigo-300'
+      };
+    }
+    if (gpa >= 2.5) {
+      return {
+        icon: <Sparkles className={isExport ? 'w-6 h-6 text-teal-300' : 'w-3.5 h-3.5 text-teal-300'} />,
+        text: 'NỖ LỰC VƯỢT TRỘI',
+        badgeClass: 'bg-teal-950/40 border-teal-500/30 text-teal-400'
+      };
+    }
+    if (gpa >= 2.0) {
+      return {
+        icon: <Star className={isExport ? 'w-6 h-6 text-amber-400' : 'w-3.5 h-3.5 text-amber-400'} />,
+        text: 'TỰ TIN BỨT PHÁ',
+        badgeClass: 'bg-amber-950/40 border-amber-500/30 text-amber-400'
+      };
+    }
+    return {
+      icon: <Sparkles className={isExport ? 'w-6 h-6 text-rose-400' : 'w-3.5 h-3.5 text-rose-400'} />,
+      text: 'QUYẾT TÂM CẢI THIỆN',
+      badgeClass: 'bg-rose-950/40 border-rose-500/30 text-rose-400'
+    };
+  };
+
+  const badge = getShareBadge();
+
+  const cleanedCardClass = isExport ? theme.cardClass.replace('shadow-2xl', '') : theme.cardClass;
+
+  return (
+    <div 
+      className={`relative select-none flex flex-col justify-between flex-shrink-0 overflow-hidden ${cleanedCardClass} ${
+        isExport ? 'w-[640px] h-[1136px] p-12 rounded-[36px]' : 'w-[360px] h-[640px] p-7 rounded-2xl'
+      }`}
+      style={{ 
+        backgroundImage: theme.id === 'custom' && customBgImage ? `url(${customBgImage})` : undefined,
+        backgroundSize: theme.id === 'custom' && customBgImage ? 'cover' : undefined,
+        backgroundPosition: theme.id === 'custom' && customBgImage ? 'center' : undefined,
+        fontFamily: "'Plus Jakarta Sans', sans-serif" 
+      }}
+    >
+      <div className="absolute inset-0 bg-white/5 opacity-40 pointer-events-none z-[3]" />
+
+      {theme.id === 'custom' && (
+        <div className="absolute inset-0 bg-black/45 z-[2] pointer-events-none" />
+      )}
+
+      {theme.id !== 'custom' && theme.pattern}
+
+      <div className={`flex justify-between items-center border-b border-white/10 z-10 ${
+        isExport ? 'pb-5' : 'pb-3'
+      }`}>
+        <div className="flex items-center gap-2">
+          <span className={`bg-white/10 rounded-lg text-indigo-300 border border-white/10 flex items-center justify-center ${
+            isExport ? 'p-2' : 'p-1'
+          }`}>
+            <GraduationCap className={isExport ? 'w-6 h-6' : 'w-4 h-4'} />
+          </span>
+          <span className={`font-bold text-slate-300 tracking-widest uppercase whitespace-nowrap ${
+            isExport ? 'text-sm' : 'text-[9px]'
+          }`}>DTU GPA Calculator</span>
+        </div>
+        <span className={`rounded-full bg-white/5 text-slate-300 font-bold border border-white/10 uppercase whitespace-nowrap ${
+          isExport ? 'text-xs px-4 py-1.5' : 'text-[8px] px-2.5 py-0.5'
+        }`}>
+          BẢNG VÀNG
+        </span>
+      </div>
+
+      <div className={`flex-grow flex flex-col justify-around items-center text-center z-10 ${
+        isExport ? 'py-10' : 'py-5'
+      }`}>
+        <div className="space-y-1.5 w-full flex flex-col items-center">
+          <span className={`font-bold text-indigo-300 tracking-widest block uppercase whitespace-nowrap ${
+            isExport ? 'text-sm' : 'text-[9px]'
+          }`}>KẾT QUẢ HỌC TẬP</span>
+          <h4 className={`font-black text-white tracking-tight ${isExport ? 'bg-[#0F131F] border border-white/15' : 'bg-black/40 border border-white/10'} rounded-2xl inline-block text-center whitespace-nowrap ${nameFontSizeClass}`}>
+            {shareStudentName.trim() || 'Nguyễn Văn A'}
+          </h4>
+        </div>
+
+        <div className={`relative rounded-full flex flex-col justify-center items-center bg-black/60 border border-white/10 ${
+          isExport ? 'w-80 h-80' : 'w-40 h-40 shadow-2xl'
+        }`}>
+          <div className={`absolute rounded-full border border-dashed border-white/10 ${
+            isExport ? 'inset-4' : 'inset-1.5'
+          }`}></div>
+          <div className={`absolute rounded-full border border-white/5 animate-spin-slow ${
+            isExport ? 'w-[360px] h-[360px]' : 'w-[180px] h-[180px]'
+          }`} style={{ borderStyle: 'dashed', animationDuration: '30s' }}></div>
+          <div className={`absolute rounded-full border border-white/5 animate-spin-slow ${
+            isExport ? 'w-[400px] h-[400px]' : 'w-[200px] h-[200px]'
+          }`} style={{ borderStyle: 'dotted', animationDuration: '45s', animationDirection: 'reverse' }}></div>
+
+          <span className={`font-black tracking-tighter text-white leading-none ${
+            isExport ? 'text-[96px]' : 'text-[48px]'
+          }`}>
+            {hasGrades ? cumulativeGpa.toFixed(2) : '--'}
+          </span>
+          <span className={`text-slate-400 font-bold ${
+            isExport ? 'text-base mt-3' : 'text-[9px] mt-1'
+          }`}>GPA TÍCH LŨY</span>
+          <span className={`text-slate-500 ${
+            isExport ? 'text-sm' : 'text-[8px]'
+          }`}>Thang điểm 4.00</span>
+        </div>
+
+        <div className={`w-full grid grid-cols-2 gap-4 ${
+          isExport ? 'max-w-[500px] gap-6' : 'max-w-[270px] gap-2.5'
+        }`}>
+          <div className={`${isExport ? 'bg-[#0F131F] border border-white/15' : 'bg-black/40 border border-white/10'} rounded-2xl text-center space-y-0.5 ${
+            isExport ? 'p-5 space-y-1' : 'p-2.5 space-y-0.5'
+          }`}>
+            <span className={`text-slate-500 font-bold uppercase tracking-wider block ${
+              isExport ? 'text-sm' : 'text-[8px]'
+            }`}>Xếp Loại</span>
+            <span className={`font-extrabold block mt-0.5 ${
+              isExport ? 'text-xl' : 'text-xs'
+            } text-white`}>
+              {gpaClassification.name}
+            </span>
+          </div>
+          <div className={`${isExport ? 'bg-[#0F131F] border border-white/15' : 'bg-black/40 border border-white/10'} rounded-2xl text-center space-y-0.5 ${
+            isExport ? 'p-5 space-y-1' : 'p-2.5 space-y-0.5'
+          }`}>
+            <span className={`text-slate-500 font-bold uppercase tracking-wider block ${
+              isExport ? 'text-sm' : 'text-[8px]'
+            }`}>Tín Chỉ Đạt</span>
+            <span className={`font-extrabold text-white block mt-0.5 ${
+              isExport ? 'text-xl' : 'text-xs'
+            }`}>
+              {accumulatedCredits} TC
+            </span>
+          </div>
+        </div>
+
+        {hasGrades && (
+          <div className={`font-extrabold flex items-center justify-center border rounded-full tracking-wider uppercase ${badge.badgeClass} ${
+            isExport ? 'px-8 py-3.5 gap-2.5 text-base' : 'px-4 py-1.5 gap-1.5 text-[9px]'
+          }`}>
+            {badge.icon}
+            <span>{badge.text}</span>
+          </div>
+        )}
+      </div>
+
+      <div className={`border-t border-white/10 flex items-center justify-between gap-2 z-10 w-full ${
+        isExport ? 'pt-5' : 'pt-3'
+      }`}>
+        <div className="text-left space-y-0.5 flex-grow">
+          <p className={`leading-tight text-slate-250 font-semibold italic whitespace-normal ${
+            isExport ? 'text-base max-w-[420px]' : 'text-[9px] max-w-[180px]'
+          }`}>
+            "{shareSlogan}"
+          </p>
+          <span className={`text-slate-500 block font-bold ${
+            isExport ? 'text-xs' : 'text-[7px]'
+          }`}>
+            Phát triển bởi levanthang.dev
+          </span>
+        </div>
+        
+        <div className="flex flex-col items-center gap-0.5 flex-shrink-0">
+          <div className={`bg-white rounded shadow-sm flex items-center justify-center ${
+            isExport ? 'p-1.5 w-[84px] h-[84px]' : 'p-0.5 w-[44px] h-[44px]'
+          }`}>
+            <img 
+              src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=https://tinhdiem-dtu-six.vercel.app/&color=0f172a&bgcolor=ffffff" 
+              alt="App QR" 
+              className="w-full h-full object-contain"
+              crossOrigin="anonymous"
+            />
+          </div>
+          <span className={`font-extrabold text-indigo-400 tracking-wider uppercase ${
+            isExport ? 'text-[7px]' : 'text-[6px]'
+          }`}>Tính Điểm</span>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 interface GpaCalculatorUIProps {
   initialCourses: Course[];
@@ -420,6 +843,85 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
   // State quản lý Modal Đồng hành cùng dự án (Support Modal)
   const [isSupportModalOpen, setIsSupportModalOpen] = useState(false);
 
+  // State quản lý Modal Khoe Kết Quả (Share Card Modal)
+  const [isShareCardModalOpen, setIsShareCardModalOpen] = useState(false);
+  const [shareStudentName, setShareStudentName] = useState('Nguyễn Văn A');
+  const [selectedThemeId, setSelectedThemeId] = useState('space');
+  const [isCardZoomed, setIsCardZoomed] = useState(false);
+  const [customBgImage, setCustomBgImage] = useState<string | null>(null);
+  const bgImageInputRef = useRef<HTMLInputElement>(null);
+
+  const activeShareTheme = useMemo(() => {
+    if (selectedThemeId === 'custom') {
+      return {
+        id: 'custom',
+        name: 'Nền Tự Chọn',
+        previewClass: '',
+        cardClass: 'bg-slate-900 border border-white/10 shadow-2xl',
+        pattern: (
+          <div className="absolute inset-0 overflow-hidden pointer-events-none">
+            {/* Subtle grid pattern overlay */}
+            <div className="absolute inset-0 opacity-[0.03]" style={{
+              backgroundImage: 'linear-gradient(rgba(255,255,255,0.8) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.8) 1px, transparent 1px)',
+              backgroundSize: '24px 24px'
+            }} />
+          </div>
+        )
+      };
+    }
+    return SHARE_THEMES.find(t => t.id === selectedThemeId) || SHARE_THEMES[0];
+  }, [selectedThemeId]);
+
+  // Responsive scaling states and refs for preview and lightbox card scaling
+  const previewContainerRef = useRef<HTMLDivElement>(null);
+  const [previewScale, setPreviewScale] = useState(0.55);
+  const lightboxContainerRef = useRef<HTMLDivElement>(null);
+  const [lightboxScale, setLightboxScale] = useState(0.8);
+
+  // ResizeObserver to dynamically scale the preview card to fit its container height
+  useEffect(() => {
+    if (!isShareCardModalOpen) return;
+    const handleResize = () => {
+      if (previewContainerRef.current) {
+        const rect = previewContainerRef.current.getBoundingClientRect();
+        const scale = Math.min(rect.width / 360, rect.height / 640);
+        setPreviewScale(scale > 0 ? scale : 0.55);
+      }
+    };
+    handleResize();
+    const observer = new ResizeObserver(handleResize);
+    if (previewContainerRef.current) {
+      observer.observe(previewContainerRef.current);
+    }
+    window.addEventListener('resize', handleResize);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('resize', handleResize);
+    };
+  }, [isShareCardModalOpen]);
+
+  // ResizeObserver to dynamically scale the lightbox card to fit its container height
+  useEffect(() => {
+    if (!isCardZoomed) return;
+    const handleResize = () => {
+      if (lightboxContainerRef.current) {
+        const rect = lightboxContainerRef.current.getBoundingClientRect();
+        const scale = Math.min(rect.width / 360, rect.height / 640);
+        setLightboxScale(scale > 0 ? scale : 0.8);
+      }
+    };
+    handleResize();
+    const observer = new ResizeObserver(handleResize);
+    if (lightboxContainerRef.current) {
+      observer.observe(lightboxContainerRef.current);
+    }
+    window.addEventListener('resize', handleResize);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('resize', handleResize);
+    };
+  }, [isCardZoomed]);
+
   // State quản lý gợi ý nhập tín chỉ lần đầu tiên
   const [showCreditsHint, setShowCreditsHint] = useState<boolean>(() => {
     try {
@@ -504,6 +1006,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
   } | null>(null);
   const [mousePos, setMousePos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const chartContainerRef = useRef<HTMLDivElement>(null);
+  const shareCardRef = useRef<HTMLDivElement>(null);
 
   // Helper chuyển đổi ảnh thành PNG blob để copy vào clipboard (Luôn đi qua canvas để chuẩn hóa định dạng)
   const convertToPngBlob = (file: File): Promise<Blob | null> => {
@@ -1094,6 +1597,17 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
     if (gpa >= 2.5) return { name: 'Khá', color: 'text-indigo-400 bg-indigo-500/10 border-indigo-500/20' };
     if (gpa >= 2.0) return { name: 'Trung bình', color: 'text-amber-400 bg-amber-500/10 border-amber-500/20' };
     return { name: 'Yêu / Kém', color: 'text-rose-400 bg-rose-500/10 border-rose-500/20' };
+  }, [dtuResult.cumulativeGpa, hasGrades]);
+
+  // Slogan Khoe Điểm phù hợp với học lực
+  const shareSlogan = useMemo(() => {
+    if (!hasGrades) return 'Hãy nhập điểm để bắt đầu hành trình chinh phục GPA của bạn!';
+    const gpa = dtuResult.cumulativeGpa;
+    if (gpa >= 3.6) return 'Thành tích vượt trội, tương lai ngời sáng! Chúc mừng thủ khoa!';
+    if (gpa >= 3.2) return 'Nỗ lực phi thường, gặt hái vinh quang! Cứ thế phát huy nhé!';
+    if (gpa >= 2.5) return 'Kết quả rất tốt! Chỉ còn một chút nỗ lực nữa để vươn tới Giỏi!';
+    if (gpa >= 2.0) return 'Mọi nỗ lực đều quý giá. Hãy kiên trì học hỏi và bứt phá kỳ tới!';
+    return 'Thất bại là mẹ thành công. Đăng ký cải thiện ngay để lội ngược dòng nhé!';
   }, [dtuResult.cumulativeGpa, hasGrades]);
 
   // Tính tỷ lệ % tín chỉ học lại
@@ -2010,7 +2524,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
         <div class="summary-value">
           ${displayGpa}
           ${exportHasGrades && dtuResult.rawCumulativeGpa > 0 ? `
-            <span style="font-size: 11px; font-weight: normal; color: #64748b; display: block; margin-top: 3px;" title="Điểm chính xác chưa làm tròn: ${dtuResult.rawCumulativeGpa.toFixed(6)}">
+            <span style="font-size: 11px; font-weight: normal; color: #64748b; display: block; margin-top: 3px;" title="Chỉ số thực chưa làm tròn: ${dtuResult.rawCumulativeGpa.toFixed(6)}">
               (${dtuResult.rawCumulativeGpa.toFixed(4)})
             </span>
           ` : ''}
@@ -2057,6 +2571,64 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
       console.error(e);
       showToast('Lỗi khi xuất tệp dữ liệu!', 'error');
     }
+  };
+
+  // Hàm Tải ảnh Khoe Kết Quả chất lượng cao
+  const handleDownloadShareCard = () => {
+    if (!shareCardRef.current) {
+      showToast('Không tìm thấy dữ liệu thẻ chia sẻ.', 'error');
+      return;
+    }
+
+    showToast('Đang tạo ảnh chất lượng cao để chia sẻ...', 'info');
+
+    // Sử dụng html-to-image để xuất
+    toPng(shareCardRef.current, {
+      quality: 0.95,
+      pixelRatio: 2, // Đảm bảo độ sắc nét cao (Retina) khi tải lên Facebook/Story
+      cacheBust: true, // Tránh các vấn đề cache ảnh từ nguồn ngoài
+      width: 640,
+      height: 1136,
+    })
+      .then((dataUrl) => {
+        const link = document.createElement('a');
+        const formattedName = shareStudentName.trim()
+          ? shareStudentName.trim().replace(/\s+/g, '_')
+          : 'Sinh_Vien_DTU';
+        link.download = `GPA_DTU_${formattedName}_${dtuResult.cumulativeGpa.toFixed(2)}.png`;
+        link.href = dataUrl;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        showToast('Đã tải xuống ảnh chia sẻ thành công!', 'success');
+      })
+      .catch((err) => {
+        console.error('Lỗi khi tạo ảnh chia sẻ:', err);
+        showToast('Có lỗi xảy ra khi tạo ảnh. Vui lòng thử lại!', 'error');
+      });
+  };
+
+  // Hàm Xử lý Tải ảnh nền tùy chỉnh từ thiết bị
+  const handleBgImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      showToast('Kích thước ảnh nền phải dưới 5MB.', 'error');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const result = event.target?.result as string;
+      setCustomBgImage(result);
+      setSelectedThemeId('custom');
+      showToast('Đã tải ảnh nền của bạn thành công!', 'success');
+    };
+    reader.onerror = () => {
+      showToast('Lỗi khi đọc file ảnh nền.', 'error');
+    };
+    reader.readAsDataURL(file);
   };
 
   // Hàm Nhập dữ liệu bảng điểm từ file JSON hoặc HTML
@@ -2476,6 +3048,19 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
           </button>
           
           <button
+            onClick={() => {
+              setShareStudentName('');
+              setIsShareCardModalOpen(true);
+            }}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 sm:px-3 sm:py-2 text-xs font-semibold rounded-lg bg-violet-500/10 border border-violet-500/20 text-violet-400 hover:bg-violet-500/20 active:scale-95 transition-all cursor-pointer shadow-sm shadow-violet-500/5"
+            title="Tạo ảnh thẻ khoe điểm GPA siêu đẹp chia sẻ lên Facebook/Story"
+            id="btn-share-card"
+          >
+            <Award className="w-3.5 h-3.5 text-violet-400" />
+            <span>Khoe Kết Quả</span>
+          </button>
+          
+          <button
             onClick={handleTriggerImport}
             className="flex items-center gap-1.5 px-2.5 py-1.5 sm:px-3 sm:py-2 text-xs font-semibold rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 hover:bg-indigo-500/20 active:scale-95 transition-all cursor-pointer shadow-sm shadow-indigo-500/5"
             title="Tải lên tệp HTML hoặc JSON đã xuất để khôi phục dữ liệu"
@@ -2576,27 +3161,27 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
               <HelpCircle className="w-3 h-3 opacity-85" />
             </span>
           </div>
-          <div className="flex items-baseline gap-1.5 flex-wrap">
+          <div className="flex items-baseline gap-1.5">
             <span className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white" id="dashboard-gpa">
               {hasGrades ? dtuResult.cumulativeGpa.toFixed(2) : '--'}
             </span>
             <span className="text-slate-500 text-xs">/ 4.00</span>
-            {hasGrades && dtuResult.rawCumulativeGpa > 0 && (
-              <span 
-                onClick={() => setIsGpaDetailModalOpen(true)}
-                className="text-[11px] text-indigo-400 font-semibold px-2 py-0.5 bg-indigo-500/10 border border-indigo-500/20 rounded cursor-pointer transition-all duration-150 select-none hover:bg-indigo-500/20 active:scale-95"
-                title="Xem chi tiết cách tính điểm GPA"
-              >
-                ({dtuResult.rawCumulativeGpa.toFixed(4)})
-              </span>
-            )}
           </div>
+          {hasGrades && dtuResult.rawCumulativeGpa > 0 && (
+            <div 
+              onClick={() => setIsGpaDetailModalOpen(true)}
+              className="mt-2 flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-bold rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 hover:bg-indigo-550/20 hover:text-indigo-300 active:scale-95 transition-all select-none w-fit cursor-pointer shadow-sm"
+              title="Nhấp để xem chi tiết cách tính điểm GPA"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-indigo-400 animate-pulse" />
+              <span>Chỉ số thực: {dtuResult.rawCumulativeGpa.toFixed(4)}</span>
+            </div>
+          )}
           <p 
             onClick={() => setIsGpaDetailModalOpen(true)}
-            className="text-[11px] text-slate-400 mt-3 flex items-center gap-1.5 cursor-pointer hover:text-indigo-400 transition-colors select-none"
+            className="text-[11px] text-slate-400 mt-2.5 flex items-center gap-1.5 cursor-pointer hover:text-indigo-400 transition-colors select-none"
             title="Nhấp để xem chi tiết cách tính điểm và cơ chế học cải thiện"
           >
-            <Info className="w-3.5 h-3.5 text-slate-500 shrink-0" />
             <span className="underline decoration-dotted decoration-slate-600 hover:decoration-indigo-400">
               Đã trừ điểm gốc của các môn bị học cải thiện.
             </span>
@@ -5137,7 +5722,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span>GPA Chính xác (Chưa làm tròn):</span>
+                  <span>GPA Chỉ số thực (Chưa làm tròn):</span>
                   <span className="text-sm font-bold text-indigo-400">
                     {hasGrades ? dtuResult.rawCumulativeGpa.toFixed(6) : '--'}
                   </span>
@@ -5280,6 +5865,218 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                 className="px-4 py-2 rounded-lg text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-500 shadow-md transition-all active:scale-95 cursor-pointer border-0"
               >
                 Đóng
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL KHOE KẾT QUẢ (Share Card Modal) */}
+      {isShareCardModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-fadeIn">
+          <div 
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm" 
+            onClick={() => setIsShareCardModalOpen(false)}
+          ></div>
+          <div className="relative bg-slate-900 border border-slate-700/80 rounded-2xl p-4 w-full max-w-sm shadow-2xl animate-in fade-in zoom-in-95 duration-200 flex flex-col max-h-[95vh] gap-3 overflow-y-auto scrollbar-thin">
+            {/* Header */}
+            <div className="flex justify-between items-center pb-2 border-b border-slate-800">
+              <h3 className="text-sm font-bold text-white uppercase tracking-wide flex items-center gap-2">
+                <Award className="w-5 h-5 text-indigo-400 animate-bounce" />
+                Thẻ Khoe Kết Quả Story 9:16
+              </h3>
+              <button 
+                onClick={() => setIsShareCardModalOpen(false)}
+                className="text-slate-500 hover:text-white hover:bg-slate-800 p-1 rounded-lg transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Input Name field */}
+            <div className="space-y-1">
+              <label className="block text-[10px] font-bold text-slate-400 tracking-wider uppercase">Nhập tên của bạn:</label>
+              <input 
+                type="text" 
+                maxLength={25}
+                value={shareStudentName}
+                onChange={(e) => setShareStudentName(e.target.value)}
+                placeholder="Ví dụ: Nguyễn Văn A"
+                className="w-full bg-slate-950 border border-slate-850 rounded-xl px-3 py-1.5 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+              />
+              <p className="text-[9px] text-slate-500 font-semibold leading-normal mt-0.5">
+                ✨ Tên này sẽ được hiển thị trên Thẻ Story và Bảng Vàng vinh danh của bạn.
+              </p>
+            </div>
+
+            {/* Theme Selector Bubble Row */}
+            <div className="space-y-1">
+              <label className="block text-[10px] font-bold text-slate-400 tracking-wider uppercase">Chọn hình nền:</label>
+              <div className="flex gap-2 pb-1 overflow-x-auto justify-start scrollbar-thin">
+                {SHARE_THEMES.map((theme) => (
+                  <button
+                    key={theme.id}
+                    onClick={() => setSelectedThemeId(theme.id)}
+                    className={`relative flex-shrink-0 w-8 h-8 rounded-full cursor-pointer transition-all duration-200 border-2 ${
+                      selectedThemeId === theme.id 
+                        ? 'border-white scale-110 shadow-lg shadow-indigo-500/20' 
+                        : 'border-slate-800 hover:border-slate-600'
+                    }`}
+                    title={theme.name}
+                  >
+                    <span className={`absolute inset-0.5 rounded-full ${theme.previewClass}`} />
+                    {selectedThemeId === theme.id && (
+                      <span className="absolute -top-1 -right-1 bg-indigo-500 text-white rounded-full p-0.5 shadow">
+                        <Check className="w-2.5 h-2.5" />
+                      </span>
+                    )}
+                  </button>
+                ))}
+
+                {/* Custom Upload Background Option */}
+                <button
+                  onClick={() => bgImageInputRef.current?.click()}
+                  className={`relative flex-shrink-0 w-8 h-8 rounded-full cursor-pointer transition-all duration-200 border-2 flex items-center justify-center ${
+                    selectedThemeId === 'custom'
+                      ? 'border-white scale-110 shadow-lg shadow-indigo-500/20'
+                      : 'border-dashed border-slate-700 hover:border-slate-500 bg-slate-800/40 text-slate-400 hover:text-white'
+                  }`}
+                  title="Tải ảnh nền riêng từ máy"
+                >
+                  {customBgImage ? (
+                    <span 
+                      className="absolute inset-0.5 rounded-full animate-fadeIn" 
+                      style={{ backgroundImage: `url(${customBgImage})`, backgroundSize: 'cover', backgroundPosition: 'center' }} 
+                    />
+                  ) : (
+                    <ImageIcon className="w-3.5 h-3.5" />
+                  )}
+                  {selectedThemeId === 'custom' && (
+                    <span className="absolute -top-1 -right-1 bg-indigo-500 text-white rounded-full p-0.5 shadow">
+                      <Check className="w-2.5 h-2.5" />
+                    </span>
+                  )}
+                </button>
+
+                {/* Hidden File Input */}
+                <input
+                  type="file"
+                  ref={bgImageInputRef}
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleBgImageChange}
+                />
+              </div>
+            </div>
+
+            {/* Card Preview Area */}
+            <div className="flex justify-center items-center py-1 flex-grow overflow-hidden bg-slate-950/40 rounded-xl border border-slate-800/80 p-2 min-h-[220px] max-h-[360px] w-full">
+              <div 
+                ref={previewContainerRef}
+                onClick={() => setIsCardZoomed(true)}
+                className="h-[280px] sm:h-[300px] aspect-[9/16] max-w-full overflow-hidden rounded-2xl border border-slate-800 flex items-center justify-center bg-slate-950/60 shadow-inner relative cursor-zoom-in group transition-all duration-300 hover:border-indigo-500/50 hover:shadow-[0_0_20px_rgba(99,102,241,0.2)]"
+              >
+                <div 
+                  style={{ transform: `scale(${previewScale})`, transformOrigin: 'center' }}
+                  className="absolute pointer-events-none transition-transform duration-300 group-hover:scale-[1.01]"
+                >
+                  <ShareCardContent
+                    theme={activeShareTheme}
+                    shareStudentName={shareStudentName}
+                    hasGrades={hasGrades}
+                    cumulativeGpa={dtuResult.cumulativeGpa}
+                    rawCumulativeGpa={dtuResult.rawCumulativeGpa}
+                    gpaClassification={gpaClassification}
+                    accumulatedCredits={dtuResult.accumulatedCredits}
+                    shareSlogan={shareSlogan}
+                    isExport={false}
+                    customBgImage={customBgImage}
+                  />
+                </div>
+                
+                {/* Hover Overlay Hint */}
+                <div className="absolute inset-0 bg-slate-950/45 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col items-center justify-center gap-1.5">
+                  <div className="p-2 bg-indigo-600/90 text-white rounded-full shadow-lg transform translate-y-2 group-hover:translate-y-0 transition-transform duration-200">
+                    <Maximize2 className="w-4 h-4" />
+                  </div>
+                  <span className="text-[10px] font-bold text-white tracking-wider uppercase drop-shadow bg-slate-900/80 px-2 py-0.5 rounded-full">
+                    Click để phóng to
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer Buttons */}
+            <div className="flex gap-2 justify-end pt-2 border-t border-slate-800">
+              <button 
+                onClick={() => setIsShareCardModalOpen(false)}
+                className="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer border-0 bg-transparent"
+              >
+                Đóng
+              </button>
+              <button 
+                onClick={handleDownloadShareCard}
+                className="px-4 py-1.5 rounded-lg text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-500 shadow-md transition-all active:scale-95 flex items-center gap-1 cursor-pointer border-0"
+              >
+                <Download className="w-3.5 h-3.5" />
+                Tải Ảnh (Story 9:16)
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* LIGHTBOX PHÓNG TO THẺ STORY (9:16) */}
+      {isCardZoomed && (
+        <div 
+          onClick={() => setIsCardZoomed(false)}
+          className="fixed inset-0 z-[100] flex flex-col items-center justify-center p-4 bg-slate-950/65 backdrop-blur-md animate-fadeIn cursor-zoom-out"
+        >
+          <div className="relative max-w-full max-h-[95vh] flex flex-col items-center justify-center gap-4 animate-in fade-in zoom-in-95 duration-200 z-10 w-full h-full pointer-events-none">
+            {/* Card Container wrapper to constrain aspect ratio and support dynamic scaling */}
+            <div className="flex-grow w-full max-h-[75vh] flex items-center justify-center overflow-hidden">
+              <div 
+                ref={lightboxContainerRef}
+                onClick={(e) => e.stopPropagation()}
+                className="w-[360px] h-[640px] max-w-full max-h-full aspect-[9/16] shadow-2xl rounded-2xl overflow-hidden border border-slate-800 relative flex items-center justify-center pointer-events-auto cursor-default"
+              >
+                <div 
+                  style={{ transform: `scale(${lightboxScale})`, transformOrigin: 'center' }}
+                  className="absolute flex-shrink-0"
+                >
+                  <ShareCardContent
+                    theme={activeShareTheme}
+                    shareStudentName={shareStudentName}
+                    hasGrades={hasGrades}
+                    cumulativeGpa={dtuResult.cumulativeGpa}
+                    rawCumulativeGpa={dtuResult.rawCumulativeGpa}
+                    gpaClassification={gpaClassification}
+                    accumulatedCredits={dtuResult.accumulatedCredits}
+                    shareSlogan={shareSlogan}
+                    isExport={false}
+                    customBgImage={customBgImage}
+                  />
+                </div>
+              </div>
+            </div>
+            
+            {/* Controls */}
+            <div 
+              onClick={(e) => e.stopPropagation()}
+              className="flex gap-3 items-center pointer-events-auto"
+            >
+              <button
+                onClick={handleDownloadShareCard}
+                className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-indigo-650 hover:bg-indigo-550 shadow-md transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer border-0"
+              >
+                <Download className="w-3.5 h-3.5" />
+                Tải Ảnh Story
+              </button>
+              <button
+                onClick={() => setIsCardZoomed(false)}
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-300 bg-slate-800 hover:bg-slate-700 hover:text-white transition-colors cursor-pointer border-0"
+              >
+                Đóng Xem
               </button>
             </div>
           </div>
@@ -5822,6 +6619,35 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
           <Plus className="w-4 h-4" />
           Nhập Điểm & Giả Lập
         </button>
+      </div>
+
+      {/* Hidden container for rendering high-quality share image */}
+      <div 
+        style={{ 
+          position: 'fixed', 
+          left: '-9999px', 
+          top: '-9999px', 
+          width: '640px', 
+          height: '1136px', 
+          overflow: 'hidden', 
+          pointerEvents: 'none',
+          zIndex: -100
+        }}
+      >
+        <div ref={shareCardRef} style={{ width: '640px', height: '1136px' }}>
+          <ShareCardContent
+            theme={activeShareTheme}
+            shareStudentName={shareStudentName}
+            hasGrades={hasGrades}
+            cumulativeGpa={dtuResult.cumulativeGpa}
+            rawCumulativeGpa={dtuResult.rawCumulativeGpa}
+            gpaClassification={gpaClassification}
+            accumulatedCredits={dtuResult.accumulatedCredits}
+            shareSlogan={shareSlogan}
+            isExport={true}
+            customBgImage={customBgImage}
+          />
+        </div>
       </div>
 
     </div>

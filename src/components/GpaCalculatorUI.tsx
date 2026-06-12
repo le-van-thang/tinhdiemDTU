@@ -851,6 +851,10 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
   const [customBgImage, setCustomBgImage] = useState<string | null>(null);
   const bgImageInputRef = useRef<HTMLInputElement>(null);
 
+  // State hỗ trợ lưu ảnh cho các thiết bị di động
+  const [downloadedImageUrl, setDownloadedImageUrl] = useState<string | null>(null);
+  const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
+
   const activeShareTheme = useMemo(() => {
     if (selectedThemeId === 'custom') {
       return {
@@ -2600,7 +2604,11 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-        showToast('Đã tải xuống ảnh chia sẻ thành công!', 'success');
+        showToast('Đã tạo ảnh chia sẻ thành công!', 'success');
+
+        // Lưu ảnh đã tạo và mở modal hướng dẫn tải trên di động
+        setDownloadedImageUrl(dataUrl);
+        setIsDownloadModalOpen(true);
       })
       .catch((err) => {
         console.error('Lỗi khi tạo ảnh chia sẻ:', err);
@@ -6077,6 +6085,87 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                 className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-300 bg-slate-800 hover:bg-slate-700 hover:text-white transition-colors cursor-pointer border-0"
               >
                 Đóng Xem
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL HƯỚNG DẪN LƯU ẢNH TRÊN DI ĐỘNG (Download Success Modal) */}
+      {isDownloadModalOpen && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 animate-fadeIn">
+          <div 
+            className="absolute inset-0 bg-black/80 backdrop-blur-md" 
+            onClick={() => setIsDownloadModalOpen(false)}
+          ></div>
+          <div className="relative bg-slate-900 border border-slate-700/80 rounded-2xl p-5 w-full max-w-sm shadow-2xl animate-in fade-in zoom-in-95 duration-200 flex flex-col max-h-[90vh] gap-3">
+            {/* Header */}
+            <div className="flex justify-between items-center pb-2 border-b border-slate-800">
+              <h3 className="text-sm font-bold text-white uppercase tracking-wide flex items-center gap-2">
+                <ImageIcon className="w-4 h-4 text-indigo-400" />
+                Lưu Ảnh Thẻ Story
+              </h3>
+              <button 
+                onClick={() => setIsDownloadModalOpen(false)}
+                className="text-slate-500 hover:text-white hover:bg-slate-800 p-1 rounded-lg transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Instruction */}
+            <div className="bg-indigo-950/40 border border-indigo-800/30 rounded-xl p-3 text-left">
+              <p className="text-xs text-indigo-200 font-semibold leading-relaxed">
+                👉 **Hướng dẫn lưu ảnh trên Điện thoại:**
+              </p>
+              <ul className="list-disc pl-4 mt-1 text-[11px] text-indigo-300/90 space-y-1 font-medium">
+                <li>Nhấn giữ (hoặc nhấn đúp) vào bức ảnh phía dưới.</li>
+                <li>Chọn <strong>"Lưu hình ảnh" (Save Image)</strong> hoặc <strong>"Tải ảnh xuống"</strong> để lưu vào Thư viện/Bộ sưu tập.</li>
+              </ul>
+              <p className="text-[10px] text-slate-400 mt-2 font-normal">
+                *Nếu dùng Máy tính, tệp ảnh đang được tự động tải về thư mục Downloads của bạn.*
+              </p>
+            </div>
+
+            {/* Generated Image Container */}
+            <div className="flex-grow overflow-y-auto flex justify-center items-center py-2 bg-slate-950/60 rounded-xl border border-slate-800/80 p-2 min-h-[260px] max-h-[400px]">
+              {downloadedImageUrl ? (
+                <img 
+                  src={downloadedImageUrl} 
+                  alt="GPA DTU Share Card" 
+                  className="max-h-full aspect-[9/16] rounded-xl object-contain shadow-lg"
+                />
+              ) : (
+                <div className="text-xs text-slate-500 font-medium animate-pulse">Đang nạp ảnh...</div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="flex gap-2 justify-end pt-2 border-t border-slate-800">
+              <button
+                onClick={() => {
+                  if (downloadedImageUrl) {
+                    const link = document.createElement('a');
+                    const formattedName = shareStudentName.trim()
+                      ? shareStudentName.trim().replace(/\s+/g, '_')
+                      : 'Sinh_Vien_DTU';
+                    link.download = `GPA_DTU_${formattedName}_${dtuResult.cumulativeGpa.toFixed(2)}.png`;
+                    link.href = downloadedImageUrl;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                  }
+                }}
+                className="px-3.5 py-1.5 rounded-lg text-xs font-bold text-white bg-slate-850 hover:bg-slate-750 flex items-center gap-1 cursor-pointer border border-slate-700/60"
+              >
+                <Download className="w-3.5 h-3.5 text-slate-400" />
+                Tải lại
+              </button>
+              <button 
+                onClick={() => setIsDownloadModalOpen(false)}
+                className="px-4 py-1.5 rounded-lg text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-500 shadow-md transition-all active:scale-95 cursor-pointer border-0"
+              >
+                Đóng
               </button>
             </div>
           </div>

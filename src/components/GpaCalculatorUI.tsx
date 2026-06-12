@@ -37,7 +37,8 @@ import {
   Image as ImageIcon,
   Trophy,
   Medal,
-  Star
+  Star,
+  Share2
 } from 'lucide-react';
 
 const K29_CMU_SE_PRESET: CurriculumCourse[] = [
@@ -854,6 +855,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
   // State hỗ trợ lưu ảnh cho các thiết bị di động
   const [downloadedImageUrl, setDownloadedImageUrl] = useState<string | null>(null);
   const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
+  const [isSharingImage, setIsSharingImage] = useState(false);
 
   const activeShareTheme = useMemo(() => {
     if (selectedThemeId === 'custom') {
@@ -2621,6 +2623,51 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
     } catch (err) {
       console.error('Lỗi khi tạo ảnh chia sẻ:', err);
       showToast('Có lỗi xảy ra khi tạo ảnh. Vui lòng thử lại!', 'error');
+    }
+  };
+
+  // Hàm chia sẻ ảnh trực tiếp lên hệ thống di động hoặc qua link dự phòng
+  const handleShareNative = async () => {
+    if (!downloadedImageUrl) return;
+    setIsSharingImage(true);
+    try {
+      const response = await fetch(downloadedImageUrl);
+      const blob = await response.blob();
+      const file = new File([blob], `GPA_DTU_Story.png`, { type: 'image/png' });
+
+      if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({
+          files: [file],
+          title: 'GPA DTU Story Card',
+          text: 'Khoe kết quả học tập GPA Duy Tân của tôi!'
+        });
+        showToast('Đã mở màn hình chia sẻ hệ thống!', 'success');
+      } else {
+        // Fallback: Tải ảnh lên Telegraph để lấy link chia sẻ
+        showToast('Đang tải ảnh lên máy chủ để lấy liên kết chia sẻ...', 'info');
+        const url = await uploadImageToTelegraph(file);
+        if (url) {
+          if (navigator.share) {
+            await navigator.share({
+              title: 'GPA DTU Story Card',
+              text: 'Khoe kết quả học tập GPA Duy Tân của tôi!',
+              url: url
+            });
+          } else {
+            // Sao chép link vào Clipboard
+            await navigator.clipboard.writeText(url);
+            showToast('Đã sao chép liên kết ảnh trực tuyến! Hãy dán để chia sẻ.', 'success');
+            window.open(url, '_blank');
+          }
+        } else {
+          showToast('Thiết bị không hỗ trợ chia sẻ trực tiếp. Hãy chụp màn hình nhé!', 'info');
+        }
+      }
+    } catch (err) {
+      console.error('Lỗi khi chia sẻ:', err);
+      showToast('Không thể chia sẻ ảnh tự động. Vui lòng chụp ảnh màn hình!', 'error');
+    } finally {
+      setIsSharingImage(false);
     }
   };
 
@@ -6124,15 +6171,12 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
             {/* Instruction */}
             <div className="bg-indigo-950/40 border border-indigo-800/30 rounded-xl p-3 text-left">
               <p className="text-xs text-indigo-200 font-semibold leading-relaxed">
-                👉 **Hướng dẫn lưu ảnh trên Điện thoại:**
+                👉 **Cách lưu ảnh về máy của bạn:**
               </p>
               <ul className="list-disc pl-4 mt-1 text-[11px] text-indigo-300/90 space-y-1 font-medium">
-                <li>Nhấn giữ (hoặc nhấn đúp) vào bức ảnh phía dưới.</li>
-                <li>Chọn <strong>"Lưu hình ảnh" (Save Image)</strong> hoặc <strong>"Tải ảnh xuống"</strong> để lưu vào Thư viện/Bộ sưu tập.</li>
+                <li><strong>Trên điện thoại:</strong> Nhấn nút <strong>"Chia sẻ / Lưu điện thoại"</strong> màu xanh ở góc dưới để lưu trực tiếp vào Thư viện ảnh (Photos) hoặc gửi qua Zalo/Messenger.</li>
+                <li>Bạn cũng có thể thử nhấn giữ trực tiếp vào ảnh để chọn <strong>"Lưu hình ảnh"</strong> (nếu trình duyệt của bạn hỗ trợ).</li>
               </ul>
-              <p className="text-[10px] text-slate-400 mt-2 font-normal">
-                *Nếu dùng Máy tính, tệp ảnh đang được tự động tải về thư mục Downloads của bạn.*
-              </p>
             </div>
 
             {/* Generated Image Container */}
@@ -6141,7 +6185,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                 <img 
                   src={downloadedImageUrl} 
                   alt="GPA DTU Share Card" 
-                  className="max-h-full aspect-[9/16] rounded-xl object-contain shadow-lg"
+                  className="max-h-full aspect-[9/16] rounded-xl object-contain shadow-lg pointer-events-auto"
                 />
               ) : (
                 <div className="text-xs text-slate-500 font-medium animate-pulse">Đang nạp ảnh...</div>
@@ -6149,31 +6193,45 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
             </div>
 
             {/* Footer */}
-            <div className="flex gap-2 justify-end pt-2 border-t border-slate-800">
+            <div className="flex flex-col sm:flex-row gap-2 justify-between pt-2 border-t border-slate-800 w-full">
+              {/* Left/Top: PC/Secondary Actions */}
+              <div className="flex gap-2 justify-start w-full sm:w-auto">
+                <button
+                  onClick={() => {
+                    if (downloadedImageUrl) {
+                      const link = document.createElement('a');
+                      const formattedName = shareStudentName.trim()
+                        ? shareStudentName.trim().replace(/\s+/g, '_')
+                        : 'Sinh_Vien_DTU';
+                      link.download = `GPA_DTU_${formattedName}_${dtuResult.cumulativeGpa.toFixed(2)}.png`;
+                      link.href = downloadedImageUrl;
+                      document.body.appendChild(link);
+                      link.click();
+                      document.body.removeChild(link);
+                    }
+                  }}
+                  className="px-3 py-1.5 rounded-lg text-xs font-bold text-slate-400 bg-slate-850 hover:bg-slate-750 flex items-center gap-1 cursor-pointer border border-slate-700/60 flex-1 sm:flex-none justify-center"
+                  title="Tải trực tiếp về máy tính (Downloads)"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  Tải về PC
+                </button>
+                <button 
+                  onClick={() => setIsDownloadModalOpen(false)}
+                  className="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer border-0 bg-transparent flex-1 sm:flex-none justify-center"
+                >
+                  Đóng
+                </button>
+              </div>
+              
+              {/* Right/Bottom: Primary Phone Action */}
               <button
-                onClick={() => {
-                  if (downloadedImageUrl) {
-                    const link = document.createElement('a');
-                    const formattedName = shareStudentName.trim()
-                      ? shareStudentName.trim().replace(/\s+/g, '_')
-                      : 'Sinh_Vien_DTU';
-                    link.download = `GPA_DTU_${formattedName}_${dtuResult.cumulativeGpa.toFixed(2)}.png`;
-                    link.href = downloadedImageUrl;
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                  }
-                }}
-                className="px-3.5 py-1.5 rounded-lg text-xs font-bold text-white bg-slate-850 hover:bg-slate-750 flex items-center gap-1 cursor-pointer border border-slate-700/60"
+                onClick={handleShareNative}
+                disabled={isSharingImage}
+                className="px-4.5 py-1.5 rounded-lg text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-500 shadow-md transition-all active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer border-0 disabled:opacity-50 w-full sm:w-auto"
               >
-                <Download className="w-3.5 h-3.5 text-slate-400" />
-                Tải lại
-              </button>
-              <button 
-                onClick={() => setIsDownloadModalOpen(false)}
-                className="px-4 py-1.5 rounded-lg text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-500 shadow-md transition-all active:scale-95 cursor-pointer border-0"
-              >
-                Đóng
+                <Share2 className="w-3.5 h-3.5" />
+                {isSharingImage ? 'Đang mở chia sẻ...' : 'Chia sẻ / Lưu điện thoại'}
               </button>
             </div>
           </div>

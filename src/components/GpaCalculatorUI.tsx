@@ -3799,13 +3799,11 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
             
             {gpaTrend.length >= 2 ? (
               <div className="w-full">
-                <div className="overflow-x-auto scrollbar-thin">
-                  <div 
-                    ref={chartContainerRef}
-                    style={{ minWidth: Math.max(320, gpaTrend.length <= 7 ? 320 : gpaTrend.length * 56) }}
-                    className="h-[185px] relative"
-                  >
-                    <svg width="100%" height="180" viewBox={`0 0 ${gpaTrend.length <= 7 ? 560 : gpaTrend.length * 70} 180`} className="overflow-visible">
+                <div 
+                  ref={chartContainerRef}
+                  className="w-full h-[185px] relative"
+                >
+                  <svg width="100%" height="180" viewBox="0 0 560 180" preserveAspectRatio="none" className="overflow-visible">
                       <defs>
                         {/* Gradient cho đường line GPA Học kỳ */}
                         <linearGradient id="line-gradient-sem" x1="0" y1="0" x2="1" y2="0">
@@ -3821,17 +3819,14 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                       </defs>
 
                       {/* Các đường Grid ngang chỉ thị mức GPA */}
-                      {(() => {
-                        const n2 = gpaTrend.length;
-                        const svgW2 = n2 <= 7 ? 560 : n2 * 70;
-                        return [1.0, 2.0, 3.0, 4.0].map((level) => {
+                      {[1.0, 2.0, 3.0, 4.0].map((level) => {
                           const y = 35 + 120 - (level / 4.0) * 120;
                           return (
                             <g key={level}>
                               <line 
                                 x1="40" 
                                 y1={y} 
-                                x2={svgW2 - 30} 
+                                x2="530" 
                                 y2={y} 
                                 stroke="#1e293b" 
                                 strokeWidth="1" 
@@ -3842,8 +3837,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                               </text>
                             </g>
                           );
-                        });
-                      })()}
+                        })}
 
                       {/* Vùng diện tích Gradient phía dưới GPA Học kỳ */}
                       <path d={chartSvgPath.areaSem} fill="url(#area-gradient-sem)" style={{ pointerEvents: 'none' }} />
@@ -3957,10 +3951,9 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                         const prevPoint = idx > 0 ? chartSvgPath.points[idx - 1].point : null;
                         const diffGpa = prevPoint ? p.point.semesterGpa - prevPoint.semesterGpa : undefined;
 
-                        const svgW3 = gpaTrend.length <= 7 ? 560 : gpaTrend.length * 70;
                         const w = gpaTrend.length > 1 
-                          ? (svgW3 - 40 - 30) / (gpaTrend.length - 1)
-                          : (svgW3 - 40 - 30);
+                          ? 490 / (gpaTrend.length - 1)
+                          : 490;
                         const xStart = p.x - w / 2;
 
                         return (
@@ -3994,11 +3987,10 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
 
                     {/* Anchored Tooltip Card */}
                     {hoveredPoint && (() => {
-                      const containerW = chartContainerRef.current?.offsetWidth || 320;
-                      const svgW4 = gpaTrend.length <= 7 ? 560 : gpaTrend.length * 70;
-                      const scale = containerW / svgW4;
+                      const containerW = chartContainerRef.current?.offsetWidth || 560;
+                      const scale = containerW / 560;
                       const actualX = hoveredPoint.x * scale;
-                      const halfTip = 88; // w-44 = 176px / 2
+                      const halfTip = 88;
                       const safeLeft = Math.max(halfTip + 4, Math.min(containerW - halfTip - 4, actualX));
                       return (
                       <div 
@@ -4041,7 +4033,6 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                       </div>
                       );
                     })()}
-                  </div>
                 </div>
 
                 {/* INTERACTIVE SELECTED SEMESTER DETAIL CARD */}

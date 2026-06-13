@@ -4238,7 +4238,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
               <select
                 value={scholarshipScope}
                 onChange={(e) => setScholarshipScope(e.target.value)}
-                className="w-full px-2 py-1.5 text-xs font-semibold text-white bg-slate-950 border border-slate-800 rounded-lg focus:border-indigo-500 focus:outline-none cursor-pointer"
+                className="w-full px-2 py-1.5 text-xs font-semibold text-gray-900 bg-white border border-gray-300 rounded-lg focus:border-blue-600 focus:ring-1 focus:ring-blue-600 focus:outline-none cursor-pointer"
               >
                 {scholarshipScopeOptions.map((opt) => (
                   <option key={opt.value} value={opt.value}>
@@ -4265,7 +4265,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                       const val = e.target.value === '' ? '' : Math.min(100, Math.max(0, parseInt(e.target.value) || 0));
                       setTrainingScore(val);
                     }}
-                    className="w-14 px-1.5 py-0.5 text-xs text-center font-bold text-white bg-slate-950 border border-slate-800 rounded focus:border-indigo-500 focus:outline-none"
+                    className="w-14 px-1.5 py-0.5 text-xs text-center font-bold text-gray-900 bg-white border border-gray-300 rounded focus:border-blue-600 focus:ring-1 focus:ring-blue-600 focus:outline-none"
                   />
                   {trainingScore !== '' && (
                     <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold border ${getTrainingClassification(trainingScore).color}`}>
@@ -4454,8 +4454,8 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                 onClick={() => setAddMode('manual')}
                 className={`flex items-center justify-center gap-1.5 py-2 rounded-xl text-[11px] font-bold transition-all border ${
                   addMode === 'manual'
-                    ? 'bg-indigo-600 text-white border-indigo-500 shadow-lg shadow-indigo-600/20'
-                    : 'bg-slate-900 text-slate-400 border-slate-700 hover:text-white hover:border-indigo-500/50'
+                    ? 'bg-blue-600 text-white border-blue-500 shadow-sm'
+                    : 'bg-white text-gray-500 border-gray-300 hover:text-gray-900 hover:border-blue-600'
                 }`}
               >
                 <Pencil className="w-3 h-3 shrink-0" />
@@ -4466,8 +4466,8 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                 onClick={() => setAddMode('smart_paste')}
                 className={`flex items-center justify-center gap-1.5 py-2 rounded-xl text-[11px] font-bold transition-all border ${
                   addMode === 'smart_paste'
-                    ? 'bg-emerald-600 text-white border-emerald-500 shadow-lg shadow-emerald-600/20'
-                    : 'bg-slate-900 text-slate-400 border-slate-700 hover:text-white hover:border-emerald-500/50'
+                    ? 'bg-emerald-600 text-white border-emerald-500 shadow-sm'
+                    : 'bg-white text-gray-500 border-gray-300 hover:text-gray-900 hover:border-emerald-600'
                 }`}
               >
                 <ClipboardList className="w-3 h-3 shrink-0" />
@@ -5527,7 +5527,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
         <div className="sm:col-span-8 space-y-4 min-w-0 overflow-hidden">
           
           {/* SEARCH, CATEGORIES, AND VIEW MODES */}
-          <div className="flex flex-col gap-3 justify-between items-start bg-slate-900/25 backdrop-blur-md border border-slate-800/80 p-3 sm:p-4 rounded-xl shadow-inner">
+          <div className="flex flex-col gap-3 justify-between items-start bg-gray-50 border border-gray-200 p-3 sm:p-4 rounded-xl shadow-inner">
             <div className="relative w-full">
               <Search className="absolute left-3 top-2 w-3.5 h-3.5 text-gray-450" />
               <input
@@ -5535,18 +5535,18 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                 placeholder="Tìm môn..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg pl-8 pr-3 py-1 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-indigo-500"
+                className="w-full bg-white border border-gray-300 rounded-lg pl-8 pr-3 py-1 text-xs text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600"
                 id="search-input"
               />
             </div>
 
             <div className="flex flex-wrap items-center gap-2 w-full justify-between">
               {/* Thẻ lọc điểm */}
-              <div className="flex items-center gap-1 bg-slate-950 p-1 rounded-lg border border-slate-800/60">
+              <div className="flex items-center gap-1 bg-gray-100 p-1 rounded-lg border border-gray-200">
                 <button
                   onClick={() => setFilterType('all')}
                   className={`px-2 sm:px-2.5 py-1 rounded-md text-[11px] font-semibold cursor-pointer transition-all ${
-                    filterType === 'all' ? 'bg-slate-900 text-white font-bold' : 'text-gray-450 hover:text-gray-650'
+                    filterType === 'all' ? 'bg-white text-gray-900 shadow-sm font-bold' : 'text-gray-500 hover:text-gray-700'
                   }`}
                   id="filter-all"
                 >
@@ -5555,7 +5555,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                 <button
                   onClick={() => setFilterType('accumulated')}
                   className={`px-2 sm:px-2.5 py-1 rounded-md text-[11px] font-semibold cursor-pointer transition-all ${
-                    filterType === 'accumulated' ? 'bg-slate-900 text-white font-bold' : 'text-gray-450 hover:text-gray-650'
+                    filterType === 'accumulated' ? 'bg-white text-gray-900 shadow-sm font-bold' : 'text-gray-500 hover:text-gray-700'
                   }`}
                   id="filter-accumulated"
                 >
@@ -5564,7 +5564,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                 <button
                   onClick={() => setFilterType('condition')}
                   className={`px-2 sm:px-2.5 py-1 rounded-md text-[11px] font-semibold cursor-pointer transition-all ${
-                    filterType === 'condition' ? 'bg-slate-900 text-white font-bold' : 'text-gray-450 hover:text-gray-650'
+                    filterType === 'condition' ? 'bg-white text-gray-900 shadow-sm font-bold' : 'text-gray-500 hover:text-gray-700'
                   }`}
                   id="filter-condition"
                 >
@@ -5573,7 +5573,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
               </div>
 
               {/* Chế độ xem: Phân học kỳ vs Phẳng vs Tiến độ Khung */}
-              <div className="flex items-center gap-1 bg-slate-950 p-1 rounded-lg border border-slate-800/60">
+              <div className="flex items-center gap-1 bg-gray-100 p-1 rounded-lg border border-gray-200">
                 <button
                   onClick={() => setViewMode('grouped')}
                   className={`flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded-md text-[11px] font-semibold cursor-pointer transition-all ${

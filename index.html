@@ -23,7 +23,60 @@
     </script>
   </head>
   <body class="bg-slate-950 text-slate-100 min-h-screen selection:bg-indigo-500 selection:text-white antialiased">
-    <div id="root"></div>
+    <div id="root">
+      <!-- Nội dung tĩnh phục vụ SEO và Google AdSense Crawler (Sẽ được React tự động thay thế khi tải xong) -->
+      <article style="max-width: 800px; margin: 0 auto; padding: 20px; font-family: sans-serif; line-height: 1.6; color: #333; display: none;">
+        <h1>Công cụ Tính Điểm GPA Đại Học Duy Tân (DTU)</h1>
+        <p>Chào mừng bạn đến với công cụ tính điểm GPA trực tuyến dành riêng cho sinh viên Đại Học Duy Tân (DTU). Đây là ứng dụng hỗ trợ đắc lực giúp bạn tính điểm trung bình tích lũy, quản lý số tín chỉ đạt được, lập kế hoạch học tập cải thiện và theo dõi điều kiện xét học bổng khuyến khích học tập theo đúng quy chế đào tạo mới nhất của nhà trường.</p>
+        
+        <h2>1. Quy chế tính điểm GPA tại Đại Học Duy Tân (DTU)</h2>
+        <p>Đại Học Duy Tân áp dụng phương pháp tính điểm trung bình tích lũy (GPA) theo hệ thống tín chỉ và quy đổi sang thang điểm 4.0. Điểm chữ (Grade Letter) được quy đổi sang điểm số tương ứng để làm cơ sở tính GPA tích lũy toàn khóa:</p>
+        <ul>
+          <li><strong>Điểm A+ (9.0 - 10.0):</strong> 4.0 - Xuất sắc</li>
+          <li><strong>Điểm A (8.5 - 8.9):</strong> 4.0 - Xuất sắc</li>
+          <li><strong>Điểm A- (8.0 - 8.4):</strong> 3.7 - Giỏi</li>
+          <li><strong>Điểm B+ (7.5 - 7.9):</strong> 3.5 - Khá Giỏi</li>
+          <li><strong>Điểm B (7.0 - 7.4):</strong> 3.0 - Khá</li>
+          <li><strong>Điểm B- (6.5 - 6.9):</strong> 2.7 - Trung bình Khá</li>
+          <li><strong>Điểm C+ (6.0 - 6.4):</strong> 2.5 - Trung bình</li>
+          <li><strong>Điểm C (5.5 - 5.9):</strong> 2.0 - Trung bình</li>
+          <li><strong>Điểm C- (5.0 - 5.4):</strong> 1.5 - Trung bình Yếu</li>
+          <li><strong>Điểm D (4.0 - 4.9):</strong> 1.0 - Yếu (Đạt)</li>
+          <li><strong>Điểm F (dưới 4.0):</strong> 0.0 - Kém (Không đạt, bị nợ môn)</li>
+        </ul>
+
+        <h2>2. Nguyên tắc tính điểm học lại và cải thiện tại DTU</h2>
+        <p>Quy chế đào tạo tín chỉ tại Đại Học Duy Tân cho phép sinh viên đăng ký học lại các môn bị điểm F hoặc học cải thiện để nâng cao điểm trung bình:</p>
+        <ul>
+          <li><strong>Cơ chế thay thế điểm (Trừ cũ - Cộng mới):</strong> Khi bạn học lại hoặc cải thiện môn học, điểm số mới nhất sẽ thay thế hoàn toàn điểm số cũ của môn học đó trong tử số và mẫu số của công thức tính GPA tích lũy. Điểm môn học cũ bị thay thế sẽ không còn tham gia tính GPA tích lũy toàn khóa học (giúp GPA tăng lên rõ rệt).</li>
+          <li><strong>Môn học điều kiện:</strong> Các môn học như Giáo dục Quốc phòng & An ninh (GDQP) và Giáo dục Thể chất (GDTC) là môn học điều kiện bắt buộc để tốt nghiệp nhưng điểm số của chúng không được tính vào điểm trung bình GPA tích lũy chung và cũng không tính vào số tín chỉ tích lũy tốt nghiệp mục tiêu (thường là 144 tín chỉ).</li>
+        </ul>
+
+        <h2>3. Điều kiện xét Học bổng khuyến khích học tập tại Đại Học Duy Tân</h2>
+        <p>Để đủ điều kiện xét duyệt học bổng khuyến khích học tập tại DTU, sinh viên cần đáp ứng các điều kiện tối thiểu sau:</p>
+        <ul>
+          <li><strong>Điểm trung bình học tập (GPA):</strong> Đạt từ loại Khá trở lên (GPA ≥ 2.5) tính theo năm học (kết hợp Học kỳ 1 và Học kỳ 2 chính khóa, không tính Học kỳ Hè).</li>
+          <li><strong>Điểm Rèn Luyện (ĐRL):</strong> Đạt từ loại Khá trở lên (ĐRL ≥ 70 điểm).</li>
+          <li><strong>Mức xếp loại xét học bổng:</strong> Xếp loại học bổng được xác định dựa trên sự kết hợp giữa GPA học tập và ĐRL rèn luyện:
+            <ul>
+              <li><strong>Học bổng Xuất sắc:</strong> GPA ≥ 3.6 và ĐRL đạt loại Xuất sắc (90 - 100).</li>
+              <li><strong>Học bổng Giỏi:</strong> GPA ≥ 3.2 và ĐRL đạt loại Tốt (80 - 89).</li>
+              <li><strong>Học bổng Khá:</strong> GPA ≥ 2.5 và ĐRL đạt loại Khá (70 - 79).</li>
+            </ul>
+          </li>
+          <li><strong>Lưu ý quan trọng:</strong> Tất cả các môn học trong năm học xét duyệt phải đạt điểm qua môn (không có môn nào bị điểm F). Do quỹ học bổng của mỗi khoa/ngành học có hạn, nhà trường sẽ tiến hành xếp hạng sinh viên từ trên xuống dưới dựa theo điểm GPA tích lũy học tập cho đến khi hết quỹ học bổng được phân bổ.</li>
+        </ul>
+
+        <h2>4. Hướng dẫn sử dụng công cụ tính điểm GPA DTU</h2>
+        <p>Ứng dụng được thiết kế đơn giản, tối ưu hóa giao diện và trải nghiệm người dùng cả trên máy tính và điện thoại:</p>
+        <ol>
+          <li><strong>Nhập thủ công hoặc dán điểm từ MyDTU:</strong> Bạn có thể dễ dàng sao chép toàn bộ bảng điểm trên trang cá nhân MyDTU và dán vào ứng dụng, hệ thống sẽ tự động phân tích mã môn, tên môn, số tín chỉ và điểm chữ để điền vào danh sách tự động.</li>
+          <li><strong>Quản lý học kỳ và năm học:</strong> Môn học được nhóm rõ ràng theo từng học kỳ và năm học tương ứng. Bạn có thể xem nhanh GPA của từng kỳ, GPA của cả năm học, và GPA tích lũy toàn khóa.</li>
+          <li><strong>Giả lập GPA mục tiêu:</strong> Tính toán số điểm cần đạt được trong các môn học còn lại để đạt được mục tiêu tốt nghiệp loại Giỏi (GPA ≥ 3.20) hoặc loại Xuất sắc (GPA ≥ 3.60).</li>
+          <li><strong>Tải ảnh Story thành tích học tập:</strong> Bạn có thể cá nhân hóa tên của mình, chọn theme giao diện yêu thích (Hoàng hôn, Cực quang, Space...) và xuất ảnh thành tích học tập chất lượng cao để chia sẻ với bạn bè hoặc lưu làm kỷ niệm.</li>
+        </ol>
+      </article>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

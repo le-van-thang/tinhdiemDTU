@@ -25,7 +25,7 @@ export default function AdUnit({
   }, []);
 
   return (
-    <div className="my-6 flex justify-center items-center overflow-hidden w-full bg-slate-950/20 border border-slate-900/40 rounded-xl p-2 min-h-[90px]">
+    <div className="my-6 flex justify-center items-center overflow-hidden w-full bg-gray-50 border border-gray-200 rounded-xl p-2 min-h-[90px]">
       <ins
         className="adsbygoogle"
         style={style}

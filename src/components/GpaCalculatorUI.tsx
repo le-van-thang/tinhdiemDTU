@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { toPng } from 'html-to-image';
 import { Course, GradeChar, ProcessedCourse, GRADE_SCALE_MAP, CurriculumCourse, DetailedGradeItem } from '../types/gpa';
-import { calculateDTUGPA, calculateGpaSummary, calculateGpaTrend, calculateSemesterGpa, GpaTrendPoint } from '../utils/gpaCalculator';
+import { calculateDTUGPA, calculateGpaSummary, calculateGpaTrend, calculateSemesterGpa, GpaTrendPoint, resolveRetakes } from '../utils/gpaCalculator';
 import { 
   Plus, 
   Trash2, 
@@ -1744,6 +1744,102 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
       return point !== null && point < 3.0; // B- (2.65), C+ (2.33), C (2.0), C- (1.65), D (1.0), F (0.0)
     });
   }, [summaryResult.processedCourses]);
+
+  // Bộ gợi ý tối ưu hóa cải thiện điểm số (GPA Booster)
+  const gpaBoosterRecommendations = useMemo(() => {
+    if (!courses || courses.length === 0 || dtuResult.accumulatedCredits === 0) {
+      return [];
+    }
+
+    const { replacedIds } = resolveRetakes(courses);
+
+    // Lọc ra các môn học đang tính vào GPA tích lũy và có điểm quy đổi hệ 4 < 3.0 (từ B- trở xuống)
+    const candidates = courses.filter(c => {
+      if (c.isConditionCourse) return false;
+      if (replacedIds.has(c.id)) return false;
+      const pt = GRADE_SCALE_MAP[c.gradeChar];
+      return pt !== null && pt !== undefined && pt < 3.0;
+    });
+
+    const totalCredits = dtuResult.accumulatedCredits;
+    const currentGpa = dtuResult.rawCumulativeGpa;
+
+    // Nhóm các môn học theo mã môn học (courseCode)
+    const grouped = new Map<string, Course[]>();
+    candidates.forEach(c => {
+      const code = c.courseCode.toUpperCase().trim();
+      if (!grouped.has(code)) {
+        grouped.set(code, []);
+      }
+      grouped.get(code)!.push(c);
+    });
+
+    const list = Array.from(grouped.entries()).map(([code, groupCourses]) => {
+      let groupCredits = 0;
+      let totalWeightedPtDiff = 0;
+      
+      const sortedGroup = [...groupCourses].sort((a, b) => b.credits - a.credits);
+      
+      const components = sortedGroup.map(c => {
+        const pt = GRADE_SCALE_MAP[c.gradeChar] || 0;
+        const diff = 4.0 - pt;
+        groupCredits += c.credits;
+        totalWeightedPtDiff += diff * c.credits;
+        return {
+          id: c.id,
+          credits: c.credits,
+          gradeChar: c.gradeChar,
+          courseName: c.courseName,
+          gradePoint: pt,
+        };
+      });
+
+      const gpaBoost = totalWeightedPtDiff / totalCredits;
+      const newGpa = currentGpa + gpaBoost;
+
+      // Đánh giá mức độ ưu tiên: Ưu tiên cao nếu tăng GPA nhiều (>= 0.08) hoặc có bất kỳ phần nào bị điểm F (phải học lại bắt buộc)
+      const hasFailedComponent = components.some(comp => comp.gradeChar === 'F');
+      let priority: 'high' | 'medium' | 'low' = 'low';
+      if (gpaBoost >= 0.08 || hasFailedComponent) {
+        priority = 'high';
+      } else if (gpaBoost >= 0.03) {
+        priority = 'medium';
+      }
+
+      const mainCourse = sortedGroup[0];
+      const gradeCharStr = components.length > 1 
+        ? components.map(comp => `${comp.gradeChar} (${comp.credits} TC)`).join(' & ')
+        : mainCourse.gradeChar;
+
+      return {
+        id: `grouped-${code}`,
+        courseCode: mainCourse.courseCode,
+        courseName: mainCourse.courseName,
+        credits: groupCredits,
+        gradeChar: gradeCharStr,
+        gpaBoost,
+        newGpa,
+        priority,
+        components
+      };
+    });
+
+    // Sắp xếp theo gpaBoost giảm dần (tăng nhiều nhất lên đầu)
+    return list.sort((a, b) => b.gpaBoost - a.gpaBoost);
+  }, [courses, dtuResult]);
+
+  // Hàm helper tính toán xếp loại thay đổi khi tăng GPA
+  const getGpaClassificationDiffText = (oldGpa: number, newGpa: number) => {
+    const oldRounded = Math.round(oldGpa * 100) / 100;
+    const newRounded = Math.round(newGpa * 100) / 100;
+    
+    if (oldRounded < 2.0 && newRounded >= 2.0 && newRounded < 2.5) return 'lên bằng Trung bình 🎓';
+    if (oldRounded < 2.5 && newRounded >= 2.5 && newRounded < 3.2) return 'lên bằng Khá 🥉';
+    if (oldRounded < 3.2 && newRounded >= 3.2 && newRounded < 3.6) return 'lên bằng Giỏi 🥈';
+    if (oldRounded < 3.6 && newRounded >= 3.6) return 'lên bằng Xuất sắc 🏆';
+    
+    return `tăng +${(newRounded - oldRounded).toFixed(2)} GPA`;
+  };
 
   // 4. Xử lý thêm môn học mới
   const handleAddCourse = (e: React.FormEvent) => {
@@ -4539,6 +4635,121 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                       </div>
                     </div>
                   ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* GPA BOOSTER / RETAKE OPTIMIZER PANEL */}
+          <div className={`bg-slate-900/50 backdrop-blur-md border border-slate-800/80 rounded-2xl p-5 shadow-md ${
+            isMobileDrawerOpen 
+              ? (mobileDrawerTab === 'simulator' ? 'block animate-fadeIn' : 'hidden')
+              : 'block'
+          }`}>
+            <h2 className="text-sm font-bold text-white mb-3 flex items-center gap-2 pb-2.5 border-b border-slate-800/80">
+              <Sparkles className="w-4 h-4 text-indigo-400" />
+              Tối Ưu Hóa Điểm Học Cải Thiện (GPA Booster)
+            </h2>
+            
+            {gpaBoosterRecommendations.length === 0 ? (
+              <p className="text-xs text-slate-500 text-center py-4 bg-slate-950/20 rounded-xl border border-dashed border-slate-800/80 px-4">
+                ✨ Không có môn học nào cần cải thiện điểm! Tất cả các môn tính GPA của bạn đều đã đạt A/A+ hoặc chưa nhập điểm số.
+              </p>
+            ) : (
+              <div className="space-y-4">
+                {/* Tóm tắt phương án tối ưu nhất */}
+                {(() => {
+                  const topRec = gpaBoosterRecommendations[0];
+                  const diffText = getGpaClassificationDiffText(dtuResult.rawCumulativeGpa, topRec.newGpa);
+                  return (
+                    <div className="p-3 bg-indigo-500/5 border border-indigo-500/10 rounded-xl space-y-1">
+                      <span className="block text-[10px] font-bold text-indigo-400 tracking-wider uppercase">💡 Gợi ý tối ưu nhất:</span>
+                      <p className="text-[11px] text-slate-300 leading-relaxed font-medium">
+                        Nếu học cải thiện môn <strong className="text-white">{topRec.courseCode}</strong> ({topRec.credits} TC, hiện là <strong className="text-rose-400">{topRec.gradeChar}</strong>) lên điểm <strong className="text-emerald-400">A/A+</strong>, GPA tích lũy của bạn sẽ tăng từ <strong className="text-slate-400">{dtuResult.cumulativeGpa.toFixed(2)}</strong> lên <strong className="text-emerald-400">{topRec.newGpa.toFixed(2)}</strong> ({diffText}). Đây là phương án hiệu quả nhất vì tín chỉ lớn và điểm cũ thấp.
+                      </p>
+                    </div>
+                  );
+                })()}
+
+                {/* Danh sách các môn cần cải thiện */}
+                <div className="space-y-2">
+                  <span className="block text-[10px] font-bold text-slate-400 tracking-wider uppercase">
+                    Thứ tự ưu tiên cải thiện điểm:
+                  </span>
+                  
+                  <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                    {gpaBoosterRecommendations.map((rec) => {
+                      const priorityColor = rec.priority === 'high' 
+                        ? 'text-rose-400 bg-rose-500/10 border-rose-500/20' 
+                        : rec.priority === 'medium'
+                        ? 'text-indigo-400 bg-indigo-500/10 border-indigo-500/20'
+                        : 'text-slate-400 bg-slate-800/40 border-slate-700/30';
+                        
+                      const priorityName = rec.priority === 'high' 
+                        ? 'Ưu tiên cao' 
+                        : rec.priority === 'medium'
+                        ? 'Ưu tiên vừa'
+                        : 'Ưu tiên thấp';
+
+                      return (
+                        <div key={rec.id} className="p-2.5 bg-slate-950/40 border border-slate-800/80 rounded-xl space-y-2 hover:border-slate-700 transition-all">
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <div className="flex items-center gap-1.5">
+                                <span className="font-extrabold text-xs text-white">{rec.courseCode}</span>
+                                <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-bold border ${priorityColor}`}>
+                                  {priorityName}
+                                </span>
+                              </div>
+                              <span className="text-[10px] text-slate-500 block truncate max-w-[170px]" title={rec.courseName}>
+                                {rec.courseName}
+                              </span>
+                            </div>
+                            <div className="text-right flex-shrink-0">
+                              <span className="text-[10px] text-slate-400 block font-bold">{rec.credits} Tín Chỉ</span>
+                              {(!rec.components || rec.components.length <= 1) && (
+                                <span className="text-[9.5px] text-slate-500 block">
+                                  Hiện tại: <strong className="text-rose-400">{rec.gradeChar}</strong>
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          {rec.components && rec.components.length > 1 && (
+                            <div className="mt-1.5 pt-1.5 border-t border-slate-900/40 space-y-1.5">
+                              <span className="text-[9px] text-slate-500 font-bold block uppercase tracking-wider">Chi tiết các phần:</span>
+                              <div className="grid grid-cols-2 gap-1.5">
+                                {rec.components.map((comp) => (
+                                  <div key={comp.id} className="bg-slate-950/60 p-1.5 rounded border border-slate-900/80 flex justify-between items-center text-[9.5px]">
+                                    <span className="text-slate-400 font-medium">{comp.credits} TC</span>
+                                    <span className="text-slate-500">Hiện tại: <strong className="text-rose-400">{comp.gradeChar}</strong></span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          
+                          <div className="pt-1.5 border-t border-slate-900/60 flex items-center justify-between text-[10px] text-slate-350">
+                            <span>GPA mới nếu cải thiện lên A/A+:</span>
+                            <span className="font-extrabold text-emerald-400">
+                              {rec.newGpa.toFixed(2)} (+{(rec.gpaBoost).toFixed(2)})
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Cảnh báo hạn mức 5% học lại */}
+                <div className="p-3 bg-amber-500/5 border border-amber-500/10 rounded-xl space-y-1 text-[10px] text-amber-300/90 leading-normal">
+                  <div className="flex items-center gap-1.5 font-bold">
+                    <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                    <span>Hạn mức 5% học cải thiện & học lại</span>
+                  </div>
+                  <p>
+                    <strong>Lưu ý:</strong> Tổng số tín chỉ học lại/cải thiện <strong>không vượt quá 5%</strong> tổng số tín chỉ tích lũy (khoảng ~7-8 TC). Nếu vượt quá hạn mức này, bạn sẽ <strong>bị hạ một bậc bằng tốt nghiệp</strong> khi xét tốt nghiệp loại Giỏi/Xuất sắc.
+                  </p>
                 </div>
               </div>
             )}

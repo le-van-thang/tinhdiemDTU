@@ -1121,14 +1121,17 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
   // State quản lý Hover vẽ Tooltip biểu đồ
   const [hoveredPoint, setHoveredPoint] = useState<{
     x: number;
-    yCum: number;
     ySem: number;
     label: string;
     semesterGpa: number;
-    cumulativeGpa: number;
+    academicYear: string;
+    semester: string;
     diffGpa?: number;
-    diffPercent?: string;
   } | null>(null);
+
+  // State quản lý Chọn điểm mốc trên biểu đồ (click để khóa/hiển thị chi tiết)
+  const [selectedPointIndex, setSelectedPointIndex] = useState<number | null>(null);
+
   const [mousePos, setMousePos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const shareCardRef = useRef<HTMLDivElement>(null);
@@ -1484,6 +1487,29 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
 
   // Tính toán xu hướng GPA (Trend Points) phục vụ vẽ biểu đồ
   const gpaTrend = useMemo(() => calculateGpaTrend(courses), [courses]);
+
+  // Vị trí/Học kỳ đang được chọn trên biểu đồ (mặc định học kỳ cuối cùng nếu có)
+  const activePointIndex = useMemo(() => {
+    if (gpaTrend.length === 0) return null;
+    if (selectedPointIndex !== null && selectedPointIndex >= 0 && selectedPointIndex < gpaTrend.length) {
+      return selectedPointIndex;
+    }
+    return gpaTrend.length - 1;
+  }, [gpaTrend, selectedPointIndex]);
+
+  const activeTrendPoint = useMemo(() => {
+    if (activePointIndex === null) return null;
+    return gpaTrend[activePointIndex];
+  }, [gpaTrend, activePointIndex]);
+
+  // Danh sách môn học thuộc học kỳ đang được chọn
+  const activeSemesterCourses = useMemo(() => {
+    if (!activeTrendPoint) return [];
+    return summaryResult.processedCourses.filter(c => 
+      c.academicYear === activeTrendPoint.academicYear && 
+      c.semester === activeTrendPoint.semester
+    );
+  }, [activeTrendPoint, summaryResult.processedCourses]);
 
   // Đối chiếu tiến độ với Khung chương trình dự kiến
   const curriculumProgress = useMemo(() => {
@@ -3108,7 +3134,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
 
   // Cấu hình tọa độ cho biểu đồ Combo Chart SVG xu hướng GPA (Cột và Đường)
   const chartSvgPath = useMemo(() => {
-    if (gpaTrend.length === 0) return { lineCum: '', areaCum: '', lineSem: '', points: [], yBase: 145 };
+    if (gpaTrend.length === 0) return { lineCum: '', areaCum: '', lineSem: '', areaSem: '', points: [], yBase: 145 };
     
     const svgWidth = 560;
     const svgHeight = 180;
@@ -3172,8 +3198,11 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
       : '';
 
     const lineSem = getBezierPath(ptsSem);
+    const areaSem = ptsSem.length > 0 
+      ? `${lineSem} L ${ptsSem[ptsSem.length - 1].x} ${yBase} L ${ptsSem[0].x} ${yBase} Z`
+      : '';
 
-    return { lineCum, areaCum, lineSem, points, yBase };
+    return { lineCum, areaCum, lineSem, areaSem, points, yBase };
   }, [gpaTrend]);
 
   // 7. Xử lý Gửi Báo cáo Lỗi qua Gmail (mailto hoặc Web Gmail)
@@ -3759,292 +3788,424 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
         {/* LEFT PANEL: GPA CHART */}
         <section className="lg:col-span-8 bg-slate-900/50 backdrop-blur-md border border-slate-800/80 rounded-2xl p-5 shadow-md flex flex-col justify-between">
           <div>
-            <h2 className="text-sm font-bold text-white mb-4 flex items-center gap-2">
+            <h2 className="text-sm font-bold text-white mb-1 flex items-center gap-2">
               <TrendingUp className="w-4 h-4 text-indigo-400" />
-              BIỂU ĐỒ BIẾN ĐỘNG GPA (GPA HỌC KỲ VS GPA TÍCH LŨY)
+              BIỂU ĐỒ XU HƯỚNG GPA HỌC KỲ
             </h2>
+            <p className="text-[11px] text-slate-500 mb-4 font-medium">
+              Nhấp vào các điểm mốc trên biểu đồ để xem điểm chi tiết của từng kỳ.
+            </p>
             
             {gpaTrend.length >= 2 ? (
-              <div className="w-full overflow-x-auto">
-                <div 
-                  ref={chartContainerRef}
-                  className="min-w-[580px] h-[185px] relative"
-                >
-                  <svg width="100%" height="180" viewBox="0 0 560 180" className="overflow-visible">
-                    <defs>
-                      {/* Gradient cho đường line GPA Tích lũy */}
-                      <linearGradient id="line-gradient" x1="0" y1="0" x2="1" y2="0">
-                        <stop offset="0%" stopColor="#6366f1" />
-                        <stop offset="50%" stopColor="#8b5cf6" />
-                        <stop offset="100%" stopColor="#ec4899" />
-                      </linearGradient>
-                      {/* Gradient cho vùng area GPA Tích lũy */}
-                      <linearGradient id="area-gradient" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#6366f1" stopOpacity="0.2" />
-                        <stop offset="100%" stopColor="#6366f1" stopOpacity="0.00" />
-                      </linearGradient>
-                    </defs>
+              <div className="w-full">
+                <div className="overflow-x-auto scrollbar-thin">
+                  <div 
+                    ref={chartContainerRef}
+                    className="min-w-[580px] h-[185px] relative"
+                  >
+                    <svg width="100%" height="180" viewBox="0 0 560 180" className="overflow-visible">
+                      <defs>
+                        {/* Gradient cho đường line GPA Học kỳ */}
+                        <linearGradient id="line-gradient-sem" x1="0" y1="0" x2="1" y2="0">
+                          <stop offset="0%" stopColor="#10b981" />
+                          <stop offset="50%" stopColor="#6366f1" />
+                          <stop offset="100%" stopColor="#8b5cf6" />
+                        </linearGradient>
+                        {/* Gradient cho vùng area GPA Học kỳ */}
+                        <linearGradient id="area-gradient-sem" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#6366f1" stopOpacity="0.18" />
+                          <stop offset="100%" stopColor="#6366f1" stopOpacity="0.00" />
+                        </linearGradient>
+                      </defs>
 
-                    {/* Chú thích đồ thị (Legend) */}
-                    <g transform="translate(150, 10)" fontSize="10" fontWeight="bold">
-                      {/* Đường GPA Học kỳ */}
-                      <line x1="0" y1="-3" x2="20" y2="-3" stroke="#10b981" strokeWidth="2" strokeDasharray="3 2" />
-                      <circle cx="10" cy="-3" r="3.5" fill="#10b981" stroke="#ffffff" strokeWidth="1.2" />
-                      <text x="28" y="1" fill="#94a3b8">GPA Học Kỳ</text>
+                      {/* Các đường Grid ngang chỉ thị mức GPA */}
+                      {[1.0, 2.0, 3.0, 4.0].map((level) => {
+                        const y = 35 + 120 - (level / 4.0) * 120;
+                        return (
+                          <g key={level}>
+                            <line 
+                              x1="40" 
+                              y1={y} 
+                              x2="530" 
+                              y2={y} 
+                              stroke="#1e293b" 
+                              strokeWidth="1" 
+                              strokeDasharray="4 4" 
+                            />
+                            <text x="32" y={y + 3} textAnchor="end" fill="#475569" fontSize="9" fontWeight="bold">
+                              {level.toFixed(2)}
+                            </text>
+                          </g>
+                        );
+                      })}
 
-                      {/* Đường GPA Tích lũy */}
-                      <line x1="110" y1="-3" x2="130" y2="-3" stroke="#6366f1" strokeWidth="2.5" />
-                      <circle cx="120" cy="-3" r="4.5" fill="#6366f1" stroke="#ffffff" strokeWidth="1.5" />
-                      <text x="138" y="1" fill="#94a3b8">GPA Tích Lũy</text>
-                    </g>
+                      {/* Vùng diện tích Gradient phía dưới GPA Học kỳ */}
+                      <path d={chartSvgPath.areaSem} fill="url(#area-gradient-sem)" style={{ pointerEvents: 'none' }} />
 
-                    {/* Các đường Grid ngang chỉ thị mức GPA */}
-                    {[1.0, 2.0, 3.0, 4.0].map((level) => {
-                      const y = 35 + 120 - (level / 4.0) * 120;
-                      return (
-                        <g key={level}>
-                          <line 
-                            x1="40" 
-                            y1={y} 
-                            x2="530" 
-                            y2={y} 
-                            stroke="#1e293b" 
-                            strokeWidth="1" 
-                            strokeDasharray="4 4" 
-                          />
-                          <text x="32" y={y + 3} textAnchor="end" fill="#475569" fontSize="9" fontWeight="bold">
-                            {level.toFixed(2)}
+                      {/* GPA Học kỳ smooth line & glow */}
+                      <path 
+                        d={chartSvgPath.lineSem} 
+                        fill="none" 
+                        stroke="#6366f1" 
+                        strokeWidth="7" 
+                        opacity="0.25"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        style={{ pointerEvents: 'none' }}
+                      />
+                      <path 
+                        d={chartSvgPath.lineSem} 
+                        fill="none" 
+                        stroke="url(#line-gradient-sem)" 
+                        strokeWidth="3.2" 
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        style={{ pointerEvents: 'none' }}
+                      />
+
+                      {/* Vẽ chấm nút (Nodes) của GPA Học Kỳ */}
+                      {chartSvgPath.points.map((p, idx) => {
+                        const isSelected = activePointIndex === idx;
+                        const isHovered = hoveredPoint && hoveredPoint.x === p.x;
+                        return (
+                          <g key={`node-group-${p.point.semesterId}`}>
+                            {isSelected && (
+                              <circle 
+                                cx={p.x} 
+                                cy={p.ySem} 
+                                r="9" 
+                                fill="#6366f1" 
+                                opacity="0.4" 
+                                className="animate-ping" 
+                              />
+                            )}
+                            <circle 
+                              cx={p.x} 
+                              cy={p.ySem} 
+                              r={isSelected ? "5.5" : isHovered ? "5" : "4"} 
+                              fill={isSelected ? "#10b981" : "#8b5cf6"} 
+                              stroke="#ffffff" 
+                              strokeWidth={isSelected ? "2.2" : "1.8"} 
+                              className="transition-all duration-200"
+                              style={{ pointerEvents: 'none' }}
+                            />
+                          </g>
+                        );
+                      })}
+
+                      {/* Các nhãn học kỳ ở trục X */}
+                      {chartSvgPath.points.map((p) => {
+                        const isActive = (hoveredPoint && hoveredPoint.x === p.x) || (activeTrendPoint && activeTrendPoint.semesterId === p.point.semesterId);
+                        return (
+                          <text 
+                            key={`label-${p.point.semesterId}`}
+                            x={p.x} 
+                            y="172" 
+                            textAnchor="middle" 
+                            fill={isActive ? '#8b5cf6' : '#64748b'} 
+                            fontSize="9" 
+                            fontWeight={isActive ? '800' : '600'}
+                            className="transition-all duration-150"
+                            style={{ pointerEvents: 'none' }}
+                          >
+                            {p.point.label}
                           </text>
+                        );
+                      })}
+
+                      {/* Đường kẻ đứng chỉ thị và hiệu ứng pulse khi hover */}
+                      {hoveredPoint && (
+                        <g style={{ pointerEvents: 'none' }}>
+                          <line 
+                            x1={hoveredPoint.x} 
+                            y1="30" 
+                            x2={hoveredPoint.x} 
+                            y2={chartSvgPath.yBase} 
+                            stroke="#8b5cf6" 
+                            strokeWidth="1.2" 
+                            strokeDasharray="3 3" 
+                            opacity="0.8"
+                          />
+                          {/* Pulse ring */}
+                          <circle 
+                            cx={hoveredPoint.x} 
+                            cy={hoveredPoint.ySem} 
+                            r="9" 
+                            fill="#8b5cf6" 
+                            opacity="0.4" 
+                            className="animate-ping" 
+                          />
+                          <circle 
+                            cx={hoveredPoint.x} 
+                            cy={hoveredPoint.ySem} 
+                            r="6.5" 
+                            fill="#8b5cf6" 
+                            stroke="#ffffff" 
+                            strokeWidth="2.5" 
+                          />
                         </g>
-                      );
-                    })}
+                      )}
 
-                    {/* GPA Học kỳ smooth line & glow */}
-                    <path 
-                      d={chartSvgPath.lineSem} 
-                      fill="none" 
-                      stroke="#10b981" 
-                      strokeWidth="5" 
-                      opacity="0.15"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      style={{ pointerEvents: 'none' }}
-                    />
-                    <path 
-                      d={chartSvgPath.lineSem} 
-                      fill="none" 
-                      stroke="#10b981" 
-                      strokeWidth="2" 
-                      strokeDasharray="4 3"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      style={{ pointerEvents: 'none' }}
-                    />
+                      {/* Các vùng tương tác trong suốt */}
+                      {chartSvgPath.points.map((p, idx) => {
+                        const prevPoint = idx > 0 ? chartSvgPath.points[idx - 1].point : null;
+                        const diffGpa = prevPoint ? p.point.semesterGpa - prevPoint.semesterGpa : undefined;
 
-                    {/* Vùng diện tích Gradient phía dưới GPA Tích lũy */}
-                    <path d={chartSvgPath.areaCum} fill="url(#area-gradient)" style={{ pointerEvents: 'none' }} />
+                        const w = gpaTrend.length > 1 
+                          ? (560 - 40 - 30) / (gpaTrend.length - 1)
+                          : (560 - 40 - 30);
+                        const xStart = p.x - w / 2;
 
-                    {/* GPA Tích lũy smooth line & glow */}
-                    <path 
-                      d={chartSvgPath.lineCum} 
-                      fill="none" 
-                      stroke="#6366f1" 
-                      strokeWidth="7" 
-                      opacity="0.2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      style={{ pointerEvents: 'none' }}
-                    />
-                    <path 
-                      d={chartSvgPath.lineCum} 
-                      fill="none" 
-                      stroke="url(#line-gradient)" 
-                      strokeWidth="3" 
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      style={{ pointerEvents: 'none' }}
-                    />
+                        return (
+                          <rect
+                            key={`hover-rect-${p.point.semesterId}`}
+                            x={xStart}
+                            y="30"
+                            width={w}
+                            height="130"
+                            fill="transparent"
+                            className="cursor-pointer"
+                            onMouseEnter={() => {
+                              setHoveredPoint({
+                                x: p.x,
+                                ySem: p.ySem,
+                                label: p.point.label,
+                                semesterGpa: p.point.semesterGpa,
+                                academicYear: p.point.academicYear,
+                                semester: p.point.semester,
+                                diffGpa
+                              });
+                            }}
+                            onMouseLeave={() => setHoveredPoint(null)}
+                            onClick={() => {
+                              setSelectedPointIndex(idx);
+                            }}
+                          />
+                        );
+                      })}
+                    </svg>
 
-                    {/* Vẽ chấm nút (Nodes) của cả 2 đường */}
-                    {chartSvgPath.points.map((p) => (
-                      <g key={`nodes-${p.point.semesterId}`} style={{ pointerEvents: 'none' }}>
-                        {/* Học kỳ dot */}
-                        <circle 
-                          cx={p.x} 
-                          cy={p.ySem} 
-                          r="3.5" 
-                          fill="#10b981" 
-                          stroke="#ffffff" 
-                          strokeWidth="1.5" 
-                        />
-                        {/* Tích lũy dot */}
-                        <circle 
-                          cx={p.x} 
-                          cy={p.yCum} 
-                          r="4" 
-                          fill="#6366f1" 
-                          stroke="#ffffff" 
-                          strokeWidth="1.8" 
-                        />
-                      </g>
-                    ))}
-
-                    {/* Các nhãn học kỳ ở trục X */}
-                    {chartSvgPath.points.map((p) => {
-                      const isActive = hoveredPoint && hoveredPoint.x === p.x;
-                      return (
-                        <text 
-                          key={`label-${p.point.semesterId}`}
-                          x={p.x} 
-                          y="172" 
-                          textAnchor="middle" 
-                          fill={isActive ? '#8b5cf6' : '#64748b'} 
-                          fontSize="9" 
-                          fontWeight={isActive ? '800' : '600'}
-                          className="transition-all duration-150"
-                          style={{ pointerEvents: 'none' }}
-                        >
-                          {p.point.label}
-                        </text>
-                      );
-                    })}
-
-                    {/* Đường kẻ đứng chỉ thị và hiệu ứng pulse khi hover */}
+                    {/* Anchored Tooltip Card */}
                     {hoveredPoint && (
-                      <g style={{ pointerEvents: 'none' }}>
-                        <line 
-                          x1={hoveredPoint.x} 
-                          y1="30" 
-                          x2={hoveredPoint.x} 
-                          y2={chartSvgPath.yBase} 
-                          stroke="#4f46e5" 
-                          strokeWidth="1.5" 
-                          strokeDasharray="3 3" 
-                          opacity="0.8"
-                        />
-                        {/* Pulse rings */}
-                        <circle 
-                          cx={hoveredPoint.x} 
-                          cy={hoveredPoint.yCum} 
-                          r="9" 
-                          fill="#6366f1" 
-                          opacity="0.4" 
-                          className="animate-ping" 
-                        />
-                        <circle 
-                          cx={hoveredPoint.x} 
-                          cy={hoveredPoint.yCum} 
-                          r="6.5" 
-                          fill="#6366f1" 
-                          stroke="#ffffff" 
-                          strokeWidth="2.5" 
-                        />
-                        <circle 
-                          cx={hoveredPoint.x} 
-                          cy={hoveredPoint.ySem} 
-                          r="9" 
-                          fill="#10b981" 
-                          opacity="0.4" 
-                          className="animate-ping" 
-                        />
-                        <circle 
-                          cx={hoveredPoint.x} 
-                          cy={hoveredPoint.ySem} 
-                          r="6.5" 
-                          fill="#10b981" 
-                          stroke="#ffffff" 
-                          strokeWidth="2.5" 
-                        />
-                      </g>
+                      <div 
+                        className="absolute bg-slate-950/95 border border-indigo-500/30 rounded-xl p-2.5 shadow-2xl backdrop-blur-md text-[11px] pointer-events-none z-50 w-44 text-left transition-all duration-200"
+                        style={{ 
+                          left: hoveredPoint.x,
+                          top: hoveredPoint.ySem < 80 ? hoveredPoint.ySem + 20 : hoveredPoint.ySem - 65,
+                          transform: 'translateX(-50%)'
+                        }}
+                      >
+                        {/* Tooltip Arrow */}
+                        <div className={`absolute left-1/2 -translate-x-1/2 w-2.5 h-2.5 bg-slate-950 border-indigo-500/30 rotate-45 ${
+                          hoveredPoint.ySem < 80 ? '-top-[5px] border-l border-t' : '-bottom-[5px] border-r border-b'
+                        }`} />
+                        
+                        <span className="font-extrabold text-indigo-400 block mb-1 text-center border-b border-slate-800/80 pb-1">
+                          {hoveredPoint.semester}
+                        </span>
+                        <span className="text-[10px] text-slate-500 block text-center mb-1.5 font-bold">
+                          Năm học {hoveredPoint.academicYear}
+                        </span>
+                        <div className="space-y-1">
+                          <div className="flex justify-between items-center">
+                            <span className="text-slate-400 font-medium">GPA Học kỳ:</span>
+                            <span className="font-extrabold text-emerald-400">{hoveredPoint.semesterGpa.toFixed(2)}</span>
+                          </div>
+                          {hoveredPoint.diffGpa !== undefined && (
+                            <div className="pt-1.5 mt-1 border-t border-slate-800/60 flex items-center justify-between font-bold">
+                              <span className="text-slate-400 font-medium">So với kỳ trước:</span>
+                              {hoveredPoint.diffGpa > 0 ? (
+                                <span className="text-emerald-400 font-extrabold">↑ +{hoveredPoint.diffGpa.toFixed(2)}</span>
+                              ) : hoveredPoint.diffGpa < 0 ? (
+                                <span className="text-rose-400 font-extrabold">↓ {hoveredPoint.diffGpa.toFixed(2)}</span>
+                              ) : (
+                                <span className="text-slate-400">→ 0.00</span>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     )}
+                  </div>
+                </div>
 
-                    {/* Các vùng tương tác trong suốt */}
-                    {chartSvgPath.points.map((p, idx) => {
-                      const prevPoint = idx > 0 ? chartSvgPath.points[idx - 1].point : null;
-                      const diffGpa = prevPoint ? p.point.cumulativeGpa - prevPoint.cumulativeGpa : undefined;
-                      const diffPercent = prevPoint && prevPoint.cumulativeGpa > 0
-                        ? `${(diffGpa! >= 0 ? '+' : '')}${((diffGpa! / prevPoint.cumulativeGpa) * 100).toFixed(1)}%`
-                        : undefined;
-
-                      const w = gpaTrend.length > 1 
-                        ? (560 - 40 - 30) / (gpaTrend.length - 1)
-                        : (560 - 40 - 30);
-                      const xStart = p.x - w / 2;
-
-                      return (
-                        <rect
-                          key={`hover-rect-${p.point.semesterId}`}
-                          x={xStart}
-                          y="30"
-                          width={w}
-                          height="130"
-                          fill="transparent"
-                          className="cursor-pointer"
-                          onMouseEnter={() => {
-                            setHoveredPoint({
-                              x: p.x,
-                              yCum: p.yCum,
-                              ySem: p.ySem,
-                              label: p.point.label,
-                              semesterGpa: p.point.semesterGpa,
-                              cumulativeGpa: p.point.cumulativeGpa,
-                              diffGpa,
-                              diffPercent
-                            });
-                          }}
-                          onMouseLeave={() => setHoveredPoint(null)}
-                        />
-                      );
-                    })}
-                  </svg>
-
-                  {/* Anchored Tooltip Card */}
-                  {hoveredPoint && (
-                    <div 
-                      className="absolute bg-slate-950/95 border border-indigo-500/30 rounded-xl p-2.5 shadow-2xl backdrop-blur-md text-[11px] pointer-events-none z-50 w-44 text-left transition-all duration-200"
-                      style={{ 
-                        left: hoveredPoint.x,
-                        top: hoveredPoint.yCum < 80 ? hoveredPoint.yCum + 20 : hoveredPoint.yCum - 68,
-                        transform: 'translateX(-50%)'
-                      }}
-                    >
-                      {/* Tooltip Arrow */}
-                      <div className={`absolute left-1/2 -translate-x-1/2 w-2.5 h-2.5 bg-slate-950 border-indigo-500/30 rotate-45 ${
-                        hoveredPoint.yCum < 80 ? '-top-[5px] border-l border-t' : '-bottom-[5px] border-r border-b'
-                      }`} />
+                {/* INTERACTIVE SELECTED SEMESTER DETAIL CARD */}
+                {activeTrendPoint && (
+                  <div className="mt-4 p-4 rounded-xl bg-slate-950/45 border border-indigo-500/15 shadow-inner backdrop-blur-md transition-all duration-300">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-slate-800/50 pb-3 mb-3">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[8.5px] uppercase font-black tracking-widest px-2 py-0.5 rounded bg-indigo-500/15 text-indigo-300 border border-indigo-500/20 animate-pulse">
+                            Chi tiết học kỳ đang chọn
+                          </span>
+                          <span className="text-[9.5px] text-slate-500 font-semibold hidden sm:inline">
+                            (Nhấp mốc trên biểu đồ để chuyển đổi kỳ)
+                          </span>
+                        </div>
+                        <h3 className="text-sm font-extrabold text-white mt-1">
+                          {activeTrendPoint.semester} — Năm học {activeTrendPoint.academicYear}
+                        </h3>
+                      </div>
                       
-                      <span className="font-extrabold text-indigo-400 block mb-1.5 text-center border-b border-slate-800/80 pb-1">{hoveredPoint.label}</span>
-                      <div className="space-y-1">
-                        <div className="flex justify-between items-center">
-                          <span className="text-slate-400 font-medium">GPA Học kỳ:</span>
-                          <span className="font-extrabold text-emerald-400">{hoveredPoint.semesterGpa.toFixed(2)}</span>
+                      {/* Nút hành động nhanh */}
+                      <button
+                        onClick={() => {
+                          const year = activeTrendPoint.academicYear;
+                          const sem = activeTrendPoint.semester;
+                          const targetId = `sem-group-${year}-${sem}`;
+                          const element = document.getElementById(targetId);
+                          if (element) {
+                            setExpandedSemesters(prev => ({
+                              ...prev,
+                              [`${year}-${sem}`]: true
+                            }));
+                            element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            element.classList.add('ring-2', 'ring-indigo-500/50', 'transition-all');
+                            setTimeout(() => {
+                              element.classList.remove('ring-2', 'ring-indigo-500/50');
+                            }, 1500);
+                          }
+                        }}
+                        className="px-3 py-1.5 rounded-lg text-xs font-bold text-white bg-indigo-600/20 hover:bg-indigo-600/35 border border-indigo-500/20 hover:border-indigo-500/40 transition-all flex items-center gap-1.5 cursor-pointer self-start md:self-auto"
+                      >
+                        <List className="w-3.5 h-3.5 text-indigo-400" />
+                        Cuộn tới bảng nhập điểm
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+                      {/* Cột trái: GPA & Học Lực */}
+                      <div className="md:col-span-5 flex flex-col justify-center items-center bg-slate-950/30 border border-slate-800/40 rounded-xl p-3 text-center">
+                        <span className="text-[9px] text-slate-500 font-bold uppercase tracking-wider block mb-0.5">GPA HỌC KỲ</span>
+                        <div className="flex items-baseline gap-1">
+                          <span className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-400">
+                            {activeTrendPoint.semesterGpa.toFixed(2)}
+                          </span>
+                          <span className="text-[10px] text-slate-500 font-bold">/ 4.00</span>
                         </div>
-                        <div className="flex justify-between items-center">
-                          <span className="text-slate-400 font-medium">GPA Tích lũy:</span>
-                          <span className="font-extrabold text-white">{hoveredPoint.cumulativeGpa.toFixed(2)}</span>
-                        </div>
-                        {hoveredPoint.diffGpa !== undefined && (
-                          <div className="pt-1.5 mt-1 border-t border-slate-800/60 flex items-center justify-between font-bold">
-                            <span className="text-slate-400 font-medium">Biến động:</span>
-                            {hoveredPoint.diffGpa > 0 ? (
-                              <span className="text-emerald-400">↑ +{hoveredPoint.diffGpa.toFixed(2)}</span>
-                            ) : hoveredPoint.diffGpa < 0 ? (
-                              <span className="text-rose-400">↓ {hoveredPoint.diffGpa.toFixed(2)}</span>
+                        
+                        <span className={`text-[9px] px-2 py-0.5 rounded-full font-bold border mt-2 ${
+                          activeTrendPoint.semesterGpa >= 3.6 ? 'text-violet-400 bg-violet-500/10 border-violet-500/20' :
+                          activeTrendPoint.semesterGpa >= 3.2 ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' :
+                          activeTrendPoint.semesterGpa >= 2.5 ? 'text-indigo-400 bg-indigo-500/10 border-indigo-500/20' :
+                          activeTrendPoint.semesterGpa >= 2.0 ? 'text-amber-400 bg-amber-500/10 border-amber-500/20' :
+                          'text-rose-400 bg-rose-500/10 border-rose-500/20'
+                        }`}>
+                          {activeTrendPoint.semesterGpa >= 3.6 ? 'Học Lực: Xuất Sắc 🏆' :
+                           activeTrendPoint.semesterGpa >= 3.2 ? 'Học Lực: Giỏi 🥈' :
+                           activeTrendPoint.semesterGpa >= 2.5 ? 'Học Lực: Khá 🥉' :
+                           activeTrendPoint.semesterGpa >= 2.0 ? 'Học Lực: Trung bình 🎓' :
+                           'Học Lực: Yếu/Kém ⚠️'}
+                        </span>
+
+                        <div className="w-full grid grid-cols-2 gap-2 mt-3.5 pt-3 border-t border-slate-800/40 text-[10px]">
+                          <div>
+                            <span className="text-slate-500 block">Tín chỉ kỳ này</span>
+                            <span className="font-bold text-white text-xs">{activeTrendPoint.semesterCredits} TC</span>
+                          </div>
+                          <div>
+                            <span className="text-slate-500 block">So với kỳ trước</span>
+                            {activePointIndex !== null && activePointIndex > 0 ? (
+                              (() => {
+                                const diff = activeTrendPoint.semesterGpa - gpaTrend[activePointIndex - 1].semesterGpa;
+                                if (diff > 0) return <span className="font-extrabold text-emerald-400">↑ +{diff.toFixed(2)}</span>;
+                                if (diff < 0) return <span className="font-extrabold text-rose-400">↓ {diff.toFixed(2)}</span>;
+                                return <span className="text-slate-400">→ 0.00</span>;
+                              })()
                             ) : (
-                              <span className="text-slate-400">→ 0.00</span>
+                              <span className="text-slate-500">-</span>
                             )}
                           </div>
-                        )}
+                        </div>
+                      </div>
+
+                      {/* Cột phải: Danh sách môn học */}
+                      <div className="md:col-span-7 flex flex-col justify-between">
+                        <span className="text-[9px] text-slate-500 font-bold uppercase tracking-wider block mb-2">MÔN HỌC TRONG KỲ ({activeSemesterCourses.length})</span>
+                        
+                        <div className="space-y-1 max-h-[125px] overflow-y-auto scrollbar-thin pr-1">
+                          {activeSemesterCourses.length > 0 ? (
+                            activeSemesterCourses.map((c) => {
+                              const isReplaced = c.isReplaced;
+                              return (
+                                <div 
+                                  key={c.id} 
+                                  className={`flex items-center justify-between p-1.5 rounded bg-slate-950/30 border border-slate-800/40 text-[10.5px] gap-2 ${
+                                    isReplaced ? 'opacity-40 line-through' : ''
+                                  }`}
+                                >
+                                  <div className="flex items-center gap-1.5 min-w-0 flex-grow">
+                                    <span className="font-extrabold text-slate-400 bg-slate-900 border border-slate-800 px-1 py-0.5 rounded text-[9px] flex-shrink-0">
+                                      {c.courseCode}
+                                    </span>
+                                    <span className="text-slate-200 font-medium truncate" title={c.courseName}>
+                                      {c.courseName}
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center gap-1.5 flex-shrink-0">
+                                    <span className="text-[9px] text-slate-500 font-bold">{c.credits} TC</span>
+                                    {c.gradeChar ? (
+                                      <span className={`w-8 text-center font-bold px-1 py-0.5 rounded border text-[9px] ${
+                                        c.gradeChar === 'A+' || c.gradeChar === 'A' ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' :
+                                        c.gradeChar === 'A-' || c.gradeChar === 'B+' || c.gradeChar === 'B' ? 'text-indigo-400 bg-indigo-500/10 border-indigo-500/20' :
+                                        c.gradeChar === 'B-' || c.gradeChar === 'C+' || c.gradeChar === 'C' ? 'text-amber-400 bg-amber-500/10 border-amber-500/20' :
+                                        c.gradeChar === 'C-' || c.gradeChar === 'D' ? 'text-orange-400 bg-orange-500/10 border-orange-500/20' :
+                                        c.gradeChar === 'F' ? 'text-rose-400 bg-rose-500/10 border-rose-500/20' :
+                                        'text-teal-400 bg-teal-500/10 border-teal-500/20'
+                                      }`}>
+                                        {c.gradeChar}
+                                      </span>
+                                    ) : (
+                                      <span className="w-8 text-center font-bold px-1 py-0.5 rounded border text-[9px] text-slate-500 bg-slate-850/20 border-slate-800/40">
+                                        --
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })
+                          ) : (
+                            <div className="text-center py-6 text-slate-600 italic">
+                              Học kỳ này không có môn học nào.
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
-                  )}
+                  </div>
+                )}
+
+                {/* PREMIUM SUMMARY BANNER BELOW THE CHART */}
+                <div className="mt-4 pt-4 border-t border-slate-800/80 grid grid-cols-3 gap-4 text-center">
+                  <div className="space-y-1">
+                    <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block">GPA Tích Lũy</span>
+                    <span className="text-lg sm:text-xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-violet-400">
+                      {dtuResult.cumulativeGpa.toFixed(2)}
+                    </span>
+                    <span className="text-[9px] text-slate-600 block">Hệ 4.00</span>
+                  </div>
+                  
+                  <div className="space-y-1 border-x border-slate-800/60 px-2">
+                    <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block">Tín Chỉ Tích Lũy</span>
+                    <span className="text-lg sm:text-xl font-extrabold text-white">
+                      {dtuResult.accumulatedCredits} <span className="text-xs text-slate-400 font-normal">TC</span>
+                    </span>
+                    <span className="text-[9px] text-slate-600 block">Đã hoàn thành</span>
+                  </div>
+                  
+                  <div className="space-y-1.5 flex flex-col items-center justify-center">
+                    <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block">Xếp Loại Học Lực</span>
+                    <span className={`text-[10.5px] px-2.5 py-0.5 rounded-full font-bold border ${gpaClassification.color}`}>
+                      {gpaClassification.name}
+                    </span>
+                  </div>
                 </div>
               </div>
             ) : (
               <div className="flex flex-col items-center justify-center py-8 text-slate-500 bg-slate-950/20 rounded-xl border border-dashed border-slate-800/80 h-[185px]">
                 <TrendingUp className="w-8 h-8 mb-1.5 text-slate-700" />
                 <p className="text-xs text-center px-4">
-                  Chưa đủ dữ liệu để vẽ biểu đồ combo. Cần nhập tối thiểu môn học của **2 học kỳ** trở lên.
+                  Chưa đủ dữ liệu để vẽ biểu đồ. Cần nhập tối thiểu môn học của **2 học kỳ** trở lên.
                 </p>
               </div>
             )}
@@ -5485,7 +5646,11 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                       const gradedSemCoursesCount = semCourses.filter(c => !c.isConditionCourse && c.gradeChar !== '').length;
 
                       return (
-                        <div key={sem} className="bg-slate-900/40 border border-slate-800/80 rounded-xl overflow-hidden shadow-sm">
+                        <div 
+                          key={sem} 
+                          id={`sem-group-${year}-${sem}`}
+                          className="bg-slate-900/40 border border-slate-800/80 rounded-xl overflow-hidden shadow-sm scroll-mt-20 transition-all duration-300"
+                        >
                           {/* Accordion Header */}
                       <div 
                             onClick={() => toggleSemester(semKey)}

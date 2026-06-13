@@ -894,14 +894,14 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
       return { 
         status: 'Chưa có điểm', 
         desc: 'Nhập điểm học tập để bắt đầu xét học bổng.', 
-        color: 'from-slate-800 to-slate-900 border-slate-700/50 text-slate-400' 
+        color: 'from-slate-50 to-slate-100 border-slate-200 text-slate-500 shadow-sm' 
       };
     }
     if (hasFailedCourse) {
       return {
         status: 'Không đạt học bổng',
         desc: 'Có môn học bị điểm F (Trượt môn) trong phạm vi xét duyệt nên không đủ điều kiện nhận học bổng.',
-        color: 'from-rose-950/40 to-slate-900 border-rose-800/20 text-rose-400'
+        color: 'from-rose-50 to-rose-100 border-rose-200 text-rose-700 shadow-sm shadow-rose-100/50'
       };
     }
 
@@ -918,7 +918,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
       return { 
         status: 'Không đạt học bổng', 
         desc, 
-        color: 'from-rose-950/40 to-slate-900 border-rose-800/20 text-rose-400' 
+        color: 'from-rose-50 to-rose-100 border-rose-200 text-rose-700 shadow-sm shadow-rose-100/50' 
       };
     }
 
@@ -935,7 +935,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
       return {
         status: 'Học bổng loại Xuất sắc 🏆',
         desc: `Tuyệt vời! Cả GPA (Xuất sắc ≥ ${xuatsacGpa}) và ĐRL (Xuất sắc ≥ 90) đều đạt tiêu chuẩn học bổng cao nhất.`,
-        color: 'from-emerald-950/40 to-slate-900 border-emerald-500/30 text-green-700 shadow-[0_0_20px_rgba(16,185,129,0.15)] animate-pulse'
+        color: 'from-emerald-50 to-emerald-100 border-emerald-200 text-emerald-800 shadow-sm shadow-emerald-100/50'
       };
     }
 
@@ -943,7 +943,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
       return {
         status: 'Học bổng loại Giỏi 🥈',
         desc: `GPA học lực đạt Xuất sắc (≥ ${xuatsacGpa}), nhưng ĐRL xếp loại Tốt (80-89) nên chỉ đạt mức Học bổng loại Giỏi.`,
-        color: 'from-indigo-950/40 to-slate-900 border-indigo-500/30 text-indigo-300'
+        color: 'from-blue-50 to-blue-100 border-blue-200 text-blue-800 shadow-sm shadow-blue-100/50'
       };
     }
 
@@ -951,7 +951,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
       return {
         status: 'Học bổng loại Giỏi 🥈',
         desc: `ĐRL rèn luyện đạt Xuất sắc, nhưng GPA xếp loại Giỏi (${gioiGpa.toFixed(2)}-${(xuatsacGpa - 0.01).toFixed(2)}) nên chỉ đạt mức Học bổng loại Giỏi.`,
-        color: 'from-indigo-950/40 to-slate-900 border-indigo-500/30 text-indigo-300'
+        color: 'from-blue-50 to-blue-100 border-blue-200 text-blue-800 shadow-sm shadow-blue-100/50'
       };
     }
 
@@ -959,7 +959,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
       return {
         status: 'Học bổng loại Giỏi 🥈',
         desc: `Tốt! Cả GPA (Giỏi ≥ ${gioiGpa}) và ĐRL (Tốt ≥ 80) đều đạt điều kiện xét Học bổng loại Giỏi.`,
-        color: 'from-indigo-950/40 to-slate-900 border-indigo-500/30 text-indigo-300'
+        color: 'from-blue-50 to-blue-100 border-blue-200 text-blue-800 shadow-sm shadow-blue-100/50'
       };
     }
 
@@ -975,7 +975,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
     return {
       status: 'Học bổng loại Khá 🥉',
       desc: limitDesc,
-      color: 'from-teal-950/40 to-slate-900 border-teal-500/30 text-teal-300'
+      color: 'from-teal-50 to-teal-100 border-teal-200 text-teal-800 shadow-sm shadow-teal-100/50'
     };
   };
 
@@ -4338,8 +4338,8 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                       <span className="font-extrabold text-xs uppercase tracking-wide">
                         {result.status}
                       </span>
-                      {scholarshipTargetData.hasGrades && currentGpa >= (scholarshipScope === 'cumulative' ? 2.50 : 2.68) && currentDrl >= 70 && (
-                        <span className="text-[9px] px-2 py-0.5 rounded-full bg-white/10 border border-white/10 font-bold">
+                      {scholarshipTargetData.hasGrades && (
+                        <span className="text-[9px] px-2 py-0.5 rounded-full bg-white/80 border border-current/25 font-bold">
                           GPA: {currentGpa.toFixed(2)}
                         </span>
                       )}
@@ -6863,11 +6863,11 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
             </div>
 
             {/* Card Preview Area */}
-            <div className="flex justify-center items-center py-1 flex-grow overflow-hidden bg-gray-50 rounded-xl border border-gray-200 p-2 min-h-[220px] max-h-[360px] w-full">
+            <div className="flex justify-center items-center py-1 flex-grow overflow-hidden bg-gray-50 rounded-xl border border-gray-200 p-2 min-h-[180px] max-h-[280px] w-full">
               <div 
                 ref={previewContainerRef}
                 onClick={() => setIsCardZoomed(true)}
-                className="h-[280px] sm:h-[300px] aspect-[9/16] max-w-full overflow-hidden rounded-2xl border border-gray-200 flex items-center justify-center bg-gray-100 shadow-inner relative cursor-zoom-in group transition-all duration-300 hover:border-blue-500 hover:shadow-[0_0_20px_rgba(99,102,241,0.1)]"
+                className="h-[200px] sm:h-[220px] aspect-[9/16] max-w-full overflow-hidden rounded-2xl border border-gray-200 flex items-center justify-center bg-gray-100 shadow-inner relative cursor-zoom-in group transition-all duration-300 hover:border-blue-500 hover:shadow-[0_0_20px_rgba(99,102,241,0.1)]"
               >
                 <div 
                   style={{ transform: `scale(${previewScale})`, transformOrigin: 'center' }}

@@ -402,57 +402,62 @@ const ShareCardContent = ({
     else if (nameLength > 12) nameFontSizeClass = 'text-4xl px-9 py-4 max-w-[540px]';
     else nameFontSizeClass = 'text-5xl px-10 py-5 max-w-[540px]';
   } else {
-    if (nameLength > 20) nameFontSizeClass = 'text-xs px-3 py-1.5 max-w-[270px]';
-    else if (nameLength > 12) nameFontSizeClass = 'text-sm px-3.5 py-1.5 max-w-[270px]';
-    else nameFontSizeClass = 'text-base px-4 py-2 max-w-[270px]';
+    if (nameLength > 20) nameFontSizeClass = 'text-[11px] px-3 py-1.5 max-w-[270px]';
+    else if (nameLength > 12) nameFontSizeClass = 'text-xs px-3.5 py-1.5 max-w-[270px]';
+    else nameFontSizeClass = 'text-sm px-4 py-2 max-w-[270px]';
   }
 
   const getShareBadge = () => {
     const gpa = cumulativeGpa;
     if (!hasGrades) {
       return {
-        icon: <Star className={isExport ? 'w-6 h-6 text-blue-700' : 'w-3.5 h-3.5 text-blue-700'} />,
+        icon: <Star className={isExport ? 'w-6 h-6 text-slate-350' : 'w-3.5 h-3.5 text-slate-350'} />,
         text: 'BẮT ĐẦU CHINH PHỤC',
-        badgeClass: 'bg-indigo-950/40 border-indigo-500/30 text-blue-700'
+        badgeClass: 'bg-slate-800/80 border-slate-700 text-slate-350',
+        glowClass: ''
       };
     }
     if (gpa >= 3.6) {
       return {
-        icon: <Trophy className={isExport ? 'w-6 h-6 text-yellow-400 animate-pulse' : 'w-3.5 h-3.5 text-yellow-400 animate-pulse'} />,
-        text: 'DANH HIỆU THỦ KHOA',
-        badgeClass: 'bg-amber-950/40 border-amber-500/40 text-amber-400'
+        icon: <Trophy className={isExport ? 'w-6 h-6 text-amber-950 animate-bounce' : 'w-3.5 h-3.5 text-amber-950'} />,
+        text: 'DANH HIỆU THỦ KHOA 👑',
+        badgeClass: 'bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-500 border-amber-300 text-slate-950 font-black',
+        glowClass: 'shadow-[0_0_25px_rgba(245,158,11,0.45)]'
       };
     }
     if (gpa >= 3.2) {
       return {
-        icon: <Medal className={isExport ? 'w-6 h-6 text-indigo-300' : 'w-3.5 h-3.5 text-indigo-300'} />,
-        text: 'SINH VIÊN TIÊU BIỂU',
-        badgeClass: 'bg-indigo-950/40 border-indigo-500/40 text-indigo-300'
+        icon: <Medal className={isExport ? 'w-6 h-6 text-white' : 'w-3.5 h-3.5 text-white'} />,
+        text: 'SINH VIÊN TIÊU BIỂU 🌟',
+        badgeClass: 'bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-600 border-indigo-400 text-white font-extrabold',
+        glowClass: 'shadow-[0_0_25px_rgba(99,102,241,0.45)]'
       };
     }
     if (gpa >= 2.5) {
       return {
-        icon: <Sparkles className={isExport ? 'w-6 h-6 text-teal-300' : 'w-3.5 h-3.5 text-teal-300'} />,
-        text: 'NỖ LỰC VƯỢT TRỘI',
-        badgeClass: 'bg-teal-950/40 border-teal-500/30 text-teal-400'
+        icon: <Sparkles className={isExport ? 'w-6 h-6 text-white' : 'w-3.5 h-3.5 text-white'} />,
+        text: 'NỖ LỰC VƯỢT TRỘI ⚡',
+        badgeClass: 'bg-gradient-to-r from-teal-500 to-emerald-600 border-teal-400 text-white font-extrabold',
+        glowClass: 'shadow-[0_0_20px_rgba(20,184,166,0.35)]'
       };
     }
     if (gpa >= 2.0) {
       return {
-        icon: <Star className={isExport ? 'w-6 h-6 text-amber-400' : 'w-3.5 h-3.5 text-amber-400'} />,
-        text: 'TỰ TIN BỨT PHÁ',
-        badgeClass: 'bg-amber-950/40 border-amber-500/30 text-amber-400'
+        icon: <Star className={isExport ? 'w-6 h-6 text-white' : 'w-3.5 h-3.5 text-white'} />,
+        text: 'TỰ TIN BỨT PHÁ 🚀',
+        badgeClass: 'bg-gradient-to-r from-orange-500 to-amber-600 border-orange-400 text-white font-extrabold',
+        glowClass: 'shadow-[0_0_20px_rgba(249,115,22,0.35)]'
       };
     }
     return {
-      icon: <Sparkles className={isExport ? 'w-6 h-6 text-rose-400' : 'w-3.5 h-3.5 text-rose-400'} />,
-      text: 'QUYẾT TÂM CẢI THIỆN',
-      badgeClass: 'bg-rose-950/40 border-rose-500/30 text-rose-400'
+      icon: <Sparkles className={isExport ? 'w-6 h-6 text-white' : 'w-3.5 h-3.5 text-white'} />,
+      text: 'QUYẾT TÂM CẢI THIỆN 💪',
+      badgeClass: 'bg-gradient-to-r from-rose-500 to-red-650 border-rose-450 text-white font-extrabold',
+      glowClass: 'shadow-[0_0_20px_rgba(244,63,94,0.35)]'
     };
   };
 
   const badge = getShareBadge();
-
   const cleanedCardClass = isExport ? theme.cardClass.replace('shadow-2xl', '') : theme.cardClass;
 
   return (
@@ -470,7 +475,10 @@ const ShareCardContent = ({
       <div className="absolute inset-0 bg-white/5 opacity-40 pointer-events-none z-[3]" />
 
       {theme.id === 'custom' && (
-        <div className="absolute inset-0 bg-black/45 z-[2] pointer-events-none" />
+        <>
+          <div className="absolute inset-0 bg-slate-950/35 z-[2] pointer-events-none" />
+          <div className="absolute inset-0 bg-gradient-to-b from-slate-950/70 via-transparent to-slate-950/80 z-[2] pointer-events-none" />
+        </>
       )}
 
       {theme.id !== 'custom' && theme.pattern}
@@ -484,104 +492,124 @@ const ShareCardContent = ({
           }`}>
             <GraduationCap className={isExport ? 'w-6 h-6' : 'w-4 h-4'} />
           </span>
-          <span className={`font-bold text-gray-650 tracking-widest uppercase whitespace-nowrap ${
+          <span className={`font-black text-white/95 tracking-widest uppercase whitespace-nowrap ${
             isExport ? 'text-sm' : 'text-[9px]'
-          }`}>DTU GPA Calculator</span>
+          }`}>DTU EXCELLENCE CARD</span>
         </div>
-        <span className={`rounded-full bg-white/5 text-gray-650 font-bold border border-white/10 uppercase whitespace-nowrap ${
+        <span className={`rounded-full bg-white/10 text-amber-400 font-extrabold border border-amber-500/25 uppercase whitespace-nowrap ${
           isExport ? 'text-xs px-4 py-1.5' : 'text-[8px] px-2.5 py-0.5'
         }`}>
-          BẢNG VÀNG
+          🏆 BẢNG VÀNG
         </span>
       </div>
 
-      <div className={`flex-grow flex flex-col justify-around items-center text-center z-10 ${
-        isExport ? 'py-10' : 'py-5'
+      <div className={`flex-grow flex flex-col justify-center items-center z-10 ${
+        isExport ? 'py-8' : 'py-4'
       }`}>
-        <div className="space-y-1.5 w-full flex flex-col items-center">
-          <span className={`font-bold text-indigo-300 tracking-widest block uppercase whitespace-nowrap ${
-            isExport ? 'text-sm' : 'text-[9px]'
-          }`}>KẾT QUẢ HỌC TẬP</span>
-          <h4 className={`font-black text-white tracking-tight ${isExport ? 'bg-[#0F131F] border border-white/15' : 'bg-black/40 border border-white/10'} rounded-2xl inline-block text-center whitespace-nowrap ${nameFontSizeClass}`}>
-            {shareStudentName.trim() || 'Nguyễn Văn A'}
-          </h4>
-        </div>
-
-        <div className={`relative rounded-full flex flex-col justify-center items-center bg-black/60 border border-white/10 ${
-          isExport ? 'w-80 h-80' : 'w-40 h-40 shadow-2xl'
+        <div className={`w-full backdrop-blur-lg bg-slate-950/45 border border-white/10 rounded-[24px] shadow-2xl flex flex-col items-center justify-around ${
+          isExport ? 'p-10 min-h-[720px] gap-8 rounded-[36px]' : 'p-5 min-h-[400px] gap-4'
         }`}>
-          <div className={`absolute rounded-full border border-dashed border-white/10 ${
-            isExport ? 'inset-4' : 'inset-1.5'
-          }`}></div>
-          <div className={`absolute rounded-full border border-white/5 animate-spin-slow ${
-            isExport ? 'w-[360px] h-[360px]' : 'w-[180px] h-[180px]'
-          }`} style={{ borderStyle: 'dashed', animationDuration: '30s' }}></div>
-          <div className={`absolute rounded-full border border-white/5 animate-spin-slow ${
-            isExport ? 'w-[400px] h-[400px]' : 'w-[200px] h-[200px]'
-          }`} style={{ borderStyle: 'dotted', animationDuration: '45s', animationDirection: 'reverse' }}></div>
-
-          <span className={`font-black tracking-tighter text-white leading-none ${
-            isExport ? 'text-[96px]' : 'text-[48px]'
-          }`}>
-            {hasGrades ? cumulativeGpa.toFixed(2) : '--'}
-          </span>
-          <span className={`text-slate-400 font-bold ${
-            isExport ? 'text-base mt-3' : 'text-[9px] mt-1'
-          }`}>GPA TÍCH LŨY</span>
-          <span className={`text-gray-450 ${
-            isExport ? 'text-sm' : 'text-[8px]'
-          }`}>Thang điểm 4.00</span>
-        </div>
-
-        <div className={`w-full grid grid-cols-2 gap-4 ${
-          isExport ? 'max-w-[500px] gap-6' : 'max-w-[270px] gap-2.5'
-        }`}>
-          <div className={`${isExport ? 'bg-[#0F131F] border border-white/15' : 'bg-black/40 border border-white/10'} rounded-2xl text-center space-y-0.5 ${
-            isExport ? 'p-5 space-y-1' : 'p-2.5 space-y-0.5'
-          }`}>
-            <span className={`text-gray-450 font-bold uppercase tracking-wider block ${
-              isExport ? 'text-sm' : 'text-[8px]'
-            }`}>Xếp Loại</span>
-            <span className={`font-extrabold block mt-0.5 ${
-              isExport ? 'text-xl' : 'text-xs'
-            } text-white`}>
-              {gpaClassification.name}
-            </span>
+          
+          <div className="space-y-1.5 w-full flex flex-col items-center">
+            <span className={`font-bold text-indigo-300 tracking-widest block uppercase whitespace-nowrap ${
+              isExport ? 'text-xs' : 'text-[8px]'
+            }`}>BẢNG VÀNG GPA SINH VIÊN</span>
+            <h4 className={`font-black text-white tracking-tight bg-gradient-to-r from-white/10 via-white/15 to-white/10 border border-white/15 rounded-2xl inline-block text-center whitespace-nowrap shadow-lg ${nameFontSizeClass}`}>
+              {shareStudentName.trim() || 'Nguyễn Văn A'}
+            </h4>
           </div>
-          <div className={`${isExport ? 'bg-[#0F131F] border border-white/15' : 'bg-black/40 border border-white/10'} rounded-2xl text-center space-y-0.5 ${
-            isExport ? 'p-5 space-y-1' : 'p-2.5 space-y-0.5'
+
+          <div className={`relative rounded-full flex flex-col justify-center items-center bg-gradient-to-b from-white/5 to-white/0 border border-white/15 shadow-[0_0_35px_rgba(99,102,241,0.2)] ${
+            isExport ? 'w-72 h-72' : 'w-36 h-36'
           }`}>
-            <span className={`text-gray-450 font-bold uppercase tracking-wider block ${
-              isExport ? 'text-sm' : 'text-[8px]'
-            }`}>Tín Chỉ Đạt</span>
-            <span className={`font-extrabold text-white block mt-0.5 ${
-              isExport ? 'text-xl' : 'text-xs'
+            <div className={`absolute rounded-full border border-dashed border-indigo-400/20 ${
+              isExport ? 'inset-4 animate-spin-slow' : 'inset-1.5 animate-spin-slow'
+            }`} style={{ animationDuration: '30s' }}></div>
+            <div className={`absolute rounded-full border border-indigo-500/10 animate-spin-slow ${
+              isExport ? 'w-[320px] h-[320px]' : 'w-[160px] h-[160px]'
+            }`} style={{ borderStyle: 'dashed', animationDuration: '45s', animationDirection: 'reverse' }}></div>
+            
+            <span className={`font-black tracking-tighter leading-none ${
+              isExport ? 'text-[84px]' : 'text-[42px]'
+            } ${
+              hasGrades && cumulativeGpa >= 3.6 
+                ? 'bg-clip-text text-transparent bg-gradient-to-r from-yellow-250 via-amber-300 to-yellow-500 drop-shadow-[0_2px_10px_rgba(245,158,11,0.25)]'
+                : hasGrades && cumulativeGpa >= 3.2
+                ? 'bg-clip-text text-transparent bg-gradient-to-r from-cyan-200 via-sky-300 to-indigo-400'
+                : 'text-white'
             }`}>
-              {accumulatedCredits} TC
+              {hasGrades ? cumulativeGpa.toFixed(2) : '--'}
             </span>
+            <span className={`text-slate-300 font-bold ${
+              isExport ? 'text-sm mt-2' : 'text-[8px] mt-0.5'
+            }`}>GPA TÍCH LŨY</span>
+            <span className={`text-slate-400/80 ${
+              isExport ? 'text-xs' : 'text-[7px]'
+            }`}>Thang điểm 4.00</span>
           </div>
-        </div>
 
-        {hasGrades && (
-          <div className={`font-extrabold flex items-center justify-center border rounded-full tracking-wider uppercase ${badge.badgeClass} ${
-            isExport ? 'px-8 py-3.5 gap-2.5 text-base' : 'px-4 py-1.5 gap-1.5 text-[9px]'
+          <div className={`w-full grid grid-cols-2 gap-4 ${
+            isExport ? 'max-w-[440px] gap-6' : 'max-w-[240px] gap-2.5'
           }`}>
-            {badge.icon}
-            <span>{badge.text}</span>
+            <div className={`bg-white/5 border border-white/10 rounded-xl text-center flex flex-col justify-center items-center ${
+              isExport ? 'p-4 space-y-1 rounded-2xl' : 'p-2 space-y-0.5'
+            }`}>
+              <span className={`text-slate-400 font-extrabold uppercase tracking-wider block ${
+                isExport ? 'text-xs' : 'text-[7px]'
+              }`}>
+                🏆 Xếp Loại
+              </span>
+              <span className={`font-extrabold block mt-0.5 ${
+                isExport ? 'text-lg' : 'text-xs'
+              } ${
+                hasGrades && cumulativeGpa >= 3.6 
+                  ? 'text-yellow-400'
+                  : hasGrades && cumulativeGpa >= 3.2
+                  ? 'text-indigo-300'
+                  : 'text-white'
+              }`}>
+                {gpaClassification.name}
+              </span>
+            </div>
+
+            <div className={`bg-white/5 border border-white/10 rounded-xl text-center flex flex-col justify-center items-center ${
+              isExport ? 'p-4 space-y-1 rounded-2xl' : 'p-2 space-y-0.5'
+            }`}>
+              <span className={`text-slate-400 font-extrabold uppercase tracking-wider block ${
+                isExport ? 'text-xs' : 'text-[7px]'
+              }`}>
+                📚 Tín Chỉ Đạt
+              </span>
+              <span className={`font-extrabold text-white block mt-0.5 ${
+                isExport ? 'text-lg' : 'text-xs'
+              }`}>
+                {accumulatedCredits} TC
+              </span>
+            </div>
           </div>
-        )}
+
+          {hasGrades && (
+            <div className={`font-extrabold flex items-center justify-center border rounded-full tracking-wider uppercase transition-all duration-300 hover:scale-105 ${badge.badgeClass} ${badge.glowClass} ${
+              isExport ? 'px-8 py-3 gap-2.5 text-sm shadow-lg' : 'px-4.5 py-1.5 gap-1.5 text-[8px]'
+            }`}>
+              {badge.icon}
+              <span>{badge.text}</span>
+            </div>
+          )}
+
+        </div>
       </div>
 
       <div className={`border-t border-white/10 flex items-center justify-between gap-2 z-10 w-full ${
         isExport ? 'pt-5' : 'pt-3'
       }`}>
-        <div className="text-left space-y-0.5 flex-grow">
-          <p className={`leading-tight text-slate-250 font-semibold italic whitespace-normal ${
-            isExport ? 'text-base max-w-[420px]' : 'text-[9px] max-w-[180px]'
+        <div className="text-left space-y-1 flex-grow">
+          <p className={`leading-tight text-white/95 font-medium italic whitespace-normal drop-shadow-sm ${
+            isExport ? 'text-sm max-w-[420px]' : 'text-[9px] max-w-[180px]'
           }`}>
             "{shareSlogan}"
           </p>
-          <span className={`text-gray-450 block font-bold ${
+          <span className={`text-slate-400/80 block font-bold ${
             isExport ? 'text-xs' : 'text-[7px]'
           }`}>
             Phát triển bởi levanthang.dev
@@ -589,8 +617,8 @@ const ShareCardContent = ({
         </div>
         
         <div className="flex flex-col items-center gap-0.5 flex-shrink-0">
-          <div className={`bg-white rounded shadow-sm flex items-center justify-center ${
-            isExport ? 'p-1.5 w-[84px] h-[84px]' : 'p-0.5 w-[44px] h-[44px]'
+          <div className={`bg-white rounded shadow-md flex items-center justify-center p-0.5 ${
+            isExport ? 'p-1.5 w-[76px] h-[76px]' : 'w-[40px] h-[40px]'
           }`}>
             <img 
               src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=https://tinhdiem-dtu-six.vercel.app/&color=0f172a&bgcolor=ffffff" 
@@ -599,9 +627,9 @@ const ShareCardContent = ({
               crossOrigin="anonymous"
             />
           </div>
-          <span className={`font-extrabold text-blue-700 tracking-wider uppercase ${
-            isExport ? 'text-[7px]' : 'text-[6px]'
-          }`}>Tính Điểm</span>
+          <span className={`font-black text-indigo-400 tracking-wider uppercase ${
+            isExport ? 'text-[7px]' : 'text-[5.5px]'
+          }`}>Tính Điểm GPA</span>
         </div>
       </div>
     </div>

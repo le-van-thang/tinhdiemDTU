@@ -920,7 +920,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
 
     if (gpaTier === 'Xuất sắc' && drlTier === 'Xuất sắc') {
       return {
-        status: 'Học bổng Xuất sắc 🏆',
+        status: 'Học bổng loại Xuất sắc 🏆',
         desc: 'Tuyệt vời! Cả GPA (Xuất sắc) và ĐRL (Xuất sắc) đều đạt tiêu chuẩn học bổng cao nhất.',
         color: 'from-emerald-950/40 to-slate-900 border-emerald-500/30 text-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.15)] animate-pulse'
       };
@@ -928,39 +928,39 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
 
     if (gpaTier === 'Xuất sắc' && drlTier === 'Giỏi') {
       return {
-        status: 'Học bổng Giỏi 🥈',
-        desc: 'GPA học lực đạt Xuất sắc, nhưng ĐRL xếp loại Tốt (80-89) nên chỉ đạt mức Học bổng Giỏi.',
+        status: 'Học bổng loại Giỏi 🥈',
+        desc: 'GPA học lực đạt Xuất sắc, nhưng ĐRL xếp loại Tốt (80-89) nên chỉ đạt mức Học bổng loại Giỏi.',
         color: 'from-indigo-950/40 to-slate-900 border-indigo-500/30 text-indigo-300'
       };
     }
 
     if (gpaTier === 'Giỏi' && drlTier === 'Xuất sắc') {
       return {
-        status: 'Học bổng Giỏi 🥈',
-        desc: 'ĐRL rèn luyện đạt Xuất sắc, nhưng GPA xếp loại Giỏi (3.2-3.59) nên chỉ đạt mức Học bổng Giỏi.',
+        status: 'Học bổng loại Giỏi 🥈',
+        desc: 'ĐRL rèn luyện đạt Xuất sắc, nhưng GPA xếp loại Giỏi (3.2-3.59) nên chỉ đạt mức Học bổng loại Giỏi.',
         color: 'from-indigo-950/40 to-slate-900 border-indigo-500/30 text-indigo-300'
       };
     }
 
     if (gpaTier === 'Giỏi' && drlTier === 'Giỏi') {
       return {
-        status: 'Học bổng Giỏi 🥈',
-        desc: 'Tốt! Cả GPA (Giỏi) và ĐRL (Tốt) đều đạt điều kiện xét Học bổng Giỏi.',
+        status: 'Học bổng loại Giỏi 🥈',
+        desc: 'Tốt! Cả GPA (Giỏi) và ĐRL (Tốt) đều đạt điều kiện xét Học bổng loại Giỏi.',
         color: 'from-indigo-950/40 to-slate-900 border-indigo-500/30 text-indigo-300'
       };
     }
 
     // Học bổng Khá
-    let limitDesc = 'Đạt điều kiện xét Học bổng Khá.';
+    let limitDesc = 'Đạt điều kiện xét Học bổng loại Khá.';
     if (gpaTier !== 'Khá' || drlTier !== 'Khá') {
       if (gpaTier === 'Khá') {
-        limitDesc = `ĐRL đạt mức ${drlTier}, nhưng GPA đạt Khá (2.5-3.19) nên bị giới hạn xét Học bổng Khá.`;
+        limitDesc = `ĐRL đạt mức ${drlTier}, nhưng GPA đạt Khá (2.5-3.19) nên bị giới hạn xét Học bổng loại Khá.`;
       } else {
-        limitDesc = `GPA đạt mức ${gpaTier}, nhưng ĐRL chỉ đạt Khá (70-79) nên bị giới hạn xét Học bổng Khá.`;
+        limitDesc = `GPA đạt mức ${gpaTier}, dung ĐRL chỉ đạt Khá (70-79) nên bị giới hạn xét Học bổng loại Khá.`;
       }
     }
     return {
-      status: 'Học bổng Khá 🥉',
+      status: 'Học bổng loại Khá 🥉',
       desc: limitDesc,
       color: 'from-teal-950/40 to-slate-900 border-teal-500/30 text-teal-300'
     };
@@ -2939,7 +2939,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
     const options = [{ value: 'cumulative', label: 'Tích lũy (Toàn khóa)' }];
     
     sortedAcademicYears.forEach(year => {
-      options.push({ value: `year:${year}`, label: `Năm học ${year}` });
+      options.push({ value: `year:${year}`, label: `Năm học ${year} (Kỳ 1 + Kỳ 2)` });
     });
     
     return options;
@@ -3864,7 +3864,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
             {/* Bộ chọn phạm vi xét học bổng */}
             <div className="space-y-1">
               <label className="text-xs font-bold text-slate-300 flex items-center gap-1">
-                Phạm vi xét duyệt:
+                Phạm vi xét học bổng:
               </label>
               <select
                 value={scholarshipScope}

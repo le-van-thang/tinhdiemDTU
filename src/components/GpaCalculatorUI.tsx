@@ -889,12 +889,19 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
   };
 
   // Tính mức học bổng xét duyệt dự kiến
-  const getScholarshipStatus = (gpa: number, drl: number, hasGradesData: boolean) => {
+  const getScholarshipStatus = (gpa: number, drl: number, hasGradesData: boolean, hasFailedCourse: boolean = false) => {
     if (!hasGradesData) {
       return { 
         status: 'Chưa có điểm', 
         desc: 'Nhập điểm học tập để bắt đầu xét học bổng.', 
         color: 'from-slate-800 to-slate-900 border-slate-700/50 text-slate-400' 
+      };
+    }
+    if (hasFailedCourse) {
+      return {
+        status: 'Không đạt học bổng',
+        desc: 'Có môn học bị điểm F (Trượt môn) trong phạm vi xét duyệt nên không đủ điều kiện nhận học bổng.',
+        color: 'from-rose-950/40 to-slate-900 border-rose-800/20 text-rose-400'
       };
     }
     if (gpa < 2.5 || drl < 70) {
@@ -3042,11 +3049,16 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
   }, [sortedAcademicYears]);
 
   const scholarshipTargetData = useMemo(() => {
+    const { replacedIds } = resolveRetakes(courses);
+
     if (scholarshipScope === 'cumulative') {
+      // Học bổng toàn khóa: không được đang nợ môn F nào (F chưa được học cải thiện/học lại thay thế)
+      const hasFailedCourse = courses.some(c => c.gradeChar === 'F' && !c.isConditionCourse && !replacedIds.has(c.id));
       return {
         gpa: dtuResult.cumulativeGpa,
         credits: dtuResult.accumulatedCredits,
-        hasGrades
+        hasGrades,
+        hasFailedCourse
       };
     }
     
@@ -3056,14 +3068,16 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
       const yearCourses = courses.filter(c => c.academicYear === targetYear && c.semester !== 'Học kỳ Hè');
       const yearResult = calculateDTUGPA(yearCourses);
       const gradedCount = yearCourses.filter(c => !c.isConditionCourse && c.gradeChar !== '').length;
+      const hasFailedCourse = yearCourses.some(c => c.gradeChar === 'F' && !c.isConditionCourse);
       return {
         gpa: yearResult.cumulativeGpa,
         credits: yearResult.accumulatedCredits,
-        hasGrades: gradedCount > 0
+        hasGrades: gradedCount > 0,
+        hasFailedCourse
       };
     }
     
-    return { gpa: 0, credits: 0, hasGrades: false };
+    return { gpa: 0, credits: 0, hasGrades: false, hasFailedCourse: false };
   }, [scholarshipScope, courses, dtuResult, hasGrades]);
 
   // Lọc phẳng phục vụ chế độ xem 'flat'
@@ -4043,7 +4057,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
             {(() => {
               const currentGpa = scholarshipTargetData.gpa;
               const currentDrl = Number(trainingScore) || 0;
-              const result = getScholarshipStatus(currentGpa, currentDrl, scholarshipTargetData.hasGrades);
+              const result = getScholarshipStatus(currentGpa, currentDrl, scholarshipTargetData.hasGrades, scholarshipTargetData.hasFailedCourse);
 
               return (
                 <div className="space-y-2">

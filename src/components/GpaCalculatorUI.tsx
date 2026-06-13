@@ -223,7 +223,7 @@ const SHARE_THEMES: ShareTheme[] = [
         <SparkleIcon className="absolute top-[32%] right-[15%] w-3 h-3 text-pink-400/50 animate-pulse" style={{ animationDelay: '300ms', animationDuration: '3s' }} />
         <SparkleIcon className="absolute bottom-[30%] left-[12%] w-5 h-5 text-white/30 animate-pulse" style={{ animationDelay: '600ms', animationDuration: '4s' }} />
         <SparkleIcon className="absolute bottom-[15%] right-[22%] w-3.5 h-3.5 text-indigo-300/40 animate-pulse" style={{ animationDelay: '900ms', animationDuration: '2.5s' }} />
-        <svg className="absolute bottom-0 inset-x-0 w-full h-40 opacity-[0.05] text-white" viewBox="0 0 100 100" preserveAspectRatio="none" fill="currentColor">
+        <svg className="absolute bottom-0 inset-x-0 w-full h-40 opacity-[0.05] text-white" viewBox="0 0 100 100" fill="currentColor">
           <path d="M0,80 C30,90 60,60 100,80 L100,100 L0,100 Z" />
           <path d="M0,60 C40,40 70,80 100,60 L100,100 L0,100 Z" opacity="0.5" />
         </svg>
@@ -252,7 +252,7 @@ const SHARE_THEMES: ShareTheme[] = [
         <SparkleIcon className="absolute top-[28%] right-[18%] w-3 h-3 text-rose-300/40 animate-pulse" style={{ animationDelay: '400ms', animationDuration: '2.5s' }} />
         <SparkleIcon className="absolute bottom-[35%] left-[25%] w-5 h-5 text-amber-400/30 animate-pulse" style={{ animationDelay: '800ms', animationDuration: '3.5s' }} />
         <SparkleIcon className="absolute bottom-[22%] right-[12%] w-4 h-4 text-rose-400/30 animate-pulse" style={{ animationDelay: '1200ms', animationDuration: '4.5s' }} />
-        <svg className="absolute bottom-0 inset-x-0 w-full h-48 opacity-[0.08] text-white" viewBox="0 0 100 100" preserveAspectRatio="none" fill="currentColor">
+        <svg className="absolute bottom-0 inset-x-0 w-full h-48 opacity-[0.08] text-white" viewBox="0 0 100 100" fill="currentColor">
           <path d="M0,50 C30,75 70,25 100,50 L100,100 L0,100 Z" />
           <path d="M0,70 C40,90 60,50 100,70 L100,100 L0,100 Z" opacity="0.4" />
         </svg>
@@ -332,7 +332,7 @@ const SHARE_THEMES: ShareTheme[] = [
         <SparkleIcon className="absolute top-[30%] right-[22%] w-3 h-3 text-blue-300/50 animate-pulse" style={{ animationDelay: '300ms', animationDuration: '3.5s' }} />
         <SparkleIcon className="absolute bottom-[32%] left-[28%] w-5 h-5 text-cyan-300/30 animate-pulse" style={{ animationDelay: '700ms', animationDuration: '4s' }} />
         <SparkleIcon className="absolute bottom-[18%] right-[15%] w-4 h-4 text-sky-400/40 animate-pulse" style={{ animationDelay: '1100ms', animationDuration: '2.5s' }} />
-        <svg className="absolute bottom-0 inset-x-0 w-full h-56 opacity-[0.09] text-white" viewBox="0 0 100 100" preserveAspectRatio="none" fill="currentColor">
+        <svg className="absolute bottom-0 inset-x-0 w-full h-56 opacity-[0.09] text-white" viewBox="0 0 100 100" fill="currentColor">
           <path d="M0,30 C30,50 60,20 100,40 L100,100 L0,100 Z" />
           <path d="M0,50 C40,30 70,70 100,50 L100,100 L0,100 Z" opacity="0.6" />
           <path d="M0,70 C30,80 70,60 100,75 L100,100 L0,100 Z" opacity="0.3" />
@@ -3803,7 +3803,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                   ref={chartContainerRef}
                   className="w-full h-[185px] relative"
                 >
-                  <svg width="100%" height="180" viewBox="0 0 560 180" preserveAspectRatio="none" className="overflow-visible">
+                  <svg width="100%" height="180" viewBox="0 0 560 180" className="overflow-visible">
                       <defs>
                         {/* Gradient cho đường line GPA Học kỳ */}
                         <linearGradient id="line-gradient-sem" x1="0" y1="0" x2="1" y2="0">

@@ -889,7 +889,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
   };
 
   // Tính mức học bổng xét duyệt dự kiến
-  const getScholarshipStatus = (gpa: number, drl: number, hasGradesData: boolean, hasFailedCourse: boolean = false) => {
+  const getScholarshipStatus = (gpa: number, drl: number, hasGradesData: boolean, hasFailedCourse: boolean = false, isCumulative: boolean = false) => {
     if (!hasGradesData) {
       return { 
         status: 'Chưa có điểm', 
@@ -904,10 +904,16 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
         color: 'from-rose-950/40 to-slate-900 border-rose-800/20 text-rose-400'
       };
     }
-    if (gpa < 2.5 || drl < 70) {
+
+    // Xác định ngưỡng điểm theo phạm vi (Tích lũy toàn khóa dùng mốc tốt nghiệp, Năm học dùng mốc học lực năm của DTU)
+    const minGpa = isCumulative ? 2.50 : 2.68;
+    const gioiGpa = isCumulative ? 3.20 : 3.34;
+    const xuatsacGpa = isCumulative ? 3.60 : 3.68;
+
+    if (gpa < minGpa || drl < 70) {
       let desc = '';
-      if (gpa < 2.5 && drl < 70) desc = 'GPA học lực dưới 2.5 và ĐRL dưới 70 không đủ tiêu chí xét học bổng.';
-      else if (gpa < 2.5) desc = 'GPA học lực của bạn dưới 2.5 không đạt yêu cầu học lực (tối thiểu 2.5).';
+      if (gpa < minGpa && drl < 70) desc = `GPA học lực dưới ${minGpa} và ĐRL dưới 70 không đủ tiêu chí xét học bổng.`;
+      else if (gpa < minGpa) desc = `GPA học lực của bạn dưới ${minGpa} không đạt yêu cầu học lực (tối thiểu ${minGpa}).`;
       else desc = 'Điểm rèn luyện của bạn dưới 70 không đạt yêu cầu hạnh kiểm (tối thiểu 70).';
       return { 
         status: 'Không đạt học bổng', 
@@ -918,8 +924,8 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
 
     // Xác định mức đạt của từng phần
     let gpaTier = 'Khá';
-    if (gpa >= 3.6) gpaTier = 'Xuất sắc';
-    else if (gpa >= 3.2) gpaTier = 'Giỏi';
+    if (gpa >= xuatsacGpa) gpaTier = 'Xuất sắc';
+    else if (gpa >= gioiGpa) gpaTier = 'Giỏi';
 
     let drlTier = 'Khá';
     if (drl >= 90) drlTier = 'Xuất sắc';
@@ -928,7 +934,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
     if (gpaTier === 'Xuất sắc' && drlTier === 'Xuất sắc') {
       return {
         status: 'Học bổng loại Xuất sắc 🏆',
-        desc: 'Tuyệt vời! Cả GPA (Xuất sắc) và ĐRL (Xuất sắc) đều đạt tiêu chuẩn học bổng cao nhất.',
+        desc: `Tuyệt vời! Cả GPA (Xuất sắc ≥ ${xuatsacGpa}) và ĐRL (Xuất sắc ≥ 90) đều đạt tiêu chuẩn học bổng cao nhất.`,
         color: 'from-emerald-950/40 to-slate-900 border-emerald-500/30 text-green-700 shadow-[0_0_20px_rgba(16,185,129,0.15)] animate-pulse'
       };
     }
@@ -936,7 +942,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
     if (gpaTier === 'Xuất sắc' && drlTier === 'Giỏi') {
       return {
         status: 'Học bổng loại Giỏi 🥈',
-        desc: 'GPA học lực đạt Xuất sắc, nhưng ĐRL xếp loại Tốt (80-89) nên chỉ đạt mức Học bổng loại Giỏi.',
+        desc: `GPA học lực đạt Xuất sắc (≥ ${xuatsacGpa}), nhưng ĐRL xếp loại Tốt (80-89) nên chỉ đạt mức Học bổng loại Giỏi.`,
         color: 'from-indigo-950/40 to-slate-900 border-indigo-500/30 text-indigo-300'
       };
     }
@@ -944,7 +950,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
     if (gpaTier === 'Giỏi' && drlTier === 'Xuất sắc') {
       return {
         status: 'Học bổng loại Giỏi 🥈',
-        desc: 'ĐRL rèn luyện đạt Xuất sắc, nhưng GPA xếp loại Giỏi (3.2-3.59) nên chỉ đạt mức Học bổng loại Giỏi.',
+        desc: `ĐRL rèn luyện đạt Xuất sắc, nhưng GPA xếp loại Giỏi (${gioiGpa.toFixed(2)}-${(xuatsacGpa - 0.01).toFixed(2)}) nên chỉ đạt mức Học bổng loại Giỏi.`,
         color: 'from-indigo-950/40 to-slate-900 border-indigo-500/30 text-indigo-300'
       };
     }
@@ -952,7 +958,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
     if (gpaTier === 'Giỏi' && drlTier === 'Giỏi') {
       return {
         status: 'Học bổng loại Giỏi 🥈',
-        desc: 'Tốt! Cả GPA (Giỏi) và ĐRL (Tốt) đều đạt điều kiện xét Học bổng loại Giỏi.',
+        desc: `Tốt! Cả GPA (Giỏi ≥ ${gioiGpa}) và ĐRL (Tốt ≥ 80) đều đạt điều kiện xét Học bổng loại Giỏi.`,
         color: 'from-indigo-950/40 to-slate-900 border-indigo-500/30 text-indigo-300'
       };
     }
@@ -961,9 +967,9 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
     let limitDesc = 'Đạt điều kiện xét Học bổng loại Khá.';
     if (gpaTier !== 'Khá' || drlTier !== 'Khá') {
       if (gpaTier === 'Khá') {
-        limitDesc = `ĐRL đạt mức ${drlTier}, nhưng GPA đạt Khá (2.5-3.19) nên bị giới hạn xét Học bổng loại Khá.`;
+        limitDesc = `ĐRL đạt mức ${drlTier}, nhưng GPA đạt Khá (${minGpa.toFixed(2)}-${(gioiGpa - 0.01).toFixed(2)}) nên bị giới hạn xét Học bổng loại Khá.`;
       } else {
-        limitDesc = `GPA đạt mức ${gpaTier}, dung ĐRL chỉ đạt Khá (70-79) nên bị giới hạn xét Học bổng loại Khá.`;
+        limitDesc = `GPA đạt mức ${gpaTier}, nhưng ĐRL chỉ đạt Khá (70-79) nên bị giới hạn xét Học bổng loại Khá.`;
       }
     }
     return {
@@ -4093,15 +4099,15 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                           );
                           return (
                             <span className={`text-[9px] px-2 py-0.5 rounded-full font-bold border mt-1.5 ${
-                              activeTrendPoint.semesterGpa >= 3.6 ? 'text-violet-700 bg-violet-50 border-violet-200' :
-                              activeTrendPoint.semesterGpa >= 3.2 ? 'text-green-700 bg-green-50 border-green-100' :
-                              activeTrendPoint.semesterGpa >= 2.5 ? 'text-blue-700 bg-blue-50 border-blue-100' :
+                              activeTrendPoint.semesterGpa >= 3.68 ? 'text-violet-700 bg-violet-50 border-violet-200' :
+                              activeTrendPoint.semesterGpa >= 3.34 ? 'text-green-700 bg-green-50 border-green-100' :
+                              activeTrendPoint.semesterGpa >= 2.68 ? 'text-blue-700 bg-blue-50 border-blue-100' :
                               activeTrendPoint.semesterGpa >= 2.0 ? 'text-amber-700 bg-amber-50 border-amber-100' :
                               'text-rose-700 bg-rose-50 border-rose-100'
                             }`}>
-                              {activeTrendPoint.semesterGpa >= 3.6 ? 'Xuất Sắc 🏆' :
-                               activeTrendPoint.semesterGpa >= 3.2 ? 'Giỏi 🥈' :
-                               activeTrendPoint.semesterGpa >= 2.5 ? 'Khá 🥉' :
+                              {activeTrendPoint.semesterGpa >= 3.68 ? 'Xuất Sắc 🏆' :
+                               activeTrendPoint.semesterGpa >= 3.34 ? 'Giỏi 🥈' :
+                               activeTrendPoint.semesterGpa >= 2.68 ? 'Khá 🥉' :
                                activeTrendPoint.semesterGpa >= 2.0 ? 'Trung bình 🎓' :
                                'Yếu/Kém ⚠️'}
                             </span>
@@ -4316,7 +4322,13 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
             {(() => {
               const currentGpa = scholarshipTargetData.gpa;
               const currentDrl = Number(trainingScore) || 0;
-              const result = getScholarshipStatus(currentGpa, currentDrl, scholarshipTargetData.hasGrades, scholarshipTargetData.hasFailedCourse);
+              const result = getScholarshipStatus(
+                currentGpa, 
+                currentDrl, 
+                scholarshipTargetData.hasGrades, 
+                scholarshipTargetData.hasFailedCourse,
+                scholarshipScope === 'cumulative'
+              );
 
               return (
                 <div className="space-y-2">
@@ -4326,7 +4338,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                       <span className="font-extrabold text-xs uppercase tracking-wide">
                         {result.status}
                       </span>
-                      {scholarshipTargetData.hasGrades && currentGpa >= 2.5 && currentDrl >= 70 && (
+                      {scholarshipTargetData.hasGrades && currentGpa >= (scholarshipScope === 'cumulative' ? 2.50 : 2.68) && currentDrl >= 70 && (
                         <span className="text-[9px] px-2 py-0.5 rounded-full bg-white/10 border border-white/10 font-bold">
                           GPA: {currentGpa.toFixed(2)}
                         </span>
@@ -4342,26 +4354,38 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
 
             {/* Bảng tiêu chuẩn tham chiếu */}
             <div className="bg-gray-50 border border-gray-200 rounded-xl p-3 space-y-2">
-              <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block">Tiêu Chuẩn Học Bổng (Bộ GD&ĐT)</span>
+              <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block">
+                {scholarshipScope === 'cumulative' 
+                  ? 'Tiêu Chuẩn Xếp Loại Tốt Nghiệp Toàn Khóa' 
+                  : 'Tiêu Chuẩn Xét Học Bổng Năm Học (Quy Chế DTU)'}
+              </span>
               <div className="grid grid-cols-3 gap-1.5 text-center text-[10px] font-medium text-gray-600">
-                <div className="bg-white p-1.5 rounded border border-gray-200">
-                  <span className="text-green-700 font-bold block">Xuất Sắc</span>
-                  <span className="text-[9px] block mt-0.5 font-semibold">GPA ≥ 3.6</span>
+                <div className="bg-white p-1.5 rounded border border-green-200 ring-1 ring-green-100">
+                  <span className="text-green-700 font-bold block">🏆 Xuất Sắc</span>
+                  <span className="text-[9px] block mt-0.5 font-semibold">
+                    GPA ≥ {scholarshipScope === 'cumulative' ? '3.60' : '3.68'}
+                  </span>
                   <span className="text-[9px] block font-semibold">ĐRL ≥ 90</span>
                 </div>
-                <div className="bg-white p-1.5 rounded border border-gray-200">
-                  <span className="text-blue-700 font-bold block">Giỏi</span>
-                  <span className="text-[9px] block mt-0.5 font-semibold">GPA ≥ 3.2</span>
+                <div className="bg-white p-1.5 rounded border border-blue-200">
+                  <span className="text-blue-700 font-bold block">🥈 Giỏi</span>
+                  <span className="text-[9px] block mt-0.5 font-semibold">
+                    GPA ≥ {scholarshipScope === 'cumulative' ? '3.20' : '3.34'}
+                  </span>
                   <span className="text-[9px] block font-semibold">ĐRL ≥ 80</span>
                 </div>
-                <div className="bg-white p-1.5 rounded border border-gray-200">
-                  <span className="text-teal-500 font-bold block">Khá</span>
-                  <span className="text-[9px] block mt-0.5 font-semibold">GPA ≥ 2.5</span>
+                <div className="bg-white p-1.5 rounded border border-teal-200">
+                  <span className="text-teal-600 font-bold block">🥉 Khá</span>
+                  <span className="text-[9px] block mt-0.5 font-semibold">
+                    GPA ≥ {scholarshipScope === 'cumulative' ? '2.50' : '2.68'}
+                  </span>
                   <span className="text-[9px] block font-semibold">ĐRL ≥ 70</span>
                 </div>
               </div>
               <p className="text-[10px] text-gray-450 leading-normal italic pt-1 border-t border-gray-200">
-                * Học bổng được xét từ cao xuống thấp theo chỉ tiêu phân bổ của lớp/ngành học.
+                {scholarshipScope === 'cumulative' 
+                  ? '* Áp dụng mốc xếp loại tốt nghiệp toàn khóa của Đại học Duy Tân.' 
+                  : '* Áp dụng quy chế khen thưởng học lực năm học của Đại học Duy Tân. Học bổng được xét từ cao xuống thấp theo chỉ tiêu phân bổ.'}
               </p>
             </div>
           </div>

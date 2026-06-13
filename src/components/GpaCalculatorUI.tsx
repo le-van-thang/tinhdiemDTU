@@ -4424,7 +4424,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
           )}
           
           {/* QUICK ADD FORM */}
-          <div className={`bg-slate-900/50 backdrop-blur-md border border-slate-800/80 rounded-xl sm:rounded-2xl p-3 sm:p-5 shadow-md ${
+          <div className={`bg-white border border-gray-200 rounded-xl sm:rounded-2xl p-3 sm:p-5 shadow-sm ${
             isMobileDrawerOpen 
               ? (mobileDrawerTab === 'add' ? 'block' : 'hidden')
               : 'block'
@@ -4502,7 +4502,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                         setAcademicYear(val);
                       }
                     }}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500 cursor-pointer"
+                    className="w-full bg-white border border-gray-300 rounded-xl px-2.5 py-1.5 text-xs text-gray-900 focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 cursor-pointer"
                     id="form-year-select"
                   >
                     {yearOptions.map(y => (
@@ -4517,7 +4517,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                   <select
                     value={semester}
                     onChange={(e) => setSemester(e.target.value as 'Học kỳ 1' | 'Học kỳ 2' | 'Học kỳ Hè')}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500 cursor-pointer"
+                    className="w-full bg-white border border-gray-300 rounded-xl px-2.5 py-1.5 text-xs text-gray-900 focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 cursor-pointer"
                     id="form-semester-select"
                   >
                     <option value="Học kỳ 1">Học kỳ 1</option>
@@ -4534,7 +4534,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                   placeholder="VD: LAW 201"
                   value={courseCode}
                   onChange={(e) => setCourseCode(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg sm:rounded-xl px-2 sm:px-3 py-1.5 sm:py-2 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-indigo-500"
+                  className="w-full bg-white border border-gray-300 rounded-lg sm:rounded-xl px-2 sm:px-3 py-1.5 sm:py-2 text-xs text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600"
                   required
                   id="form-course-code"
                 />
@@ -4547,7 +4547,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                   placeholder="Ví dụ: Pháp luật đại cương"
                   value={courseName}
                   onChange={(e) => setCourseName(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-indigo-500"
+                  className="w-full bg-white border border-gray-300 rounded-xl px-3 py-2 text-xs text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600"
                   required
                   id="form-course-name"
                 />
@@ -4565,7 +4565,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                       const val = parseInt(e.target.value);
                       setCredits(isNaN(val) ? 0 : val);
                     }}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-lg sm:rounded-xl px-2 sm:px-3 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500"
+                    className="w-full bg-white border border-gray-300 rounded-lg sm:rounded-xl px-2 sm:px-3 py-1.5 text-xs text-gray-900 focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600"
                     id="form-credits"
                     required
                   />
@@ -4584,7 +4584,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                   <select
                     value={gradeChar}
                     onChange={(e) => setGradeChar(e.target.value as GradeChar)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-lg sm:rounded-xl px-2 sm:px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500 cursor-pointer"
+                    className="w-full bg-white border border-gray-300 rounded-lg sm:rounded-xl px-2 sm:px-2.5 py-1.5 text-xs text-gray-900 focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 cursor-pointer"
                     id="form-grade"
                   >
                     <option value="">-- Chưa có --</option>
@@ -4623,7 +4623,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                         setGradeChar('B');
                       }
                     }}
-                    className="rounded border-slate-850 bg-slate-950 text-indigo-500 focus:ring-indigo-500 focus:ring-offset-0 focus:ring-0 w-3 h-3 sm:w-3.5 sm:h-3.5"
+                    className="rounded border-gray-300 bg-white text-blue-600 focus:ring-blue-600 focus:ring-offset-0 focus:ring-0 w-3 h-3 sm:w-3.5 sm:h-3.5"
                     id="form-is-condition"
                   />
                   <span className="text-[10px] sm:text-xs text-slate-400 font-semibold">Môn điều kiện (PE, Quốc phòng)</span>
@@ -4640,7 +4640,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                           setReplacesCourseId(null);
                         }
                       }}
-                      className="rounded border-slate-850 bg-slate-950 text-indigo-500 focus:ring-indigo-500 focus:ring-offset-0 focus:ring-0 w-3 h-3 sm:w-3.5 sm:h-3.5"
+                      className="rounded border-gray-300 bg-white text-blue-600 focus:ring-blue-600 focus:ring-offset-0 focus:ring-0 w-3 h-3 sm:w-3.5 sm:h-3.5"
                       id="form-is-retake"
                     />
                     <span className="text-[10px] sm:text-xs text-slate-400 font-semibold">Môn học lại / cải thiện điểm</span>
@@ -4656,7 +4656,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                     <select
                       value={replacesCourseId || ''}
                       onChange={(e) => setReplacesCourseId(e.target.value || null)}
-                      className="w-full bg-slate-950 border border-slate-800 rounded-lg px-2 py-1 text-xs text-white focus:outline-none focus:border-indigo-500 cursor-pointer"
+                      className="w-full bg-white border border-gray-300 rounded-lg px-2 py-1 text-xs text-gray-900 focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 cursor-pointer"
                       required
                       id="form-replaces-select"
                     >
@@ -4692,7 +4692,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                 <button
                   type="button"
                   onClick={() => setIsHelpModalOpen(true)}
-                  className="flex items-center gap-1.5 text-[10px] text-slate-300 hover:text-white bg-slate-900 border border-slate-800 hover:border-slate-700 px-2 py-1 rounded-lg transition-all cursor-pointer font-bold"
+                  className="flex items-center gap-1.5 text-[10px] text-gray-650 hover:text-gray-900 bg-gray-50 border border-gray-200 hover:border-gray-350 px-2 py-1 rounded-lg transition-all cursor-pointer font-bold"
                 >
                   <HelpCircle className="w-3.5 h-3.5 text-blue-700" />
                   Hướng dẫn copy-paste
@@ -4706,7 +4706,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                 value={smartPasteText}
                 onChange={(e) => setSmartPasteText(e.target.value)}
                 placeholder="Dán toàn bộ bảng điểm copy từ myDTU vào đây..."
-                className="w-full bg-slate-950/80 border border-slate-800/80 rounded-xl p-3 text-xs text-emerald-100 placeholder-slate-600 focus:outline-none focus:border-emerald-500/50 h-32 resize-none font-mono"
+                className="w-full bg-white border border-gray-300 rounded-xl p-3 text-xs text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 h-32 resize-none font-mono"
               />
 
               {smartPasteStatus.message && (
@@ -4758,7 +4758,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                       setSimulatorTargetGpa(parseFloat(e.target.value));
                     }
                   }}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500 cursor-pointer"
+                  className="w-full bg-white border border-gray-300 rounded-xl px-2.5 py-1.5 text-xs text-gray-900 focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 cursor-pointer"
                   id="simulator-target-select"
                 >
                   <option value="3.6">Xuất sắc (3.60)</option>
@@ -5577,7 +5577,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                 <button
                   onClick={() => setViewMode('grouped')}
                   className={`flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded-md text-[11px] font-semibold cursor-pointer transition-all ${
-                    viewMode === 'grouped' ? 'bg-indigo-600 text-white' : 'text-slate-500 hover:text-slate-300'
+                    viewMode === 'grouped' ? 'bg-blue-600 text-white shadow-sm' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
                   }`}
                   title="Hiển thị theo từng học kỳ"
                   id="view-mode-grouped"
@@ -5588,7 +5588,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                 <button
                   onClick={() => setViewMode('flat')}
                   className={`flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded-md text-[11px] font-semibold cursor-pointer transition-all ${
-                    viewMode === 'flat' ? 'bg-indigo-600 text-white' : 'text-slate-500 hover:text-slate-300'
+                    viewMode === 'flat' ? 'bg-blue-600 text-white shadow-sm' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
                   }`}
                   title="Hiển thị bảng tất cả môn học phẳng"
                   id="view-mode-flat"
@@ -5599,7 +5599,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                 <button
                   onClick={() => setViewMode('curriculum')}
                   className={`flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded-md text-[11px] font-semibold cursor-pointer transition-all ${
-                    viewMode === 'curriculum' ? 'bg-indigo-600 text-white' : 'text-slate-500 hover:text-slate-300'
+                    viewMode === 'curriculum' ? 'bg-blue-600 text-white shadow-sm' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
                   }`}
                   title="Đối chiếu tiến độ theo Khung chương trình"
                   id="view-mode-curriculum"
@@ -5632,16 +5632,16 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                         const gradedCount = yearCourses.filter(c => !c.isConditionCourse && c.gradeChar !== '').length;
                         return (
                           <div className="flex items-center gap-1.5 flex-wrap">
-                            <span className={`text-[10px] px-1.5 py-0.5 rounded bg-slate-900/60 font-bold border border-slate-800/80 ${gradedCount > 0 ? 'text-emerald-400' : 'text-slate-400'} whitespace-nowrap`}>
+                            <span className={`text-[10px] px-1.5 py-0.5 rounded bg-white font-bold border border-gray-200 ${gradedCount > 0 ? 'text-emerald-400' : 'text-slate-400'} whitespace-nowrap`}>
                               GPA Năm: {gradedCount > 0 ? yearResult.cumulativeGpa.toFixed(2) : '--'}
                             </span>
-                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-900/60 font-semibold border border-slate-800/80 text-slate-400 whitespace-nowrap">
+                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-white font-semibold border border-gray-200 text-gray-500 whitespace-nowrap">
                               {yearResult.accumulatedCredits} TC Tích Lũy
                             </span>
                           </div>
                         );
                       })()}
-                      <div className="h-[2px] bg-gradient-to-r from-indigo-500/40 to-transparent flex-grow ml-1 hidden xs:block"></div>
+                      <div className="h-[2px] bg-gradient-to-r from-blue-300/40 to-transparent flex-grow ml-1 hidden xs:block"></div>
                     </div>
 
                     {/* Accordion từng học kỳ trong năm học */}
@@ -5659,25 +5659,25 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                         <div 
                           key={sem} 
                           id={`sem-group-${year}-${sem}`}
-                          className="bg-slate-900/40 border border-slate-800/80 rounded-xl overflow-hidden shadow-sm scroll-mt-20 transition-all duration-300"
+                          className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm scroll-mt-20 transition-all duration-300"
                         >
                           {/* Accordion Header */}
                       <div 
                             onClick={() => toggleSemester(semKey)}
-                            className="flex items-center justify-between px-3 sm:px-4 py-2.5 sm:py-3 bg-slate-900/60 hover:bg-slate-900/80 cursor-pointer select-none border-b border-slate-800/40"
+                            className="flex items-center justify-between px-3 sm:px-4 py-2.5 sm:py-3 bg-gray-50 hover:bg-gray-100 cursor-pointer select-none border-b border-gray-200"
                           >
                             <div className="flex items-center gap-1.5 flex-wrap">
-                              <span className="font-black text-xs text-indigo-200 bg-indigo-600/35 px-2 py-0.5 rounded-lg border border-indigo-500/30 shadow-inner whitespace-nowrap">
+                              <span className="font-black text-xs text-blue-700 bg-blue-50 px-2 py-0.5 rounded-lg border border-blue-100 shadow-sm whitespace-nowrap">
                                 {sem} (Năm học {year})
                               </span>
                               
                               {/* Điểm GPA Học kỳ */}
-                              <span className={`text-[10px] px-1.5 py-0.5 rounded bg-slate-950 font-bold border border-slate-800/60 ${gradedSemCoursesCount > 0 ? 'text-emerald-400' : 'text-slate-400'} whitespace-nowrap`}>
+                              <span className={`text-[10px] px-1.5 py-0.5 rounded bg-white font-bold border border-gray-200 ${gradedSemCoursesCount > 0 ? 'text-emerald-400' : 'text-slate-400'} whitespace-nowrap`}>
                                 GPA: {gradedSemCoursesCount > 0 ? semGPA.toFixed(2) : '--'}
                               </span>
 
                               {/* Tổng số tín chỉ kỳ này */}
-                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-950 font-semibold border border-slate-800/60 text-slate-400 whitespace-nowrap hidden sm:inline">
+                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-white font-semibold border border-gray-200 text-gray-500 whitespace-nowrap hidden sm:inline">
                                 {semCredits} TC
                               </span>
 
@@ -5718,7 +5718,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                             <div className="flex items-center gap-3">
                               <button
                                 onClick={(e) => handleDeleteSemester(year, sem, e)}
-                                className="p-1 text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 rounded transition-colors"
+                                className="p-1 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-colors"
                                 title={`Xóa toàn bộ ${sem}`}
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
@@ -5734,7 +5734,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                             <div className="overflow-x-auto">
                               <table className="w-full border-collapse text-left text-xs">
                                 <thead>
-                                <tr className="border-b border-slate-800 bg-slate-950/20 text-slate-500 font-bold uppercase tracking-wider text-[9px] sm:text-[10px]">
+                                <tr className="border-b border-gray-200 bg-gray-50 text-gray-500 font-bold uppercase tracking-wider text-[9px] sm:text-[10px]">
                                     <th className="px-2 sm:px-4 py-2 sm:py-2.5">Mã Môn</th>
                                     <th className="px-2 sm:px-4 py-2 sm:py-2.5">Tên Môn Học</th>
                                     <th className="px-2 sm:px-4 py-2 sm:py-2.5 text-center">TC</th>
@@ -5744,7 +5744,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                                     <th className="px-2 sm:px-4 py-2 sm:py-2.5 text-right">Xóa</th>
                                   </tr>
                                 </thead>
-                                <tbody className="divide-y divide-slate-850 bg-transparent">
+                                <tbody className="divide-y divide-gray-100 bg-transparent">
                                   {semCourses.map(pc => {
                                     const replacedCourse = pc.replacesCourseId 
                                       ? summaryResult.processedCourses.find(c => c.id === pc.replacesCourseId) 
@@ -5759,16 +5759,16 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                                       <tr 
                                         key={pc.id} 
                                         className={`hover:bg-slate-900/20 transition-colors ${
-                                          pc.isReplaced ? 'opacity-40 line-through bg-slate-950/10' : ''
+                                          pc.isReplaced ? 'opacity-40 line-through bg-gray-100/30' : ''
                                         }`}
                                       >
-                                      <td className="px-2 sm:px-4 py-2 sm:py-2.5 font-semibold text-slate-400 whitespace-nowrap">
+                                      <td className="px-2 sm:px-4 py-2 sm:py-2.5 font-semibold text-gray-500 whitespace-nowrap">
                                           {isEditing ? (
                                             <input 
                                               type="text"
                                               value={editCourseCode}
                                               onChange={(e) => setEditCourseCode(e.target.value)}
-                                              className="w-16 bg-slate-950 border border-slate-800 rounded px-1.5 py-0.5 text-xs text-white font-semibold focus:outline-none focus:border-indigo-500"
+                                              className="w-16 bg-white border border-gray-300 rounded px-1.5 py-0.5 text-xs text-gray-900 font-semibold focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600"
                                             />
                                           ) : (
                                             pc.courseCode
@@ -5780,11 +5780,11 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                                               type="text"
                                               value={editCourseName}
                                               onChange={(e) => setEditCourseName(e.target.value)}
-                                              className="w-full bg-slate-950 border border-slate-800 rounded px-1.5 py-0.5 text-xs text-white focus:outline-none focus:border-indigo-500"
+                                              className="w-full bg-white border border-gray-300 rounded px-1.5 py-0.5 text-xs text-gray-900 focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600"
                                             />
                                           ) : (
                                             <div className="min-w-0">
-                                              <span className="font-semibold text-slate-200 text-xs leading-tight line-clamp-2">{pc.courseName}</span>
+                                              <span className="font-semibold text-gray-800 text-xs leading-tight line-clamp-2">{pc.courseName}</span>
                                               {replacedCourse && (
                                                 <div className="text-[9px] text-blue-700 mt-0.5 flex items-center gap-1 font-semibold">
                                                   <RefreshCw className="w-2.5 h-2.5" />
@@ -5792,7 +5792,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                                                 </div>
                                               )}
                                               {replacementCourse && (
-                                                <div className="text-[9px] text-rose-400 mt-0.5 flex items-center gap-1 font-semibold">
+                                                <div className="text-[9px] text-rose-700 mt-0.5 flex items-center gap-1 font-semibold">
                                                   <AlertTriangle className="w-2.5 h-2.5" />
                                                   Cải thiện tại: {replacementCourse.academicYear} - {replacementCourse.semester}
                                                 </div>
@@ -5800,7 +5800,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                                             </div>
                                           )}
                                         </td>
-                                        <td className="px-2 sm:px-4 py-2 sm:py-2.5 text-center font-semibold text-slate-300 whitespace-nowrap">
+                                        <td className="px-2 sm:px-4 py-2 sm:py-2.5 text-center font-semibold text-gray-700 whitespace-nowrap">
                                           {isEditing ? (
                                             <input 
                                               type="number"
@@ -5810,7 +5810,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                                                 const val = e.target.value;
                                                 setEditCredits(val === '' ? '' : parseInt(val) || 0);
                                               }}
-                                              className="w-12 bg-slate-950 border border-slate-800 rounded px-1 py-0.5 text-xs text-white text-center font-bold focus:outline-none focus:border-indigo-500"
+                                              className="w-12 bg-white border border-gray-300 rounded px-1 py-0.5 text-xs text-gray-900 text-center font-bold focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600"
                                             />
                                           ) : (
                                             pc.credits
@@ -5821,7 +5821,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                                             disabled={isEditing}
                                             value={pc.gradeChar}
                                             onChange={(e) => handleUpdateGrade(pc.id, e.target.value as GradeChar)}
-                                            className="font-bold text-[11px] px-2 py-1 rounded bg-slate-900 border border-slate-700 text-white cursor-pointer hover:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 appearance-none text-center outline-none disabled:opacity-50"
+                                            className="font-bold text-[11px] px-2 py-1 rounded bg-white border border-gray-300 text-gray-900 cursor-pointer hover:border-blue-600 focus:outline-none focus:ring-1 focus:ring-blue-600 appearance-none text-center outline-none disabled:opacity-50"
                                           >
                                             <option value="">--</option>
                                             {['A+', 'A', 'A-', 'B+', 'B', 'B-', 'C+', 'C', 'C-', 'D', 'F', 'P'].map(grade => (
@@ -5829,17 +5829,17 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                                             ))}
                                           </select>
                                         </td>
-                                        <td className="px-2 sm:px-4 py-2 sm:py-2.5 text-center font-medium text-slate-400 hidden sm:table-cell">
+                                        <td className="px-2 sm:px-4 py-2 sm:py-2.5 text-center font-medium text-gray-500 hidden sm:table-cell">
                                           {pc.gradePoint !== null ? pc.gradePoint.toFixed(2) : '-'}
                                         </td>
                                         <td className="px-2 sm:px-4 py-2 sm:py-2.5 hidden sm:table-cell">
                                           <div className="flex flex-wrap gap-1">
                                             {pc.isConditionCourse ? (
-                                              <span className="bg-amber-500/10 text-amber-400 text-[8px] font-bold px-1 rounded border border-amber-500/10">Đ.Kiện</span>
+                                              <span className="bg-amber-50 text-amber-700 text-[8px] font-bold px-1 rounded border border-amber-200">Đ.Kiện</span>
                                             ) : pc.isReplaced ? (
-                                              <span className="bg-rose-500/10 text-rose-400 text-[8px] font-bold px-1 rounded border border-rose-500/10">Bị Thay</span>
+                                              <span className="bg-rose-50 text-rose-700 text-[8px] font-bold px-1 rounded border border-rose-200">Bị Thay</span>
                                             ) : (
-                                              <span className="bg-emerald-500/10 text-emerald-400 text-[8px] font-bold px-1 rounded border border-emerald-500/10">T.Lũy</span>
+                                              <span className="bg-emerald-50 text-emerald-700 text-[8px] font-bold px-1 rounded border border-emerald-200">T.Lũy</span>
                                             )}
                                             {pc.isRetake && (
                                               <span className="bg-indigo-500/10 text-blue-700 text-[8px] font-bold px-1 rounded border border-indigo-500/10">Học Lại</span>
@@ -5875,7 +5875,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                                               </button>
                                               <button
                                                 onClick={() => handleDeleteCourse(pc.id)}
-                                                className="text-slate-500 hover:text-rose-450 p-1 rounded-md hover:bg-rose-500/10 transition-all cursor-pointer"
+                                                className="text-gray-400 hover:text-rose-600 p-1 rounded-md hover:bg-rose-50 transition-all cursor-pointer"
                                                 title="Xóa môn học"
                                               >
                                                 <Trash2 className="w-3.5 h-3.5 text-rose-400" />
@@ -5896,7 +5896,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                   </div>
                 ))
               ) : (
-                <div className="text-center py-10 text-slate-500 bg-slate-900/20 border border-slate-800 rounded-xl">
+                <div className="text-center py-10 text-gray-500 bg-gray-50 border border-gray-200 rounded-xl">
                   Chưa có môn học nào được đăng ký trong hệ thống.
                 </div>
               )}
@@ -5920,7 +5920,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                       <th className="px-2 sm:px-4 py-2 sm:py-3 text-right">Xóa</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-850 bg-transparent" id="course-table-body">
+                  <tbody className="divide-y divide-gray-100 bg-transparent" id="course-table-body">
                     {flatFilteredCourses.length > 0 ? (
                       flatFilteredCourses.map((pc) => {
                         const replacedCourse = pc.replacesCourseId 
@@ -5942,13 +5942,13 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                             <td className="px-2 sm:px-4 py-2 sm:py-3 text-slate-400 font-medium whitespace-nowrap hidden sm:table-cell">
                               {pc.academicYear} - <span className="text-[10px] font-semibold">{pc.semester.replace('Học kỳ ', 'HK')}</span>
                             </td>
-                            <td className="px-2 sm:px-4 py-2 sm:py-3 font-semibold text-slate-300 whitespace-nowrap">
+                            <td className="px-2 sm:px-4 py-2 sm:py-3 font-semibold text-gray-700 whitespace-nowrap">
                               {isEditing ? (
                                 <input 
                                   type="text"
                                   value={editCourseCode}
                                   onChange={(e) => setEditCourseCode(e.target.value)}
-                                  className="w-16 bg-slate-950 border border-slate-800 rounded px-1.5 py-0.5 text-xs text-white font-semibold focus:outline-none focus:border-indigo-500"
+                                  className="w-16 bg-white border border-gray-300 rounded px-1.5 py-0.5 text-xs text-gray-900 font-semibold focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600"
                                 />
                               ) : (
                                 pc.courseCode
@@ -5960,7 +5960,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                                   type="text"
                                   value={editCourseName}
                                   onChange={(e) => setEditCourseName(e.target.value)}
-                                  className="w-full bg-slate-950 border border-slate-800 rounded px-1.5 py-0.5 text-xs text-white focus:outline-none focus:border-indigo-500"
+                                  className="w-full bg-white border border-gray-300 rounded px-1.5 py-0.5 text-xs text-gray-900 focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600"
                                 />
                               ) : (
                                 <div>
@@ -5972,7 +5972,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                                     </div>
                                   )}
                                   {replacementCourse && (
-                                    <div className="text-[9px] text-rose-400 mt-0.5 flex items-center gap-1 font-semibold">
+                                    <div className="text-[9px] text-rose-700 mt-0.5 flex items-center gap-1 font-semibold">
                                       <AlertTriangle className="w-2.5 h-2.5" />
                                       Bị phủ quyết bởi môn cải thiện
                                     </div>
@@ -5990,7 +5990,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                                     const val = e.target.value;
                                     setEditCredits(val === '' ? '' : parseInt(val) || 0);
                                   }}
-                                  className="w-12 bg-slate-950 border border-slate-800 rounded px-1 py-0.5 text-xs text-white text-center font-bold focus:outline-none focus:border-indigo-500"
+                                  className="w-12 bg-white border border-gray-300 rounded px-1 py-0.5 text-xs text-gray-900 text-center font-bold focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600"
                                 />
                               ) : (
                                 pc.credits
@@ -6001,7 +6001,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                                 disabled={isEditing}
                                 value={pc.gradeChar}
                                 onChange={(e) => handleUpdateGrade(pc.id, e.target.value as GradeChar)}
-                                className="font-bold text-[11px] px-2 py-1 rounded bg-slate-900 border border-slate-700 text-white cursor-pointer hover:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 appearance-none text-center outline-none disabled:opacity-50"
+                                className="font-bold text-[11px] px-2 py-1 rounded bg-white border border-gray-300 text-gray-900 cursor-pointer hover:border-blue-600 focus:outline-none focus:ring-1 focus:ring-blue-600 appearance-none text-center outline-none disabled:opacity-50"
                               >
                                 <option value="">--</option>
                                 {['A+', 'A', 'A-', 'B+', 'B', 'B-', 'C+', 'C', 'C-', 'D', 'F', 'P'].map(grade => (
@@ -6009,7 +6009,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                                 ))}
                               </select>
                             </td>
-                            <td className="px-2 sm:px-4 py-2 sm:py-3 text-center font-medium text-slate-400 hidden sm:table-cell">
+                            <td className="px-2 sm:px-4 py-2 sm:py-3 text-center font-medium text-gray-500 hidden sm:table-cell">
                               {pc.gradePoint !== null ? pc.gradePoint.toFixed(2) : '-'}
                             </td>
                             <td className="px-2 sm:px-4 py-2 sm:py-3 hidden sm:table-cell">

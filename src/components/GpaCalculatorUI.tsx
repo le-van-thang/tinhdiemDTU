@@ -866,8 +866,28 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
       return 80;
     }
   });
-
-  const [scholarshipScope, setScholarshipScope] = useState<string>('cumulative');
+  const [scholarshipScope, setScholarshipScope] = useState<string>(() => {
+    try {
+      const savedCourses = localStorage.getItem('dtu_gpa_courses');
+      let parsed: any[] = [];
+      if (savedCourses) {
+        parsed = JSON.parse(savedCourses);
+      }
+      if (!Array.isArray(parsed) || parsed.length === 0) {
+        parsed = initialCourses || [];
+      }
+      if (parsed.length > 0) {
+        const years = Array.from(new Set(parsed.map((c: any) => c.academicYear).filter(Boolean)))
+          .sort((a, b) => b.localeCompare(a));
+        if (years.length > 0) {
+          return `year:${years[0]}`;
+        }
+      }
+    } catch (e) {
+      console.error('Lỗi thiết lập năm học mặc định cho học bổng:', e);
+    }
+    return 'cumulative';
+  });
 
   // Lưu ĐRL vào localStorage khi thay đổi
   useEffect(() => {

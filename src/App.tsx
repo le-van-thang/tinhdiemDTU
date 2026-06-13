@@ -128,14 +128,14 @@ export default function App() {
       </main>
 
       {/* FOOTER */}
-      <footer className="border-t border-slate-900 bg-slate-950/80 backdrop-blur-md py-6 text-center text-xs text-slate-500">
+      <footer className="border-t border-gray-200 bg-white py-6 text-center text-xs text-gray-500">
         <div className="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row justify-between items-center gap-3">
           <p>
             &copy; 2026 Quy chế đào tạo Đại học Duy Tân (DTU).
           </p>
           <p className="flex items-center gap-1.5 justify-center">
             <span>Thiết kế bởi</span>
-            <span className="font-semibold text-indigo-400">Lê Văn Thắng dev</span>
+            <span className="font-semibold text-blue-600">Lê Văn Thắng dev</span>
           </p>
         </div>
       </footer>

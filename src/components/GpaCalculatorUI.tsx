@@ -3136,7 +3136,8 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
   const chartSvgPath = useMemo(() => {
     if (gpaTrend.length === 0) return { lineCum: '', areaCum: '', lineSem: '', areaSem: '', points: [], yBase: 145 };
     
-    const svgWidth = 560;
+    const n = gpaTrend.length;
+    const svgWidth = n <= 7 ? 560 : n * 70;
     const svgHeight = 180;
     const paddingLeft = 40;
     const paddingRight = 30;
@@ -3661,8 +3662,8 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
               style={{ width: `${Math.min(100, (dtuResult.accumulatedCredits / targetCredits) * 100)}%` }}
             ></div>
           </div>
-          <div className="text-[11px] text-slate-400 mt-2 flex justify-between items-center">
-            <span>Đã hoàn thành {targetCredits > 0 ? Math.round((dtuResult.accumulatedCredits / targetCredits) * 100) : 0}% chương trình.</span>
+          <div className="mt-2 flex justify-between items-center">
+            <span className="text-[10px] text-slate-500">Đã hoàn thành {targetCredits > 0 ? Math.round((dtuResult.accumulatedCredits / targetCredits) * 100) : 0}%</span>
             <button 
               onClick={() => setIsCurriculumModalOpen(true)}
               className="text-[10px] text-indigo-400 hover:text-indigo-300 font-bold hover:underline cursor-pointer flex items-center gap-0.5"
@@ -3783,10 +3784,10 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
       </section>
 
       {/* GRAPH & CHART PANEL & SCHOLARSHIP EVALUATOR */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-6">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-6 lg:items-start">
         
         {/* LEFT PANEL: GPA CHART */}
-        <section className="lg:col-span-8 bg-slate-900/50 backdrop-blur-md border border-slate-800/80 rounded-2xl p-5 shadow-md flex flex-col justify-between">
+        <section className="lg:col-span-8 bg-slate-900/50 backdrop-blur-md border border-slate-800/80 rounded-2xl p-5 shadow-md flex flex-col">
           <div>
             <h2 className="text-sm font-bold text-white mb-1 flex items-center gap-2">
               <TrendingUp className="w-4 h-4 text-indigo-400" />
@@ -3801,9 +3802,10 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                 <div className="overflow-x-auto scrollbar-thin">
                   <div 
                     ref={chartContainerRef}
-                    className="min-w-[580px] h-[185px] relative"
+                    style={{ minWidth: Math.max(320, gpaTrend.length <= 7 ? 320 : gpaTrend.length * 56) }}
+                    className="h-[185px] relative"
                   >
-                    <svg width="100%" height="180" viewBox="0 0 560 180" className="overflow-visible">
+                    <svg width="100%" height="180" viewBox={`0 0 ${gpaTrend.length <= 7 ? 560 : gpaTrend.length * 70} 180`} className="overflow-visible">
                       <defs>
                         {/* Gradient cho đường line GPA Học kỳ */}
                         <linearGradient id="line-gradient-sem" x1="0" y1="0" x2="1" y2="0">
@@ -3819,25 +3821,29 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                       </defs>
 
                       {/* Các đường Grid ngang chỉ thị mức GPA */}
-                      {[1.0, 2.0, 3.0, 4.0].map((level) => {
-                        const y = 35 + 120 - (level / 4.0) * 120;
-                        return (
-                          <g key={level}>
-                            <line 
-                              x1="40" 
-                              y1={y} 
-                              x2="530" 
-                              y2={y} 
-                              stroke="#1e293b" 
-                              strokeWidth="1" 
-                              strokeDasharray="4 4" 
-                            />
-                            <text x="32" y={y + 3} textAnchor="end" fill="#475569" fontSize="9" fontWeight="bold">
-                              {level.toFixed(2)}
-                            </text>
-                          </g>
-                        );
-                      })}
+                      {(() => {
+                        const n2 = gpaTrend.length;
+                        const svgW2 = n2 <= 7 ? 560 : n2 * 70;
+                        return [1.0, 2.0, 3.0, 4.0].map((level) => {
+                          const y = 35 + 120 - (level / 4.0) * 120;
+                          return (
+                            <g key={level}>
+                              <line 
+                                x1="40" 
+                                y1={y} 
+                                x2={svgW2 - 30} 
+                                y2={y} 
+                                stroke="#1e293b" 
+                                strokeWidth="1" 
+                                strokeDasharray="4 4" 
+                              />
+                              <text x="32" y={y + 3} textAnchor="end" fill="#475569" fontSize="9" fontWeight="bold">
+                                {level.toFixed(2)}
+                              </text>
+                            </g>
+                          );
+                        });
+                      })()}
 
                       {/* Vùng diện tích Gradient phía dưới GPA Học kỳ */}
                       <path d={chartSvgPath.areaSem} fill="url(#area-gradient-sem)" style={{ pointerEvents: 'none' }} />
@@ -3951,9 +3957,10 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                         const prevPoint = idx > 0 ? chartSvgPath.points[idx - 1].point : null;
                         const diffGpa = prevPoint ? p.point.semesterGpa - prevPoint.semesterGpa : undefined;
 
+                        const svgW3 = gpaTrend.length <= 7 ? 560 : gpaTrend.length * 70;
                         const w = gpaTrend.length > 1 
-                          ? (560 - 40 - 30) / (gpaTrend.length - 1)
-                          : (560 - 40 - 30);
+                          ? (svgW3 - 40 - 30) / (gpaTrend.length - 1)
+                          : (svgW3 - 40 - 30);
                         const xStart = p.x - w / 2;
 
                         return (
@@ -3986,11 +3993,18 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                     </svg>
 
                     {/* Anchored Tooltip Card */}
-                    {hoveredPoint && (
+                    {hoveredPoint && (() => {
+                      const containerW = chartContainerRef.current?.offsetWidth || 320;
+                      const svgW4 = gpaTrend.length <= 7 ? 560 : gpaTrend.length * 70;
+                      const scale = containerW / svgW4;
+                      const actualX = hoveredPoint.x * scale;
+                      const halfTip = 88; // w-44 = 176px / 2
+                      const safeLeft = Math.max(halfTip + 4, Math.min(containerW - halfTip - 4, actualX));
+                      return (
                       <div 
                         className="absolute bg-slate-950/95 border border-indigo-500/30 rounded-xl p-2.5 shadow-2xl backdrop-blur-md text-[11px] pointer-events-none z-50 w-44 text-left transition-all duration-200"
                         style={{ 
-                          left: hoveredPoint.x,
+                          left: safeLeft,
                           top: hoveredPoint.ySem < 80 ? hoveredPoint.ySem + 20 : hoveredPoint.ySem - 65,
                           transform: 'translateX(-50%)'
                         }}
@@ -4025,25 +4039,21 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                           )}
                         </div>
                       </div>
-                    )}
+                      );
+                    })()}
                   </div>
                 </div>
 
                 {/* INTERACTIVE SELECTED SEMESTER DETAIL CARD */}
                 {activeTrendPoint && (
-                  <div className="mt-4 p-4 rounded-xl bg-slate-950/45 border border-indigo-500/15 shadow-inner backdrop-blur-md transition-all duration-300">
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-slate-800/50 pb-3 mb-3">
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-[8.5px] uppercase font-black tracking-widest px-2 py-0.5 rounded bg-indigo-500/15 text-indigo-300 border border-indigo-500/20 animate-pulse">
-                            Chi tiết học kỳ đang chọn
-                          </span>
-                          <span className="text-[9.5px] text-slate-500 font-semibold hidden sm:inline">
-                            (Nhấp mốc trên biểu đồ để chuyển đổi kỳ)
-                          </span>
-                        </div>
-                        <h3 className="text-sm font-extrabold text-white mt-1">
-                          {activeTrendPoint.semester} — Năm học {activeTrendPoint.academicYear}
+                  <div className="mt-3 p-3 rounded-xl bg-slate-950/45 border border-indigo-500/15 shadow-inner backdrop-blur-md transition-all duration-300">
+                    <div className="flex flex-row items-center justify-between gap-2 border-b border-slate-800/50 pb-2 mb-2">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="text-[8px] uppercase font-black tracking-widest px-1.5 py-0.5 rounded bg-indigo-500/15 text-indigo-300 border border-indigo-500/20 flex-shrink-0">
+                          Chi tiết kỳ
+                        </span>
+                        <h3 className="text-xs font-extrabold text-white truncate">
+                          {activeTrendPoint.semester} — {activeTrendPoint.academicYear}
                         </h3>
                       </div>
                       
@@ -4066,51 +4076,61 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                             }, 1500);
                           }
                         }}
-                        className="px-3 py-1.5 rounded-lg text-xs font-bold text-white bg-indigo-600/20 hover:bg-indigo-600/35 border border-indigo-500/20 hover:border-indigo-500/40 transition-all flex items-center gap-1.5 cursor-pointer self-start md:self-auto"
+                        className="px-2 py-1 rounded-lg text-[10px] font-bold text-white bg-indigo-600/20 hover:bg-indigo-600/35 border border-indigo-500/20 hover:border-indigo-500/40 transition-all flex items-center gap-1 cursor-pointer flex-shrink-0"
                       >
                         <List className="w-3.5 h-3.5 text-indigo-400" />
                         Cuộn tới bảng nhập điểm
                       </button>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+                    <div className="grid grid-cols-12 gap-2">
                       {/* Cột trái: GPA & Học Lực */}
-                      <div className="md:col-span-5 flex flex-col justify-center items-center bg-slate-950/30 border border-slate-800/40 rounded-xl p-3 text-center">
-                        <span className="text-[9px] text-slate-500 font-bold uppercase tracking-wider block mb-0.5">GPA HỌC KỲ</span>
-                        <div className="flex items-baseline gap-1">
-                          <span className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-400">
+                      <div className="col-span-4 flex flex-col justify-center items-center bg-slate-950/30 border border-slate-800/40 rounded-xl p-2 text-center">
+                        <span className="text-[8px] text-slate-500 font-bold uppercase tracking-wider block mb-0.5">GPA HỌC KỲ</span>
+                        <div className="flex items-baseline gap-0.5">
+                          <span className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-400">
                             {activeTrendPoint.semesterGpa.toFixed(2)}
                           </span>
-                          <span className="text-[10px] text-slate-500 font-bold">/ 4.00</span>
+                          <span className="text-[9px] text-slate-500 font-bold">/4</span>
                         </div>
                         
-                        <span className={`text-[9px] px-2 py-0.5 rounded-full font-bold border mt-2 ${
-                          activeTrendPoint.semesterGpa >= 3.6 ? 'text-violet-400 bg-violet-500/10 border-violet-500/20' :
-                          activeTrendPoint.semesterGpa >= 3.2 ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' :
-                          activeTrendPoint.semesterGpa >= 2.5 ? 'text-indigo-400 bg-indigo-500/10 border-indigo-500/20' :
-                          activeTrendPoint.semesterGpa >= 2.0 ? 'text-amber-400 bg-amber-500/10 border-amber-500/20' :
-                          'text-rose-400 bg-rose-500/10 border-rose-500/20'
-                        }`}>
-                          {activeTrendPoint.semesterGpa >= 3.6 ? 'Học Lực: Xuất Sắc 🏆' :
-                           activeTrendPoint.semesterGpa >= 3.2 ? 'Học Lực: Giỏi 🥈' :
-                           activeTrendPoint.semesterGpa >= 2.5 ? 'Học Lực: Khá 🥉' :
-                           activeTrendPoint.semesterGpa >= 2.0 ? 'Học Lực: Trung bình 🎓' :
-                           'Học Lực: Yếu/Kém ⚠️'}
-                        </span>
+                        {(() => {
+                          const hasGrades = activeSemesterCourses.some(c => !c.isConditionCourse && !!c.gradeChar);
+                          if (!hasGrades) return (
+                            <span className="text-[9px] px-2 py-0.5 rounded-full font-bold border mt-1.5 text-slate-400 bg-slate-700/20 border-slate-700/30">
+                              Chưa có điểm
+                            </span>
+                          );
+                          return (
+                            <span className={`text-[9px] px-2 py-0.5 rounded-full font-bold border mt-1.5 ${
+                              activeTrendPoint.semesterGpa >= 3.6 ? 'text-violet-400 bg-violet-500/10 border-violet-500/20' :
+                              activeTrendPoint.semesterGpa >= 3.2 ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' :
+                              activeTrendPoint.semesterGpa >= 2.5 ? 'text-indigo-400 bg-indigo-500/10 border-indigo-500/20' :
+                              activeTrendPoint.semesterGpa >= 2.0 ? 'text-amber-400 bg-amber-500/10 border-amber-500/20' :
+                              'text-rose-400 bg-rose-500/10 border-rose-500/20'
+                            }`}>
+                              {activeTrendPoint.semesterGpa >= 3.6 ? 'Xuất Sắc 🏆' :
+                               activeTrendPoint.semesterGpa >= 3.2 ? 'Giỏi 🥈' :
+                               activeTrendPoint.semesterGpa >= 2.5 ? 'Khá 🥉' :
+                               activeTrendPoint.semesterGpa >= 2.0 ? 'Trung bình 🎓' :
+                               'Yếu/Kém ⚠️'}
+                            </span>
+                          );
+                        })()}
 
-                        <div className="w-full grid grid-cols-2 gap-2 mt-3.5 pt-3 border-t border-slate-800/40 text-[10px]">
+                        <div className="w-full grid grid-cols-2 gap-1 mt-2 pt-2 border-t border-slate-800/40 text-[9px]">
                           <div>
-                            <span className="text-slate-500 block">Tín chỉ kỳ này</span>
-                            <span className="font-bold text-white text-xs">{activeTrendPoint.semesterCredits} TC</span>
+                            <span className="text-slate-500 block">Tín chỉ</span>
+                            <span className="font-bold text-white text-[10px]">{activeTrendPoint.semesterCredits} TC</span>
                           </div>
                           <div>
-                            <span className="text-slate-500 block">So với kỳ trước</span>
+                            <span className="text-slate-500 block">So kỳ trước</span>
                             {activePointIndex !== null && activePointIndex > 0 ? (
                               (() => {
                                 const diff = activeTrendPoint.semesterGpa - gpaTrend[activePointIndex - 1].semesterGpa;
-                                if (diff > 0) return <span className="font-extrabold text-emerald-400">↑ +{diff.toFixed(2)}</span>;
-                                if (diff < 0) return <span className="font-extrabold text-rose-400">↓ {diff.toFixed(2)}</span>;
-                                return <span className="text-slate-400">→ 0.00</span>;
+                                if (diff > 0) return <span className="font-extrabold text-emerald-400 text-[10px]">↑ +{diff.toFixed(2)}</span>;
+                                if (diff < 0) return <span className="font-extrabold text-rose-400 text-[10px]">↓ {diff.toFixed(2)}</span>;
+                                return <span className="text-slate-400 text-[10px]">→ 0.00</span>;
                               })()
                             ) : (
                               <span className="text-slate-500">-</span>
@@ -4120,10 +4140,10 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                       </div>
 
                       {/* Cột phải: Danh sách môn học */}
-                      <div className="md:col-span-7 flex flex-col justify-between">
-                        <span className="text-[9px] text-slate-500 font-bold uppercase tracking-wider block mb-2">MÔN HỌC TRONG KỲ ({activeSemesterCourses.length})</span>
+                      <div className="col-span-8 flex flex-col">
+                        <span className="text-[9px] text-slate-500 font-bold uppercase tracking-wider block mb-1.5">MÔN HỌC ({activeSemesterCourses.length})</span>
                         
-                        <div className="space-y-1 max-h-[125px] overflow-y-auto scrollbar-thin pr-1">
+                        <div className="space-y-1 max-h-[112px] overflow-y-auto scrollbar-thin pr-1">
                           {activeSemesterCourses.length > 0 ? (
                             activeSemesterCourses.map((c) => {
                               const isReplaced = c.isReplaced;
@@ -4213,7 +4233,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
         </section>
 
         {/* RIGHT PANEL: SCHOLARSHIP EVALUATOR */}
-        <section className="lg:col-span-4 bg-slate-900/50 backdrop-blur-md border border-slate-800/80 rounded-2xl p-5 shadow-md flex flex-col justify-between">
+        <section className="lg:col-span-4 bg-slate-900/50 backdrop-blur-md border border-slate-800/80 rounded-2xl p-5 shadow-md flex flex-col gap-4">
           <div className="space-y-4">
             <h2 className="text-sm font-bold text-white flex items-center gap-2">
               <Trophy className="w-4 h-4 text-amber-400" />

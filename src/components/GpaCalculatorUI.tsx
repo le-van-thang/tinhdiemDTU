@@ -805,6 +805,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
   const [isCustomTarget, setIsCustomTarget] = useState(false);
   const [customTargetGpa, setCustomTargetGpa] = useState('3.50');
   const [isRemainingCreditsEdited, setIsRemainingCreditsEdited] = useState(false);
+  const [isGuideExpanded, setIsGuideExpanded] = useState(false);
 
   // State quản lý Modal Cảnh báo (Xóa toàn bộ/Xóa học kỳ)
   const [confirmModal, setConfirmModal] = useState<{
@@ -4505,7 +4506,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
           <div className="flex flex-col gap-2.5 mb-3 pb-3 border-b border-gray-200">
             {/* Dòng 1: Title + Help */}
             <div className="flex items-center justify-between">
-              <h2 className="text-xs sm:text-sm font-bold text-white flex items-center gap-1.5">
+              <h2 className="text-xs sm:text-sm font-bold text-gray-900 flex items-center gap-1.5">
                 <Plus className="w-3.5 h-3.5 text-blue-700 shrink-0" />
                 Thêm Môn Học
               </h2>
@@ -6477,6 +6478,148 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
           )}
 
         </div>
+
+        {/* BÀI VIẾT QUY CHẾ VÀ HƯỚNG DẪN CHI TIẾT (SEO & AdSense Publisher Content) */}
+        <section className="col-span-1 sm:col-span-12 mt-8 pt-6 border-t border-gray-200 text-left w-full space-y-4 animate-fadeIn">
+          <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
+            <button
+              onClick={() => setIsGuideExpanded(!isGuideExpanded)}
+              className="w-full flex items-center justify-between gap-4 cursor-pointer focus:outline-none group text-left"
+            >
+              <div className="space-y-1">
+                <h2 className="text-xs sm:text-sm font-extrabold text-gray-950 uppercase tracking-wider flex items-center gap-2">
+                  📚 CẨM NANG & QUY CHẾ TÍNH ĐIỂM GPA ĐẠI HỌC DUY TÂN (DTU)
+                </h2>
+                <p className="text-[10px] text-gray-500 font-semibold leading-relaxed">
+                  Thông tin tra cứu chính thức về cách tính điểm chữ, quy chế học lại/học cải thiện thay thế điểm cũ và các tiêu chuẩn xét học bổng khuyến khích học tập của Duy Tân. (Nhấn để {isGuideExpanded ? 'thu gọn' : 'xem chi tiết'})
+                </p>
+              </div>
+              <div className="p-2 bg-gray-50 group-hover:bg-gray-100 rounded-xl border border-gray-200 transition-colors shrink-0">
+                {isGuideExpanded ? (
+                  <ChevronUp className="w-4 h-4 text-gray-650" />
+                ) : (
+                  <ChevronDown className="w-4 h-4 text-gray-650" />
+                )}
+              </div>
+            </button>
+
+            {/* Collapsible Content using Tailwind classes to be indexable by Google */}
+            <div
+              className={`transition-all duration-300 ease-in-out overflow-hidden ${
+                isGuideExpanded 
+                  ? 'max-h-[5000px] opacity-100 mt-6 pt-6 border-t border-gray-150' 
+                  : 'max-h-0 opacity-0 pointer-events-none'
+              }`}
+            >
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Section 1 */}
+                <div className="bg-gray-50/50 border border-gray-200 rounded-2xl p-5 space-y-3">
+                  <h3 className="text-xs sm:text-sm font-extrabold text-blue-700 uppercase tracking-wide flex items-center gap-1.5 border-b border-gray-150 pb-2">
+                    🎓 1. Quy Chế Tính Điểm GPA Hệ 4.0 Tại DTU
+                  </h3>
+                  <p className="text-[11px] text-gray-600 leading-relaxed font-medium">
+                    Trường Đại Học Duy Tân áp dụng quy chế đào tạo tín chỉ, quy đổi kết quả học tập từ điểm số (thang 10) sang điểm chữ và tính điểm trung bình tích lũy (GPA) theo thang điểm 4.0:
+                  </p>
+                  <div className="grid grid-cols-2 gap-2 text-[10px] text-gray-600 font-medium">
+                    <div className="bg-white p-1.5 rounded border border-gray-150 shadow-sm">
+                      <span className="font-bold text-gray-800">A+ / A (8.5 - 10):</span> 4.0 - Xuất sắc
+                    </div>
+                    <div className="bg-white p-1.5 rounded border border-gray-150 shadow-sm">
+                      <span className="font-bold text-gray-800">A- (8.0 - 8.4):</span> 3.7 - Giỏi
+                    </div>
+                    <div className="bg-white p-1.5 rounded border border-gray-150 shadow-sm">
+                      <span className="font-bold text-gray-800">B+ (7.5 - 7.9):</span> 3.5 - Khá Giỏi
+                    </div>
+                    <div className="bg-white p-1.5 rounded border border-gray-150 shadow-sm">
+                      <span className="font-bold text-gray-800">B (7.0 - 7.4):</span> 3.0 - Khá
+                    </div>
+                    <div className="bg-white p-1.5 rounded border border-gray-150 shadow-sm">
+                      <span className="font-bold text-gray-800">B- (6.5 - 6.9):</span> 2.7 - Trung bình Khá
+                    </div>
+                    <div className="bg-white p-1.5 rounded border border-gray-150 shadow-sm">
+                      <span className="font-bold text-gray-800">C+ (6.0 - 6.4):</span> 2.5 - Trung bình
+                    </div>
+                    <div className="bg-white p-1.5 rounded border border-gray-150 shadow-sm">
+                      <span className="font-bold text-gray-800">C (5.5 - 5.9):</span> 2.0 - Trung bình
+                    </div>
+                    <div className="bg-white p-1.5 rounded border border-gray-150 shadow-sm">
+                      <span className="font-bold text-gray-800">C- (5.0 - 5.4):</span> 1.5 - Trung bình Yếu
+                    </div>
+                    <div className="bg-white p-1.5 rounded border border-gray-150 shadow-sm">
+                      <span className="font-bold text-gray-800">D (4.0 - 4.9):</span> 1.0 - Yếu (Đạt)
+                    </div>
+                    <div className="bg-rose-50 p-1.5 rounded border border-rose-100 shadow-sm">
+                      <span className="font-bold text-rose-700">F (dưới 4.0):</span> 0.0 - Trượt (Nợ môn)
+                    </div>
+                  </div>
+                </div>
+
+                {/* Section 2 */}
+                <div className="bg-gray-50/50 border border-gray-200 rounded-2xl p-5 space-y-3">
+                  <h3 className="text-xs sm:text-sm font-extrabold text-blue-700 uppercase tracking-wide flex items-center gap-1.5 border-b border-gray-155 pb-2">
+                    🔄 2. Cơ Chế Thay Thế Điểm Khi Học Lại & Cải Thiện
+                  </h3>
+                  <p className="text-[11px] text-gray-600 leading-relaxed font-medium">
+                    Quy chế đào tạo của DTU cho phép sinh viên cải thiện điểm số và trả nợ môn một cách tối ưu thông qua cơ chế tự động thay thế điểm:
+                  </p>
+                  <ul className="list-disc pl-4 space-y-2 text-[11px] text-gray-600 font-medium">
+                    <li><strong>Cơ chế thay thế (Trừ cũ - Cộng mới):</strong> Khi học lại hoặc học cải thiện điểm, điểm số của lượt học mới nhất sẽ được thay thế hoàn toàn điểm số của lượt học cũ. Môn học cũ sẽ bị loại hoàn toàn ra khỏi việc tính GPA tích lũy, giúp điểm trung bình của bạn tăng nhanh chóng.</li>
+                    <li><strong>Môn điều kiện bắt buộc:</strong> Các môn Giáo dục Quốc phòng & An ninh và Giáo dục Thể chất là môn điều kiện cần để xét tốt nghiệp nhưng <strong>không tham gia tính GPA tích lũy</strong> và không cộng dồn vào tổng số tín chỉ tích lũy chuyên ngành tốt nghiệp.</li>
+                  </ul>
+                </div>
+
+                {/* Section 3 */}
+                <div className="bg-gray-50/50 border border-gray-200 rounded-2xl p-5 space-y-3 md:col-span-2">
+                  <h3 className="text-xs sm:text-sm font-extrabold text-blue-700 uppercase tracking-wide flex items-center gap-1.5 border-b border-gray-155 pb-2">
+                    🏆 3. Tiêu Chuẩn Xét Học Bổng Khuyến Khích Học Tập DTU
+                  </h3>
+                  <p className="text-[11px] text-gray-600 leading-relaxed font-medium">
+                    Học bổng được xét duyệt theo từng năm học dựa trên kết quả kết hợp của 2 học kỳ chính khóa (Kỳ 1 + Kỳ 2, không tính Kỳ Hè) với các mốc điều kiện đạt tối thiểu như sau:
+                  </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 my-2">
+                    <div className="p-3.5 bg-green-50 border border-green-200 rounded-xl space-y-1.5 shadow-sm">
+                      <span className="text-[11px] font-extrabold text-green-800 block">🏆 Học bổng Xuất sắc</span>
+                      <div className="text-[10px] text-green-700 leading-normal space-y-0.5 font-medium">
+                        <p>• GPA học lực ≥ <strong>3.68</strong></p>
+                        <p>• Điểm rèn luyện ≥ <strong>90</strong> (loại Xuất sắc)</p>
+                      </div>
+                    </div>
+                    <div className="p-3.5 bg-blue-50 border border-blue-200 rounded-xl space-y-1.5 shadow-sm">
+                      <span className="text-[11px] font-extrabold text-blue-800 block">🥈 Học bổng Giỏi</span>
+                      <div className="text-[10px] text-blue-700 leading-normal space-y-0.5 font-medium">
+                        <p>• GPA học lực ≥ <strong>3.34</strong></p>
+                        <p>• Điểm rèn luyện ≥ <strong>80</strong> (loại Tốt)</p>
+                      </div>
+                    </div>
+                    <div className="p-3.5 bg-teal-50 border border-teal-200 rounded-xl space-y-1.5 shadow-sm">
+                      <span className="text-[11px] font-extrabold text-teal-850 block">🥉 Học bổng Khá</span>
+                      <div className="text-[10px] text-teal-800 leading-normal space-y-0.5 font-medium">
+                        <p>• GPA học lực ≥ <strong>2.68</strong></p>
+                        <p>• Điểm rèn luyện ≥ <strong>70</strong> (loại Khá)</p>
+                      </div>
+                    </div>
+                  </div>
+                  <ul className="list-disc pl-4 space-y-1.5 text-[11px] text-gray-600 font-medium">
+                    <li><strong>Không bị điểm F (Trượt môn):</strong> Toàn bộ các môn học trong phạm vi năm học xét học bổng phải đạt điểm qua môn (không có môn nào bị điểm F ở kỳ chính khóa).</li>
+                    <li><strong>Phân bổ chỉ tiêu:</strong> Học bổng sẽ được nhà trường xét duyệt bằng cách xếp thứ tự điểm GPA từ cao xuống thấp trong phạm vi ngành/lớp cho đến khi hết ngân quỹ được cấp của kỳ học đó.</li>
+                  </ul>
+                </div>
+
+                {/* Section 4 */}
+                <div className="bg-gray-50/50 border border-gray-200 rounded-2xl p-5 space-y-3 md:col-span-2">
+                  <h3 className="text-xs sm:text-sm font-extrabold text-blue-700 uppercase tracking-wide flex items-center gap-1.5 border-b border-gray-155 pb-2">
+                    📱 4. Hướng Dẫn Sử Dụng Nhanh Bộ Công Cụ Tính Điểm
+                  </h3>
+                  <ul className="list-disc pl-4 space-y-2 text-[11px] text-gray-600 font-medium">
+                    <li><strong>Dán điểm tự động từ myDTU:</strong> Bạn chỉ cần truy cập cổng thông tin myDTU, chọn xem bảng điểm, bôi đen toàn bộ bảng rồi copy (Ctrl+C). Sau đó, quay lại ứng dụng này, bấm vào nút <strong>"Dán từ myDTU"</strong> và paste (Ctrl+V) để ứng dụng tự động điền nhanh điểm toàn bộ các kỳ học.</li>
+                    <li><strong>Giả lập GPA đạt mục tiêu học lực:</strong> Nhập số tín chỉ còn lại và chọn loại xếp loại mong muốn để hệ thống tự động tính toán chính xác số điểm GPA tối thiểu bạn cần đạt được ở các kỳ tiếp theo.</li>
+                    <li><strong>Cá nhân hóa và chia sẻ (Story 9:16):</strong> Nhập tên của bạn, chọn chủ đề (Hoàng hôn, Cực quang, Vũ trụ...) hoặc tải ảnh nền của bạn lên, hệ thống sẽ kết xuất một thẻ kết quả cực đẹp để bạn lưu ảnh làm kỷ niệm hoặc chia sẻ lên Zalo/Messenger/Instagram.</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
 
       </div>
 

@@ -1986,6 +1986,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
       let currentSemester = semester;
       
       const newCourses: Course[] = [];
+      const updatedCoursesList = [...courses];
       
       // Theo dõi lần xuất hiện của môn học để auto-retake
       // Cần lưu thêm năm học và học kỳ để phân biệt môn học lại vs môn Lý thuyết/Thực hành học cùng 1 kỳ
@@ -2001,6 +2002,7 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
       });
 
       let importedCount = 0;
+      let updatedCount = 0;
       let duplicateCount = 0;
 
       for (let i = 0; i < cells.length; i++) {
@@ -2055,16 +2057,48 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                                        nameLower.includes('chạy ngắn') || 
                                        nameLower.includes('bơi lội');
 
-            // Chống trùng lặp môn học giống hệt trong cùng 1 kỳ
-            // Bổ sung c.credits để phân biệt môn Lý thuyết (vd: 2 tín) và Thực hành (vd: 1 tín) chung mã môn
-            const isDuplicate = [...courses, ...newCourses].some(
+            // Tìm xem môn này đã có trong danh sách hiện có chưa
+            const existingCourseIndex = updatedCoursesList.findIndex(
               c => c.courseCode === courseCodeExtract && 
                    c.academicYear === currentYear && 
                    c.semester === currentSemester &&
                    c.credits === creditsExtract
             );
-            
-            if (!isDuplicate) {
+
+            // Tìm xem môn này đã được thêm trong chính lần dán này chưa
+            const existingNewCourseIndex = newCourses.findIndex(
+              c => c.courseCode === courseCodeExtract && 
+                   c.academicYear === currentYear && 
+                   c.semester === currentSemester &&
+                   c.credits === creditsExtract
+            );
+
+            if (existingCourseIndex !== -1) {
+              // Đã tồn tại trong danh sách môn học cũ
+              const existingCourse = updatedCoursesList[existingCourseIndex];
+              // Nếu điểm chữ mới khác điểm cũ (hoặc điểm cũ chưa có, giờ có)
+              if (existingCourse.gradeChar !== gradeCharExtract) {
+                updatedCoursesList[existingCourseIndex] = {
+                  ...existingCourse,
+                  gradeChar: gradeCharExtract,
+                  courseName: courseNameExtract // cập nhật tên môn phòng khi thay đổi nhẹ
+                };
+                updatedCount++;
+              } else {
+                duplicateCount++;
+              }
+            } else if (existingNewCourseIndex !== -1) {
+              // Đã được xử lý trước đó trong lần dán này
+              const existingNewCourse = newCourses[existingNewCourseIndex];
+              if (existingNewCourse.gradeChar !== gradeCharExtract) {
+                newCourses[existingNewCourseIndex] = {
+                  ...existingNewCourse,
+                  gradeChar: gradeCharExtract,
+                  courseName: courseNameExtract
+                };
+              }
+            } else {
+              // Môn học hoàn toàn mới trong kỳ học này
               // Tự động nhận diện Học lại / Cải thiện
               let isRetakeExtract = false;
               let replacesCourseIdExtract: string | null = null;
@@ -2073,7 +2107,6 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
                 const prevCourse = codeToCourseMap.get(courseCodeExtract);
                 if (prevCourse) {
                   // CHỈ CÓ THỂ LÀ HỌC LẠI nếu môn cũ nằm ở MỘT KỲ KHÁC (trước đó)
-                  // Nếu học cùng kỳ, cùng năm (VD: CS 201 Lý thuyết và CS 201 Thực hành), thì KHÔNG phải học lại
                   if (prevCourse.academicYear !== currentYear || prevCourse.semester !== currentSemester) {
                     isRetakeExtract = true;
                     replacesCourseIdExtract = prevCourse.id;
@@ -2105,8 +2138,6 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
               });
               
               importedCount++;
-            } else {
-              duplicateCount++;
             }
             
             // Nhảy index qua các ô thuộc môn này (5 ô nếu chưa có điểm, 7 ô nếu đã có)
@@ -2115,17 +2146,28 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
         }
       }
 
-      if (importedCount > 0) {
-        updateCoursesState([...courses, ...newCourses]);
+      if (importedCount > 0 || updatedCount > 0) {
+        updateCoursesState([...updatedCoursesList, ...newCourses]);
         setIsMockDataLoaded(false);
         setSmartPasteText('');
-        const dupMsg = duplicateCount > 0 ? ` (Đã bỏ qua ${duplicateCount} môn trùng lặp)` : '';
-        setSmartPasteStatus({ message: `Hoàn tất! Đã thêm ${importedCount} môn học.${dupMsg}`, type: 'success' });
+        
+        let msg = 'Hoàn tất!';
+        if (importedCount > 0) {
+          msg += ` Đã thêm ${importedCount} môn mới.`;
+        }
+        if (updatedCount > 0) {
+          msg += ` Đã cập nhật điểm cho ${updatedCount} môn.`;
+        }
+        if (duplicateCount > 0) {
+          msg += ` (Bỏ qua ${duplicateCount} môn trùng khớp)`;
+        }
+
+        setSmartPasteStatus({ message: msg, type: 'success' });
         setIsMobileDrawerOpen(false);
         
         setTimeout(() => setSmartPasteStatus({ message: '', type: 'idle' }), 5000);
       } else if (duplicateCount > 0) {
-        setSmartPasteStatus({ message: `Đã bỏ qua ${duplicateCount} môn học do bị trùng lặp trong bảng.`, type: 'error' });
+        setSmartPasteStatus({ message: `Đã bỏ qua ${duplicateCount} môn do thông tin điểm trùng khớp hoàn toàn.`, type: 'success' });
       } else {
         setSmartPasteStatus({ message: 'Không tìm thấy dữ liệu! Hãy đảm bảo copy đúng bảng điểm.', type: 'error' });
       }

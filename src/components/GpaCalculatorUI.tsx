@@ -1836,6 +1836,36 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
     });
   }, [summaryResult.processedCourses]);
 
+  // Dự báo GPA sau khi các môn học lại đang chờ điểm có kết quả
+  const predictedGpaIfPendingPassed = useMemo(() => {
+    const { replacesMap } = resolveRetakes(courses);
+    const pendingRetakeIds = new Set<string>();
+    
+    courses.forEach(c => {
+      if ((c.isRetake || replacesMap.has(c.id)) && c.replacesCourseId && c.gradeChar === '') {
+        pendingRetakeIds.add(c.replacesCourseId);
+      }
+    });
+
+    if (pendingRetakeIds.size === 0) return null;
+
+    let totalPts = 0;
+    let totalCreds = 0;
+
+    for (const c of courses) {
+      if (c.isConditionCourse) continue;
+      if (pendingRetakeIds.has(c.id)) continue;
+      const pt = GRADE_SCALE_MAP[c.gradeChar];
+      if (pt !== null && pt !== undefined) {
+        totalCreds += c.credits;
+        totalPts += pt * c.credits;
+      }
+    }
+
+    if (totalCreds === 0) return null;
+    return Math.round((totalPts / totalCreds) * 100) / 100;
+  }, [courses]);
+
   // Bộ gợi ý tối ưu hóa cải thiện điểm số (GPA Booster)
   const gpaBoosterRecommendations = useMemo(() => {
     if (!courses || courses.length === 0 || dtuResult.accumulatedCredits === 0) {
@@ -3665,9 +3695,19 @@ export default function GpaCalculatorUI({ initialCourses, onCoursesChange }: Gpa
             title="Nhấp để xem chi tiết cách tính điểm và cơ chế học cải thiện"
           >
             <span className="underline decoration-dotted decoration-gray-300 hover:decoration-blue-600">
-              Đã trừ điểm gốc của các môn bị học cải thiện.
+              Đã trừ điểm gốc của các môn học lại đã có kết quả.
             </span>
           </p>
+          {predictedGpaIfPendingPassed !== null && (
+            <div 
+              onClick={() => setIsGpaDetailModalOpen(true)}
+              className="mt-2.5 p-2 bg-amber-50/80 border border-amber-200/80 rounded-xl text-[10.5px] text-amber-900 font-medium flex items-center gap-1.5 cursor-pointer hover:bg-amber-100/80 transition-colors"
+              title="Nhấp để xem chi tiết dự báo GPA sau khi thi xong môn học lại"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-amber-600 shrink-0 animate-pulse" />
+              <span>Dự báo sau khi có điểm môn học lại: <strong className="text-amber-950 font-extrabold">{predictedGpaIfPendingPassed.toFixed(2)}</strong></span>
+            </div>
+          )}
         </div>
 
         {/* CREDITS CARD */}

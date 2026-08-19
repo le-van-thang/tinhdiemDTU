@@ -60,7 +60,10 @@ export function resolveRetakes(courses: Course[]) {
   // 1. Áp dụng liên kết thủ công của người dùng (nếu có)
   courses.forEach(course => {
     if (course.isRetake && course.replacesCourseId) {
-      replacedIds.add(course.replacesCourseId);
+      // CHỈ đánh dấu môn cũ là bị thay thế (trừ khỏi GPA tích lũy) khi môn học lại ĐÃ CÓ ĐIỂM CHÍNH THỨC
+      if (course.gradeChar !== '') {
+        replacedIds.add(course.replacesCourseId);
+      }
       retakeIds.add(course.id);
       replacesMap.set(course.id, course.replacesCourseId);
     }
